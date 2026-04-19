@@ -6,6 +6,7 @@ import Processing from '../components/Processing';
 import Result from '../components/Result';
 import JobHistory from '../components/JobHistory';
 import { uploadTempFile } from '../lib/uploader';
+import { log } from '../lib/debugLog';
 
 export default function Home({ activeTab, onTabChange }) {
   const [step, setStep] = useState('upload');
@@ -36,11 +37,18 @@ export default function Home({ activeTab, onTabChange }) {
     setSubmitting(true);
 
     try {
+      log('info', 'submit click', {
+        videoName: videoFile.name,
+        videoSize: videoFile.size,
+        faceName: faceFile.name,
+        faceSize: faceFile.size,
+      });
       const [videoUrl, faceUrl] = await Promise.all([
         uploadTempFile(videoFile),
         uploadTempFile(faceFile),
       ]);
 
+      log('info', 'swap request', { videoUrl, faceUrl });
       const res = await fetch('/api/swap', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -51,7 +59,18 @@ export default function Home({ activeTab, onTabChange }) {
           faceFileName: faceFile.name,
         }),
       });
-      const data = await res.json();
+      const rawText = await res.text();
+      let data = {};
+      try {
+        data = rawText ? JSON.parse(rawText) : {};
+      } catch (parseErr) {
+        log('error', 'swap response not JSON', {
+          httpStatus: res.status,
+          bodyPreview: rawText.slice(0, 300),
+        });
+        throw new Error(`Server returned non-JSON (${res.status})`);
+      }
+      log(res.ok ? 'info' : 'error', 'swap response', { httpStatus: res.status, body: data });
       if (!res.ok) {
         throw new Error(data.error || 'Failed to start face swap.');
       }
@@ -65,6 +84,7 @@ export default function Home({ activeTab, onTabChange }) {
       });
       setStep('processing');
     } catch (err) {
+      log('error', 'submit failed', { message: err.message });
       setError(err.message || 'Something went wrong.');
     } finally {
       setSubmitting(false);

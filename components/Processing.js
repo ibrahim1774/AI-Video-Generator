@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import styles from './Processing.module.css';
+import { log } from '../lib/debugLog';
 
 const PHASES = [
   { label: 'Uploading assets', detail: 'Securing your source video and reference face.' },
@@ -36,14 +37,29 @@ export default function Processing({ predictionId, onComplete, onError }) {
       });
     }, 200);
 
+    let pollCount = 0;
+    log('info', 'polling start', { predictionId });
     const poll = setInterval(async () => {
+      pollCount += 1;
       try {
         const res = await fetch(`/api/status?predictionId=${encodeURIComponent(predictionId)}`);
-        const data = await res.json();
+        const rawText = await res.text();
+        let data = {};
+        try {
+          data = rawText ? JSON.parse(rawText) : {};
+        } catch (parseErr) {
+          log('error', `poll #${pollCount} not JSON`, {
+            httpStatus: res.status,
+            bodyPreview: rawText.slice(0, 300),
+          });
+          return;
+        }
+        log(res.ok ? 'info' : 'warn', `poll #${pollCount}`, { httpStatus: res.status, data });
         if (!res.ok && !data.status) {
           throw new Error(data.error || 'Status lookup failed');
         }
         if (data.status === 'complete') {
+          log('info', 'prediction complete', { resultUrl: data.resultUrl });
           doneRef.current = true;
           setProgress(100);
           setPhase(PHASES.length - 1);
@@ -51,13 +67,14 @@ export default function Processing({ predictionId, onComplete, onError }) {
           clearInterval(poll);
           onComplete && onComplete(data);
         } else if (data.status === 'error') {
+          log('error', 'prediction error', { error: data.error });
           doneRef.current = true;
           clearInterval(tick);
           clearInterval(poll);
           onError && onError(data.error || 'Face swap failed.');
         }
       } catch (err) {
-        // transient — keep polling
+        log('error', `poll #${pollCount} threw`, { message: err.message });
       }
     }, 3000);
 

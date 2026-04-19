@@ -1,0 +1,146 @@
+.panel {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  width: 420px;
+  max-width: calc(100vw - 32px);
+  max-height: 50vh;
+  background: rgba(10, 10, 12, 0.95);
+  border: 1px solid rgba(224, 196, 136, 0.25);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  color: #e6e6e6;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  backdrop-filter: blur(6px);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.title {
+  color: #e0c488;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.actions {
+  display: flex;
+  gap: 6px;
+}
+
+.btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ddd;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 10px;
+}
+
+.btn:hover {
+  border-color: rgba(224, 196, 136, 0.5);
+  color: #e0c488;
+}
+
+.list {
+  overflow-y: auto;
+  padding: 6px 8px 10px;
+}
+
+.empty {
+  color: #888;
+  padding: 14px 6px;
+  text-align: center;
+}
+
+.entry {
+  padding: 6px 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.entry:last-child {
+  border-bottom: none;
+}
+
+.meta {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.ts {
+  color: #777;
+}
+
+.level {
+  text-transform: uppercase;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #aaa;
+}
+
+.label {
+  color: #eee;
+  font-weight: 500;
+}
+
+.error .level {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+
+.error .label {
+  color: #fca5a5;
+}
+
+.warn .level {
+  background: rgba(234, 179, 8, 0.2);
+  color: #fde68a;
+}
+
+.info .level {
+  background: rgba(34, 197, 94, 0.15);
+  color: #86efac;
+}
+
+.data {
+  margin: 4px 0 0;
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 4px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: #c9c9c9;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.toggle {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  background: rgba(10, 10, 12, 0.95);
+  border: 1px solid rgba(224, 196, 136, 0.4);
+  color: #e0c488;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  cursor: pointer;
+  z-index: 9999;
+}

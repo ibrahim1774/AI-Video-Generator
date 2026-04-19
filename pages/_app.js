@@ -3,6 +3,7 @@ import { useState } from 'react';
 import '../styles/globals.css';
 import AppHead from '../components/AppHead';
 import Navbar from '../components/Navbar';
+import DebugConsole from '../components/DebugConsole';
 
 export default function App({ Component, pageProps }) {
   const [activeTab, setActiveTab] = useState('create');
@@ -16,6 +17,7 @@ export default function App({ Component, pageProps }) {
         activeTab={activeTab}
         onTabChange={setActiveTab}
       />
+      <DebugConsole />
     </>
   );
 }
