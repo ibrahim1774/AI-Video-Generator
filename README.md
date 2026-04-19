@@ -56,13 +56,17 @@ npm run start
 
 ### Backend flow
 
-1. **Browser uploads each file directly to [litterbox.catbox.moe](https://litterbox.catbox.moe)** (free temp host, 1 GB max, files auto-delete in 60 min). This bypasses Vercel's 4.5 MB request-body limit on serverless functions. See [lib/uploader.js](lib/uploader.js).
+1. **Browser uploads each file directly to Vercel Blob** via [`@vercel/blob/client`](https://vercel.com/docs/storage/vercel-blob/client-upload). The client hits `/api/upload-token` for a short-lived token, then PUTs the file straight to `*.blob.vercel-storage.com`. This bypasses Vercel's 4.5 MB serverless request-body limit. See [lib/uploader.js](lib/uploader.js) and [pages/api/upload-token.js](pages/api/upload-token.js).
 2. `POST /api/swap` receives a tiny JSON body `{ videoUrl, faceUrl }` and creates a Replicate prediction against `arabyai-replicate/roop_face_swap` (pinned version). Replicate fetches both URLs server-side. The returned `prediction.id` is stored on the in-memory job.
 3. The client receives `{ jobId, predictionId, status }`.
 4. The client polls `GET /api/status?jobId=...` every 3 s. The server calls `replicate.predictions.get(predictionId)`, normalizes the status (`succeeded → complete`, `failed/canceled → error`, else `processing`), and on completion stores the prediction's output URL as `resultUrl`.
 5. `GET /api/jobs` returns the in-memory list for the History tab.
 
-> **Note:** the tmpfiles.org hop is a temporary stage. For production, replace [lib/uploader.js](lib/uploader.js) with Vercel Blob (`@vercel/blob/client`) or S3/R2 presigned uploads — no other files need to change.
+### Enabling Vercel Blob (one-time)
+
+1. Open your Vercel project → **Storage** tab → **Create Database** → **Blob**.
+2. Vercel auto-adds `BLOB_READ_WRITE_TOKEN` to the project env vars (Production + Preview + Development).
+3. For local dev, run `vercel env pull .env.local` to fetch the token onto disk.
 
 ---
 

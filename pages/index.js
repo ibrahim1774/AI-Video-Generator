@@ -93,7 +93,7 @@ export default function Home({ activeTab, onTabChange }) {
     return (
       <main className={styles.page}>
         <Processing
-          jobId={activeJob.jobId}
+          predictionId={activeJob.predictionId}
           onComplete={handleComplete}
           onError={handleError}
         />

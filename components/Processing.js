@@ -14,13 +14,13 @@ const PHASES = [
 const RADIUS = 52;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
-export default function Processing({ jobId, onComplete, onError }) {
+export default function Processing({ predictionId, onComplete, onError }) {
   const [progress, setProgress] = useState(0);
   const [phase, setPhase] = useState(0);
   const doneRef = useRef(false);
 
   useEffect(() => {
-    if (!jobId) return undefined;
+    if (!predictionId) return undefined;
 
     const tick = setInterval(() => {
       setProgress((p) => {
@@ -38,7 +38,7 @@ export default function Processing({ jobId, onComplete, onError }) {
 
     const poll = setInterval(async () => {
       try {
-        const res = await fetch(`/api/status?jobId=${encodeURIComponent(jobId)}`);
+        const res = await fetch(`/api/status?predictionId=${encodeURIComponent(predictionId)}`);
         const data = await res.json();
         if (!res.ok && !data.status) {
           throw new Error(data.error || 'Status lookup failed');
@@ -66,7 +66,7 @@ export default function Processing({ jobId, onComplete, onError }) {
       clearInterval(tick);
       clearInterval(poll);
     };
-  }, [jobId, onComplete, onError]);
+  }, [predictionId, onComplete, onError]);
 
   const currentPhase = PHASES[Math.min(phase, PHASES.length - 1)];
   const dashOffset = CIRCUMFERENCE - (CIRCUMFERENCE * progress) / 100;
