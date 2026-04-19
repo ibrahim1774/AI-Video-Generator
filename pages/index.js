@@ -5,6 +5,7 @@ import UploadZone from '../components/UploadZone';
 import Processing from '../components/Processing';
 import Result from '../components/Result';
 import JobHistory from '../components/JobHistory';
+import { uploadTempFile } from '../lib/uploader';
 
 export default function Home({ activeTab, onTabChange }) {
   const [step, setStep] = useState('upload');
@@ -35,13 +36,21 @@ export default function Home({ activeTab, onTabChange }) {
     setSubmitting(true);
 
     try {
-      const fd = new FormData();
-      fd.append('video', videoFile);
-      fd.append('face', faceFile);
-      fd.append('startSeconds', '0');
-      fd.append('endSeconds', '10');
+      const [videoUrl, faceUrl] = await Promise.all([
+        uploadTempFile(videoFile),
+        uploadTempFile(faceFile),
+      ]);
 
-      const res = await fetch('/api/swap', { method: 'POST', body: fd });
+      const res = await fetch('/api/swap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          videoUrl,
+          faceUrl,
+          videoFileName: videoFile.name,
+          faceFileName: faceFile.name,
+        }),
+      });
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.error || 'Failed to start face swap.');
@@ -49,7 +58,7 @@ export default function Home({ activeTab, onTabChange }) {
 
       setActiveJob({
         jobId: data.jobId,
-        projectId: data.projectId,
+        predictionId: data.predictionId,
         status: data.status,
         videoFileName: videoFile.name,
         faceFileName: faceFile.name,
@@ -175,7 +184,7 @@ export default function Home({ activeTab, onTabChange }) {
           disabled={!canSubmit}
         >
           {submitting && <span className={styles.spinner} aria-hidden="true" />}
-          {submitting ? 'Starting swap…' : 'Create face swap'}
+          {submitting ? 'Uploading…' : 'Create face swap'}
         </button>
 
         <div className={styles.footerRow}>

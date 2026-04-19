@@ -1,5 +1,5 @@
 import { getJob, updateJob } from '../../lib/jobs';
-import { getVideoStatus, normalizeStatus } from '../../lib/magichour';
+import { getPrediction, normalizeStatus } from '../../lib/replicate';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -21,24 +21,26 @@ export default async function handler(req, res) {
     return res.status(200).json(job);
   }
 
-  if (!job.projectId) {
+  if (!job.predictionId) {
     return res.status(200).json(job);
   }
 
   try {
-    const raw = await getVideoStatus(job.projectId);
-    const normalized = normalizeStatus(raw);
+    const prediction = await getPrediction(job.predictionId);
+    const normalized = normalizeStatus(prediction);
 
     const patch = { status: normalized.status };
     if (normalized.resultUrl) patch.resultUrl = normalized.resultUrl;
-    if (normalized.status === 'error') patch.error = normalized.error || 'Magic Hour job failed';
+    if (normalized.status === 'error') {
+      patch.error = normalized.error || 'Replicate prediction failed';
+    }
 
     const updated = updateJob(jobId, patch);
     return res.status(200).json(updated);
   } catch (err) {
     return res.status(502).json({
       ...job,
-      error: err.message || 'Failed to reach Magic Hour.',
+      error: err.message || 'Failed to reach Replicate.',
     });
   }
 }
