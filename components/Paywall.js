@@ -28,6 +28,25 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
     }
   };
 
+  const startDev = async () => {
+    if (busy) return;
+    setBusy('dev');
+    setLocalError('');
+    try {
+      const res = await fetch('/api/start-dev', { method: 'POST' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to enable dev mode.');
+      }
+      onTrialStarted && onTrialStarted();
+    } catch (err) {
+      setLocalError(err.message);
+      onError && onError(err.message);
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const startCheckout = async (plan) => {
     if (busy) return;
     setBusy(plan);
@@ -140,10 +159,19 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
         {localError && <div className={styles.error}>{localError}</div>}
 
         <footer className={styles.footer}>
-          <span>◆ Encrypted</span>
-          <span>◆ Powered by Stripe</span>
-          <span>◆ Cancel anytime</span>
+          <span>\u25c6 Encrypted</span>
+          <span>\u25c6 Powered by Stripe</span>
+          <span>\u25c6 Cancel anytime</span>
         </footer>
+
+        <button
+          type="button"
+          className={styles.devBtn}
+          onClick={startDev}
+          disabled={busy !== null}
+        >
+          {busy === 'dev' ? 'Enabling\u2026' : 'Dev: enable unlimited (testing only)'}
+        </button>
       </div>
     </section>
   );
