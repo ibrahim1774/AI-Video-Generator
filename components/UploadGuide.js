@@ -1,34 +1,34 @@
 import styles from './UploadGuide.module.css';
 
 const IMAGE_TIPS = [
-  'Full body and head clearly visible, no obstructions',
-  'Front-facing, well-lit, neutral background helps',
-  'Aspect ratio between 2:5 and 5:2 — portrait or landscape both fine',
-  'JPG or PNG, at least 300px on the short edge, ≤ 10 MB',
+  'Front-facing, eyes open, neutral expression',
+  'Bright, even lighting \u2014 no harsh side shadows',
+  'Crop tight to the face, ideally 1024 px+ on the short edge',
+  'JPG or PNG, sharp and high quality',
 ];
 
 const VIDEO_TIPS = [
-  'A clip showing the motion you want your character to copy',
-  'Steady, moderate movement works best — avoid chaotic/very fast action',
-  '3 to 30 seconds long, MP4 or MOV, ≤ 100 MB',
-  'One clear subject performing the motion',
+  'The clip whose person you want to replace',
+  'Frame 1 should clearly show the original person\u2019s face',
+  '3 to 30 seconds long, MP4 or MOV, \u2264 100 MB',
+  'One dominant face per frame, stable lighting',
 ];
 
 export default function UploadGuide() {
   return (
     <section className={styles.wrap} aria-label="Best practices">
       <div className={styles.headerRow}>
-        <span className={styles.eyebrow}>◆ Get the best results</span>
+        <span className={styles.eyebrow}>\u25c6 Get the best results</span>
         <p className={styles.lede}>
-          Upload your character + a motion clip. We'll generate a brand-new video of your character performing that motion.
+          Upload your reference face + the source video. We'll generate a preview frame for you to approve, then run the full swap.
         </p>
       </div>
 
       <div className={styles.grid}>
         <article className={styles.card}>
           <header className={styles.cardHeader}>
-            <span className={styles.icon} aria-hidden="true">👤</span>
-            <h3 className={styles.cardTitle}>Character image</h3>
+            <span className={styles.icon} aria-hidden="true">\ud83d\udc64</span>
+            <h3 className={styles.cardTitle}>Reference face</h3>
           </header>
           <ul className={styles.list}>
             {IMAGE_TIPS.map((t) => (
@@ -39,8 +39,8 @@ export default function UploadGuide() {
 
         <article className={styles.card}>
           <header className={styles.cardHeader}>
-            <span className={styles.icon} aria-hidden="true">🎬</span>
-            <h3 className={styles.cardTitle}>Motion video</h3>
+            <span className={styles.icon} aria-hidden="true">\ud83c\udfac</span>
+            <h3 className={styles.cardTitle}>Source video</h3>
           </header>
           <ul className={styles.list}>
             {VIDEO_TIPS.map((t) => (
