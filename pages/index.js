@@ -23,6 +23,7 @@ export default function Home({ activeTab, onTabChange }) {
   const [entitlement, setEntitlement] = useState(null);
   const [paidBanner, setPaidBanner] = useState(false);
   const [mode, setMode] = useState('std');
+  const [swapMode, setSwapMode] = useState(null); // 'face' | 'body' \u2014 no default
   const [previewBusy, setPreviewBusy] = useState(null); // 'regen' | 'proceed' | null
   // URLs persist across upload -> preview -> processing transitions.
   const [uploadedUrls, setUploadedUrls] = useState({
@@ -30,11 +31,12 @@ export default function Home({ activeTab, onTabChange }) {
     sourceFrameUrl: null,
     referenceImageUrl: null,
     hybridFrameUrl: null,
+    swapMode: null,
   });
   const pendingSwapRef = useRef(false);
   const paRetryRef = useRef(false);
 
-  const canSubmit = Boolean(videoFile && faceFile && consent && !submitting);
+  const canSubmit = Boolean(videoFile && faceFile && consent && swapMode && !submitting);
 
   const fetchEntitlement = useCallback(async () => {
     try {
@@ -84,11 +86,13 @@ export default function Home({ activeTab, onTabChange }) {
     setError('');
     setSubmitting(false);
     setActiveJob(null);
+    setSwapMode(null);
     setUploadedUrls({
       sourceVideoUrl: null,
       sourceFrameUrl: null,
       referenceImageUrl: null,
       hybridFrameUrl: null,
+      swapMode: null,
     });
   }, []);
 
@@ -146,11 +150,11 @@ export default function Home({ activeTab, onTabChange }) {
         sourceFrameUrl = fdata.frameUrl;
       }
 
-      log('info', 'banana request', { sourceFrameUrl, referenceImageUrl });
+      log('info', 'banana request', { sourceFrameUrl, referenceImageUrl, swapMode });
       const res = await fetch('/api/banana-prep', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ firstFrameUrl: sourceFrameUrl, referenceImageUrl }),
+        body: JSON.stringify({ firstFrameUrl: sourceFrameUrl, referenceImageUrl, swapMode }),
       });
       const rawText = await res.text();
       let data = {};
@@ -179,6 +183,7 @@ export default function Home({ activeTab, onTabChange }) {
         sourceFrameUrl,
         referenceImageUrl,
         hybridFrameUrl: data.hybridFrameUrl,
+        swapMode,
       });
       setStep('preview');
       return true;
@@ -189,20 +194,24 @@ export default function Home({ activeTab, onTabChange }) {
     } finally {
       setSubmitting(false);
     }
-  }, [videoFile, faceFile, fetchEntitlement]);
+  }, [videoFile, faceFile, swapMode, fetchEntitlement]);
 
   // Regenerate just the Banana hybrid frame using the already-uploaded URLs.
   const regenerateHybrid = useCallback(async () => {
-    const { sourceFrameUrl, referenceImageUrl } = uploadedUrls;
-    if (!sourceFrameUrl || !referenceImageUrl) return;
+    const { sourceFrameUrl, referenceImageUrl, swapMode: storedMode } = uploadedUrls;
+    if (!sourceFrameUrl || !referenceImageUrl || !storedMode) return;
     setPreviewBusy('regen');
     setError('');
     try {
-      log('info', 'banana regen request', { sourceFrameUrl, referenceImageUrl });
+      log('info', 'banana regen request', { sourceFrameUrl, referenceImageUrl, swapMode: storedMode });
       const res = await fetch('/api/banana-prep', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ firstFrameUrl: sourceFrameUrl, referenceImageUrl }),
+        body: JSON.stringify({
+          firstFrameUrl: sourceFrameUrl,
+          referenceImageUrl,
+          swapMode: storedMode,
+        }),
       });
       const data = await res.json().catch(() => ({}));
       log(res.ok ? 'info' : 'warn', 'banana regen response', {
@@ -450,6 +459,32 @@ export default function Home({ activeTab, onTabChange }) {
           >
             <span className={styles.modeName}>Pro</span>
             <span className={styles.modeDetail}>1080p \u00b7 sharper</span>
+          </button>
+        </div>
+
+        <div className={styles.swapModeLabel}>
+          Swap mode <span className={styles.required}>(required)</span>
+        </div>
+        <div className={styles.modeRow} role="radiogroup" aria-label="Swap mode">
+          <button
+            type="button"
+            role="radio"
+            aria-checked={swapMode === 'face'}
+            className={`${styles.modeBtn} ${swapMode === 'face' ? styles.modeBtnActive : ''}`}
+            onClick={() => setSwapMode('face')}
+          >
+            <span className={styles.modeName}>Face swap</span>
+            <span className={styles.modeDetail}>Keep source body + scene, swap only the face</span>
+          </button>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={swapMode === 'body'}
+            className={`${styles.modeBtn} ${swapMode === 'body' ? styles.modeBtnActive : ''}`}
+            onClick={() => setSwapMode('body')}
+          >
+            <span className={styles.modeName}>Full body swap</span>
+            <span className={styles.modeDetail}>Replace whole character, keep source pose + scene</span>
           </button>
         </div>
 

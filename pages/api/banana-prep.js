@@ -39,17 +39,25 @@ export default async function handler(req, res) {
     });
   }
 
-  const { firstFrameUrl, referenceImageUrl } = req.body || {};
+  const { firstFrameUrl, referenceImageUrl, swapMode } = req.body || {};
   if (!isHttpUrl(firstFrameUrl) || !isHttpUrl(referenceImageUrl)) {
     return res.status(400).json({
       error: 'firstFrameUrl and referenceImageUrl are required (http/https URLs).',
     });
   }
+  const mode = swapMode === 'body' ? 'body' : swapMode === 'face' ? 'face' : null;
+  if (!mode) {
+    return res.status(400).json({ error: "swapMode must be 'face' or 'body'." });
+  }
 
-  console.log('[banana-prep] running', { firstFrameUrl, referenceImageUrl });
+  console.log('[banana-prep] running', { firstFrameUrl, referenceImageUrl, mode });
 
   try {
-    const hybridFrameUrl = await createBananaPrep({ firstFrameUrl, referenceImageUrl });
+    const hybridFrameUrl = await createBananaPrep({
+      firstFrameUrl,
+      referenceImageUrl,
+      swapMode: mode,
+    });
     if (!hybridFrameUrl) {
       throw new Error('Nano Banana Pro returned no image.');
     }

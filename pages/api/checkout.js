@@ -26,6 +26,7 @@ export default async function handler(req, res) {
       cancel_url: `${origin}/?paid=0`,
       allow_promotion_codes: true,
       billing_address_collection: 'auto',
+      subscription_data: { trial_period_days: 1 },
     });
     return res.status(200).json({ url: session.url });
   } catch (err) {

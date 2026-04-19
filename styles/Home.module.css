@@ -295,3 +295,19 @@
 .modeBtnActive .modeDetail {
   color: #c9a98a;
 }
+
+.swapModeLabel {
+  margin-top: 14px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #aaa;
+}
+
+.required {
+  color: #e0c488;
+  font-style: italic;
+  text-transform: none;
+  letter-spacing: 0.04em;
+  margin-left: 6px;
+}

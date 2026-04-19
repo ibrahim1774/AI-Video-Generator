@@ -2,31 +2,9 @@ import { useState } from 'react';
 
 import styles from './Paywall.module.css';
 
-export default function Paywall({ entitlement, onTrialStarted, onError }) {
-  const [busy, setBusy] = useState(null); // 'trial' | 'monthly' | 'yearly'
+export default function Paywall({ onTrialStarted, onError }) {
+  const [busy, setBusy] = useState(null); // 'monthly' | 'yearly' | 'dev'
   const [localError, setLocalError] = useState('');
-
-  const trialAlreadyUsed =
-    entitlement && entitlement.tier === 'trial' && (entitlement.expired || entitlement.videosUsed >= entitlement.videoCap);
-
-  const startTrial = async () => {
-    if (busy) return;
-    setBusy('trial');
-    setLocalError('');
-    try {
-      const res = await fetch('/api/start-trial', { method: 'POST' });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'Failed to start trial.');
-      }
-      onTrialStarted && onTrialStarted();
-    } catch (err) {
-      setLocalError(err.message);
-      onError && onError(err.message);
-    } finally {
-      setBusy(null);
-    }
-  };
 
   const startDev = async () => {
     if (busy) return;
@@ -73,42 +51,16 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
     <section className={styles.wrap}>
       <div className={styles.card}>
         <header className={styles.header}>
-          <span className={styles.kicker}>◆ Pricing</span>
-          <h2 className={styles.title}>
-            {trialAlreadyUsed ? 'Trial used — pick a plan to keep going' : 'Get started with a 1-day free trial'}
-          </h2>
+          <span className={styles.kicker}>\u25c6 Pricing</span>
+          <h2 className={styles.title}>Start with a 1-day free trial</h2>
           <p className={styles.subtitle}>
-            {trialAlreadyUsed
-              ? 'Your free trial has ended or you used your free generation. Upgrade to keep going.'
-              : '1 free video in 24 hours. No card. Upgrade anytime.'}
+            Both plans start with 24 hours free. Cancel anytime during the trial and you won't be charged.
           </p>
         </header>
 
-        <div className={styles.tiers}>
-          <article className={`${styles.tier} ${trialAlreadyUsed ? styles.tierDisabled : ''}`}>
-            <div className={styles.tierHead}>
-              <h3 className={styles.tierName}>Free trial</h3>
-              <div className={styles.price}>
-                <span className={styles.amount}>$0</span>
-                <span className={styles.period}>/ 1 day</span>
-              </div>
-            </div>
-            <ul className={styles.feats}>
-              <li>1 video generation</li>
-              <li>24 hours of access</li>
-              <li>No card required</li>
-            </ul>
-            <button
-              type="button"
-              className={`${styles.btn} ${styles.btnGhost}`}
-              onClick={startTrial}
-              disabled={busy !== null || trialAlreadyUsed}
-            >
-              {trialAlreadyUsed ? 'Trial used' : busy === 'trial' ? 'Starting…' : 'Start free trial'}
-            </button>
-          </article>
-
+        <div className={styles.tiersTwo}>
           <article className={styles.tier}>
+            <div className={styles.tierBadge}>1-day free trial</div>
             <div className={styles.tierHead}>
               <h3 className={styles.tierName}>Monthly</h3>
               <div className={styles.price}>
@@ -118,6 +70,7 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
             </div>
             <ul className={styles.feats}>
               <li>10 video generations / month</li>
+              <li>1 day free, then $9/month</li>
               <li>Cancel anytime</li>
               <li>720p or 1080p, no watermark</li>
             </ul>
@@ -127,12 +80,12 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
               onClick={() => startCheckout('monthly')}
               disabled={busy !== null}
             >
-              {busy === 'monthly' ? 'Redirecting…' : 'Choose monthly'}
+              {busy === 'monthly' ? 'Redirecting\u2026' : 'Start free trial \u2192 $9/mo'}
             </button>
           </article>
 
           <article className={`${styles.tier} ${styles.tierFeatured}`}>
-            <div className={styles.tierBadge}>Best value</div>
+            <div className={styles.tierBadge}>Best value \u00b7 1-day free trial</div>
             <div className={styles.tierHead}>
               <h3 className={styles.tierName}>Yearly</h3>
               <div className={styles.price}>
@@ -142,8 +95,9 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
             </div>
             <ul className={styles.feats}>
               <li>100 video generations / year</li>
+              <li>1 day free, then $69/year</li>
               <li>~36% cheaper than monthly</li>
-              <li>One charge, no surprises</li>
+              <li>One charge, cancel anytime</li>
             </ul>
             <button
               type="button"
@@ -151,7 +105,7 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
               onClick={() => startCheckout('yearly')}
               disabled={busy !== null}
             >
-              {busy === 'yearly' ? 'Redirecting…' : 'Choose yearly'}
+              {busy === 'yearly' ? 'Redirecting\u2026' : 'Start free trial \u2192 $69/yr'}
             </button>
           </article>
         </div>
@@ -159,9 +113,9 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
         {localError && <div className={styles.error}>{localError}</div>}
 
         <footer className={styles.footer}>
-          <span>\u25c6 Encrypted</span>
+          <span>\u25c6 Card required</span>
           <span>\u25c6 Powered by Stripe</span>
-          <span>\u25c6 Cancel anytime</span>
+          <span>\u25c6 Cancel during trial = no charge</span>
         </footer>
 
         <button

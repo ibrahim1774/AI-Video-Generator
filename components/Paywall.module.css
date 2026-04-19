@@ -227,3 +227,15 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.tiersTwo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 720px) {
+  .tiersTwo {
+    grid-template-columns: 1fr;
+  }
+}
