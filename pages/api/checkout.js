@@ -1,4 +1,4 @@
-import { stripe, PRICE_MONTHLY, PRICE_YEARLY } from '../../lib/stripe';
+import { stripe, getOrCreatePrice } from '../../lib/stripe';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -7,10 +7,7 @@ export default async function handler(req, res) {
   }
 
   const { plan } = req.body || {};
-  const price =
-    plan === 'monthly' ? PRICE_MONTHLY : plan === 'yearly' ? PRICE_YEARLY : null;
-
-  if (!price) {
+  if (plan !== 'monthly' && plan !== 'yearly') {
     return res.status(400).json({ error: 'Invalid plan. Expected monthly or yearly.' });
   }
 
@@ -20,10 +17,11 @@ export default async function handler(req, res) {
     `https://${req.headers.host}`;
 
   try {
+    const price = await getOrCreatePrice(plan);
     const session = await stripe().checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
-      line_items: [{ price, quantity: 1 }],
+      line_items: [{ price: price.id, quantity: 1 }],
       success_url: `${origin}/?paid=1&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/?paid=0`,
       allow_promotion_codes: true,
