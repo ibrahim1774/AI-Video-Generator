@@ -1,8 +1,8 @@
 # FaceForge
 
-A luxury, minimal face-swap SaaS built on **Next.js 14** (Pages Router) and the **Replicate** API.
+A luxury, minimal AI motion-control SaaS built on **Next.js 14** (Pages Router) and the **Replicate** API.
 
-Upload a source video + a reference face photo, and FaceForge sends both to Replicate's `arabyai-replicate/roop_face_swap` model, polls for completion, and gives you back a finished MP4 — wrapped in a dark, premium UI.
+Upload a character image + a motion reference video, and FaceForge sends both to Replicate's `kwaivgi/kling-v3-motion-control` (Kling 3.0) model, polls for completion, and gives you back a finished MP4 of your character performing the reference motion — wrapped in a dark, premium UI.
 
 ---
 
@@ -83,9 +83,9 @@ No webhook needed — `/api/entitlement` reads subscription status directly from
 
 | Tier | Price | Cap | Window |
 |---|---|---|---|
-| Free trial | $0 | 1 swap | 24 hours |
-| Monthly | $5 | 10 swaps | per billing month |
-| Yearly | $39 | 100 swaps | per billing year |
+| Free trial | $0 | 1 generation | 24 hours |
+| Monthly | $9 | 10 generations | per billing month |
+| Yearly | $69 | 100 generations | per billing year |
 
 Free-trial state lives in httpOnly cookies. Paid subscription state + usage counters live on the **Stripe Customer's `metadata`** — no separate database. The `/api/swap` route gates on `getEntitlement()` from `lib/entitlement.js` and returns **402** with `{ error: 'paywall' }` when the user is over cap or has no entitlement; the UI then renders `<Paywall />`.
 

@@ -60,8 +60,8 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
           </h2>
           <p className={styles.subtitle}>
             {trialAlreadyUsed
-              ? 'Your free trial has ended or you used your free swap. Upgrade to keep swapping.'
-              : '1 free swap in 24 hours. No card. Upgrade anytime.'}
+              ? 'Your free trial has ended or you used your free generation. Upgrade to keep going.'
+              : '1 free video in 24 hours. No card. Upgrade anytime.'}
           </p>
         </header>
 
@@ -75,7 +75,7 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
               </div>
             </div>
             <ul className={styles.feats}>
-              <li>1 video swap</li>
+              <li>1 video generation</li>
               <li>24 hours of access</li>
               <li>No card required</li>
             </ul>
@@ -93,14 +93,14 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
             <div className={styles.tierHead}>
               <h3 className={styles.tierName}>Monthly</h3>
               <div className={styles.price}>
-                <span className={styles.amount}>$5</span>
+                <span className={styles.amount}>$9</span>
                 <span className={styles.period}>/ month</span>
               </div>
             </div>
             <ul className={styles.feats}>
-              <li>10 video swaps / month</li>
+              <li>10 video generations / month</li>
               <li>Cancel anytime</li>
-              <li>Same quality, no watermark</li>
+              <li>720p or 1080p, no watermark</li>
             </ul>
             <button
               type="button"
@@ -117,13 +117,13 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
             <div className={styles.tierHead}>
               <h3 className={styles.tierName}>Yearly</h3>
               <div className={styles.price}>
-                <span className={styles.amount}>$39</span>
+                <span className={styles.amount}>$69</span>
                 <span className={styles.period}>/ year</span>
               </div>
             </div>
             <ul className={styles.feats}>
-              <li>100 video swaps / year</li>
-              <li>35% cheaper than monthly</li>
+              <li>100 video generations / year</li>
+              <li>~36% cheaper than monthly</li>
               <li>One charge, no surprises</li>
             </ul>
             <button

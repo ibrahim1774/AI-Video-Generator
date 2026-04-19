@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 
 import { createJob, updateJob } from '../../lib/jobs';
-import { createFaceSwapPrediction, normalizeStatus } from '../../lib/replicate';
+import { createKlingPrediction, normalizeStatus } from '../../lib/replicate';
 import { getEntitlement, incrementUsage } from '../../lib/entitlement';
 
 function isHttpUrl(value) {
@@ -22,7 +22,6 @@ export default async function handler(req, res) {
 
   const jobId = uuidv4();
 
-  // Gate on entitlement before doing anything else.
   let entitlement;
   try {
     entitlement = await getEntitlement(req);
@@ -41,26 +40,37 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { videoUrl, faceUrl, videoFileName, faceFileName } = req.body || {};
+    const {
+      imageUrl,
+      videoUrl,
+      mode,
+      videoFileName,
+      faceFileName,
+    } = req.body || {};
 
-    if (!isHttpUrl(videoUrl) || !isHttpUrl(faceUrl)) {
+    if (!isHttpUrl(imageUrl) || !isHttpUrl(videoUrl)) {
       return res.status(400).json({
-        error: 'videoUrl and faceUrl are required (must be http/https URLs).',
+        error: 'imageUrl (character image) and videoUrl (motion video) are required.',
       });
     }
+
+    const safeMode = mode === 'pro' ? 'pro' : 'std';
 
     createJob({
       jobId,
       status: 'queued',
-      videoFileName: videoFileName || 'video.mp4',
-      faceFileName: faceFileName || 'face.jpg',
+      videoFileName: videoFileName || 'motion.mp4',
+      faceFileName: faceFileName || 'character.jpg',
+      mode: safeMode,
     });
 
     updateJob(jobId, { status: 'processing' });
 
-    const prediction = await createFaceSwapPrediction({
+    const prediction = await createKlingPrediction({
+      imageUrl,
       videoUrl,
-      imageUrl: faceUrl,
+      mode: safeMode,
+      characterOrientation: 'video',
     });
     const normalized = normalizeStatus(prediction);
 
@@ -69,7 +79,6 @@ export default async function handler(req, res) {
       status: normalized.status === 'queued' ? 'processing' : normalized.status,
     });
 
-    // Best-effort usage increment (don't fail the swap if this errors).
     try {
       await incrementUsage(req, res, entitlement);
     } catch {
@@ -88,7 +97,7 @@ export default async function handler(req, res) {
     });
     return res.status(500).json({
       jobId,
-      error: err.message || 'Face swap failed to start.',
+      error: err.message || 'Generation failed to start.',
     });
   }
 }

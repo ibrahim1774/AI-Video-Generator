@@ -20,6 +20,7 @@ export default function Home({ activeTab, onTabChange }) {
   const [activeJob, setActiveJob] = useState(null);
   const [entitlement, setEntitlement] = useState(null);
   const [paidBanner, setPaidBanner] = useState(false);
+  const [mode, setMode] = useState('std');
   const pendingSwapRef = useRef(false);
 
   const canSubmit = Boolean(videoFile && faceFile && consent && !submitting);
@@ -89,18 +90,19 @@ export default function Home({ activeTab, onTabChange }) {
         faceSize: faceFile.size,
       });
 
-      const [videoUrl, faceUrl] = await Promise.all([
+      const [videoUrl, imageUrl] = await Promise.all([
         uploadTempFile(videoFile),
         uploadTempFile(faceFile),
       ]);
 
-      log('info', 'swap request', { videoUrl, faceUrl });
+      log('info', 'swap request', { videoUrl, imageUrl, mode });
       const res = await fetch('/api/swap', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           videoUrl,
-          faceUrl,
+          imageUrl,
+          mode,
           videoFileName: videoFile.name,
           faceFileName: faceFile.name,
         }),
@@ -146,7 +148,7 @@ export default function Home({ activeTab, onTabChange }) {
     } finally {
       setSubmitting(false);
     }
-  }, [videoFile, faceFile, fetchEntitlement]);
+  }, [videoFile, faceFile, mode, fetchEntitlement]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -235,13 +237,12 @@ export default function Home({ activeTab, onTabChange }) {
   return (
     <main className={styles.page}>
       <div className={styles.hero}>
-        <span className={styles.eyebrow}>◆ AI Face Swap</span>
+        <span className={styles.eyebrow}>◆ Kling 3.0 Motion Control</span>
         <h1 className={styles.headline}>
-          Swap any face <span className={styles.accent}>in seconds</span>
+          Animate any character <span className={styles.accent}>with any motion</span>
         </h1>
         <p className={styles.subtitle}>
-          Drop in a source video and a reference face. Our pipeline handles the rest — detection,
-          encoding, rendering and a clean MP4 ready to download.
+          Drop in a character image and a motion reference video. We generate a brand-new clip of your character performing that motion.
         </p>
       </div>
 
@@ -256,8 +257,8 @@ export default function Home({ activeTab, onTabChange }) {
       <form className={styles.shell} onSubmit={handleSubmit}>
         <div className={styles.uploads}>
           <UploadZone
-            label="Source video"
-            sublabel="MP4, MOV, WEBM · Max 100MB"
+            label="Motion video"
+            sublabel="MP4, MOV · 3–30s · Max 100MB"
             icon="🎬"
             accept="video/*"
             file={videoFile}
@@ -265,14 +266,37 @@ export default function Home({ activeTab, onTabChange }) {
             onRemove={() => setVideoFile(null)}
           />
           <UploadZone
-            label="Reference face"
-            sublabel="JPG, PNG · Clear, front-facing"
+            label="Character image"
+            sublabel="JPG, PNG · Full body + head visible"
             icon="👤"
             accept="image/*"
             file={faceFile}
             onFileSelected={setFaceFile}
             onRemove={() => setFaceFile(null)}
           />
+        </div>
+
+        <div className={styles.modeRow} role="radiogroup" aria-label="Output quality">
+          <button
+            type="button"
+            role="radio"
+            aria-checked={mode === 'std'}
+            className={`${styles.modeBtn} ${mode === 'std' ? styles.modeBtnActive : ''}`}
+            onClick={() => setMode('std')}
+          >
+            <span className={styles.modeName}>Standard</span>
+            <span className={styles.modeDetail}>720p · faster</span>
+          </button>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={mode === 'pro'}
+            className={`${styles.modeBtn} ${mode === 'pro' ? styles.modeBtnActive : ''}`}
+            onClick={() => setMode('pro')}
+          >
+            <span className={styles.modeName}>Pro</span>
+            <span className={styles.modeDetail}>1080p · sharper</span>
+          </button>
         </div>
 
         <label
