@@ -98,15 +98,53 @@ export default function Home({ activeTab, onTabChange }) {
     setError('');
     setSubmitting(true);
     try {
-      log('info', 'extracting first frame', { name: videoFile.name });
-      const frameFile = await extractFirstFrame(videoFile);
-      log('info', 'frame extracted', { size: frameFile.size });
+      log('info', 'extracting first frame (browser)', { name: videoFile.name });
+      let frameFile = null;
+      let needsServerFallback = false;
+      try {
+        frameFile = await extractFirstFrame(videoFile);
+        log('info', 'frame extracted (browser)', { size: frameFile.size });
+      } catch (err) {
+        if (err && err.code === 'BROWSER_DECODE_FAILED') {
+          log('warn', 'browser decode failed \u2014 will use server ffmpeg', {
+            message: err.message,
+          });
+          needsServerFallback = true;
+        } else {
+          throw err;
+        }
+      }
 
-      const [sourceVideoUrl, sourceFrameUrl, referenceImageUrl] = await Promise.all([
-        uploadTempFile(videoFile),
-        uploadTempFile(frameFile),
-        uploadTempFile(faceFile),
-      ]);
+      // Always upload the source video and reference image. The frame
+      // is either uploaded from the browser (fast path) or generated
+      // server-side from the source URL (codec fallback).
+      const uploadPromises = [uploadTempFile(videoFile), uploadTempFile(faceFile)];
+      if (frameFile) uploadPromises.push(uploadTempFile(frameFile));
+      const uploaded = await Promise.all(uploadPromises);
+      const sourceVideoUrl = uploaded[0];
+      const referenceImageUrl = uploaded[1];
+      let sourceFrameUrl = uploaded[2] || null;
+
+      if (needsServerFallback) {
+        log('info', 'extract-frame request', { sourceVideoUrl });
+        const fr = await fetch('/api/extract-frame', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ videoUrl: sourceVideoUrl }),
+        });
+        const fdata = await fr.json().catch(() => ({}));
+        log(fr.ok ? 'info' : 'error', 'extract-frame response', {
+          httpStatus: fr.status,
+          body: fdata,
+        });
+        if (!fr.ok || !fdata.frameUrl) {
+          throw new Error(
+            fdata.error ||
+              'Server could not extract a first frame from this video.'
+          );
+        }
+        sourceFrameUrl = fdata.frameUrl;
+      }
 
       log('info', 'banana request', { sourceFrameUrl, referenceImageUrl });
       const res = await fetch('/api/banana-prep', {
