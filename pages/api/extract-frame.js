@@ -1,4 +1,7 @@
 import { spawn } from 'child_process';
+import { promises as fs } from 'fs';
+import path from 'path';
+import os from 'os';
 import { put } from '@vercel/blob';
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
 
@@ -6,7 +9,6 @@ export const config = {
   api: {
     bodyParser: { sizeLimit: '1mb' },
   },
-  // 60s for ffmpeg cold start + frame extract
   maxDuration: 60,
 };
 
@@ -20,10 +22,28 @@ function isHttpUrl(value) {
   }
 }
 
+function runFfmpeg(args) {
+  return new Promise((resolve, reject) => {
+    const proc = spawn(ffmpegInstaller.path, args);
+    const errs = [];
+    proc.stderr.on('data', (c) => errs.push(c));
+    proc.on('error', reject);
+    proc.on('close', (code) => {
+      const stderr = Buffer.concat(errs).toString();
+      if (code !== 0) {
+        return reject(
+          new Error(`ffmpeg exited ${code}: ${stderr.slice(-1000) || '<no stderr>'}`)
+        );
+      }
+      resolve({ stderr });
+    });
+  });
+}
+
 /**
  * Server-side first-frame extractor for videos the browser couldn't
- * decode (e.g. iPhone HEVC). Streams the video into ffmpeg, captures
- * frame 0 as JPG, uploads it to Vercel Blob, returns the public URL.
+ * decode. Writes the input to /tmp so ffmpeg can seek (MOV requires
+ * this — its moov atom is often at the end of the file).
  */
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -38,52 +58,43 @@ export default async function handler(req, res) {
 
   console.log('[extract-frame] start', { videoUrl });
 
+  const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const inPath = path.join(os.tmpdir(), `${id}-in`);
+  const outPath = path.join(os.tmpdir(), `${id}.jpg`);
+
   try {
-    // Download the video from Blob into memory.
     const videoResp = await fetch(videoUrl);
     if (!videoResp.ok) {
       throw new Error(`Could not fetch source video (${videoResp.status})`);
     }
     const videoBuffer = Buffer.from(await videoResp.arrayBuffer());
-    console.log('[extract-frame] downloaded', { bytes: videoBuffer.length });
+    await fs.writeFile(inPath, videoBuffer);
+    console.log('[extract-frame] written to tmp', { bytes: videoBuffer.length, inPath });
 
-    // ffmpeg: read mp4/mov from stdin, output a single JPG to stdout.
     const args = [
-      '-loglevel', 'error',
-      '-i', 'pipe:0',
+      '-y',
+      '-loglevel', 'warning',
+      '-i', inPath,
       '-frames:v', '1',
       '-q:v', '3',
-      '-f', 'image2',
-      'pipe:1',
+      outPath,
     ];
 
-    const frameBuffer = await new Promise((resolve, reject) => {
-      const proc = spawn(ffmpegInstaller.path, args);
-      const chunks = [];
-      const errs = [];
-      proc.stdout.on('data', (c) => chunks.push(c));
-      proc.stderr.on('data', (c) => errs.push(c));
-      proc.on('error', reject);
-      proc.on('close', (code) => {
-        if (code !== 0) {
-          return reject(
-            new Error(
-              `ffmpeg exited ${code}: ${Buffer.concat(errs).toString().slice(0, 500)}`
-            )
-          );
-        }
-        resolve(Buffer.concat(chunks));
-      });
-      proc.stdin.on('error', reject);
-      proc.stdin.end(videoBuffer);
-    });
+    const { stderr } = await runFfmpeg(args);
+    if (stderr) console.log('[extract-frame] ffmpeg stderr:', stderr.slice(-1000));
 
+    let frameBuffer;
+    try {
+      frameBuffer = await fs.readFile(outPath);
+    } catch (e) {
+      throw new Error(`ffmpeg did not produce output file. stderr: ${stderr.slice(-500)}`);
+    }
     if (!frameBuffer.length) {
-      throw new Error('ffmpeg produced no output');
+      throw new Error('ffmpeg produced empty output file');
     }
     console.log('[extract-frame] frame ok', { bytes: frameBuffer.length });
 
-    const filename = `frames/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+    const filename = `frames/${id}.jpg`;
     const blob = await put(filename, frameBuffer, {
       access: 'public',
       contentType: 'image/jpeg',
@@ -97,5 +108,8 @@ export default async function handler(req, res) {
     return res
       .status(500)
       .json({ error: err.message || 'Server-side frame extraction failed.' });
+  } finally {
+    fs.unlink(inPath).catch(() => {});
+    fs.unlink(outPath).catch(() => {});
   }
 }
