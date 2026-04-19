@@ -66,6 +66,14 @@ export default async function handler(req, res) {
 
     updateJob(jobId, { status: 'processing' });
 
+    console.log('[swap] creating prediction', {
+      jobId,
+      imageUrl,
+      videoUrl,
+      mode: safeMode,
+      characterOrientation: 'video',
+    });
+
     const prediction = await createKlingPrediction({
       imageUrl,
       videoUrl,
@@ -73,6 +81,12 @@ export default async function handler(req, res) {
       characterOrientation: 'video',
     });
     const normalized = normalizeStatus(prediction);
+
+    console.log('[swap] prediction created', {
+      jobId,
+      predictionId: prediction.id,
+      status: prediction.status,
+    });
 
     updateJob(jobId, {
       predictionId: prediction.id,

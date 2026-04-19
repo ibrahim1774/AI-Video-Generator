@@ -22,6 +22,7 @@ export default function Home({ activeTab, onTabChange }) {
   const [paidBanner, setPaidBanner] = useState(false);
   const [mode, setMode] = useState('std');
   const pendingSwapRef = useRef(false);
+  const paRetryRef = useRef(false);
 
   const canSubmit = Boolean(videoFile && faceFile && consent && !submitting);
 
@@ -138,6 +139,7 @@ export default function Home({ activeTab, onTabChange }) {
         faceFileName: faceFile.name,
       });
       setStep('processing');
+      paRetryRef.current = false; // arm the retry for this fresh prediction
       // Refresh entitlement so the next click reflects the new usage count.
       fetchEntitlement();
       return true;
@@ -183,10 +185,25 @@ export default function Home({ activeTab, onTabChange }) {
     setStep('result');
   }, []);
 
-  const handleError = useCallback((message) => {
-    setError(message);
-    setStep('upload');
-  }, []);
+  const handleError = useCallback(
+    (message) => {
+      // Replicate's PA ("Prediction Aborted") is documented as transient — auto-retry once.
+      const isPa =
+        typeof message === 'string' && /\bPA\b|prediction interrupted/i.test(message);
+      if (isPa && !paRetryRef.current) {
+        paRetryRef.current = true;
+        log('warn', 'PA error \u2014 auto-retrying once', { message });
+        setError('');
+        setStep('upload');
+        setTimeout(() => runSwap(), 0);
+        return;
+      }
+      paRetryRef.current = false;
+      setError(message);
+      setStep('upload');
+    },
+    [runSwap]
+  );
 
   if (activeTab === 'history') {
     return (
@@ -258,18 +275,18 @@ export default function Home({ activeTab, onTabChange }) {
         <div className={styles.uploads}>
           <UploadZone
             label="Motion video"
-            sublabel="MP4, MOV · 3–30s · Max 100MB"
+            sublabel="MP4 or MOV · 3–30s · Max 100MB"
             icon="🎬"
-            accept="video/*"
+            accept="video/mp4,video/quicktime"
             file={videoFile}
             onFileSelected={setVideoFile}
             onRemove={() => setVideoFile(null)}
           />
           <UploadZone
             label="Character image"
-            sublabel="JPG, PNG · Full body + head visible"
+            sublabel="JPG or PNG · Full body + head visible"
             icon="👤"
-            accept="image/*"
+            accept="image/jpeg,image/png"
             file={faceFile}
             onFileSelected={setFaceFile}
             onRemove={() => setFaceFile(null)}
