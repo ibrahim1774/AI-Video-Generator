@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { createJob, updateJob } from '../../lib/jobs';
 import { createFaceSwapPrediction, normalizeStatus } from '../../lib/replicate';
+import { getEntitlement, incrementUsage } from '../../lib/entitlement';
 
 function isHttpUrl(value) {
   if (typeof value !== 'string') return false;
@@ -20,6 +21,24 @@ export default async function handler(req, res) {
   }
 
   const jobId = uuidv4();
+
+  // Gate on entitlement before doing anything else.
+  let entitlement;
+  try {
+    entitlement = await getEntitlement(req);
+  } catch (err) {
+    return res.status(500).json({ error: `Entitlement check failed: ${err.message}` });
+  }
+
+  if (!entitlement.canSwap) {
+    return res.status(402).json({
+      error: 'paywall',
+      tier: entitlement.tier,
+      videosUsed: entitlement.videosUsed,
+      videoCap: entitlement.videoCap,
+      expired: entitlement.expired || false,
+    });
+  }
 
   try {
     const { videoUrl, faceUrl, videoFileName, faceFileName } = req.body || {};
@@ -49,6 +68,13 @@ export default async function handler(req, res) {
       predictionId: prediction.id,
       status: normalized.status === 'queued' ? 'processing' : normalized.status,
     });
+
+    // Best-effort usage increment (don't fail the swap if this errors).
+    try {
+      await incrementUsage(req, res, entitlement);
+    } catch {
+      // ignore
+    }
 
     return res.status(200).json({
       jobId,

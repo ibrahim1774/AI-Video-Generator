@@ -68,6 +68,34 @@ npm run start
 2. Vercel auto-adds `BLOB_READ_WRITE_TOKEN` to the project env vars (Production + Preview + Development).
 3. For local dev, run `vercel env pull .env.local` to fetch the token onto disk.
 
+### Enabling Stripe billing (one-time)
+
+1. **Stripe dashboard** → **Products** → create two recurring prices:
+   - "FaceForge Monthly" — recurring **$10 / month** → copy the `price_xxx` ID
+   - "FaceForge Yearly" — recurring **$60 / year** → copy the `price_xxx` ID
+2. **Stripe dashboard** → **Developers → Webhooks** → add an endpoint at
+   `https://<your-vercel-url>/api/webhook` listening for:
+   - `checkout.session.completed`
+   - `customer.subscription.updated`
+   - `customer.subscription.deleted`
+   Copy the **signing secret**.
+3. **Vercel → Settings → Environment Variables** (Production + Preview + Development), add:
+   - `STRIPE_SECRET_KEY` (from Stripe → Developers → API keys)
+   - `STRIPE_WEBHOOK_SECRET` (from step 2)
+   - `STRIPE_PRICE_MONTHLY`, `STRIPE_PRICE_YEARLY` (from step 1)
+   - `APP_URL` (your deployed URL, e.g. `https://faceforge.vercel.app`)
+4. Pull them locally with `vercel env pull .env.local`.
+
+### Plans + caps
+
+| Tier | Price | Cap | Window |
+|---|---|---|---|
+| Free trial | $0 | 2 swaps | 24 hours |
+| Monthly | $10 | 40 swaps | per billing month |
+| Yearly | $60 | 200 swaps | per billing year |
+
+Free-trial state lives in httpOnly cookies. Paid subscription state + usage counters live on the **Stripe Customer's `metadata`** — no separate database. The `/api/swap` route gates on `getEntitlement()` from `lib/entitlement.js` and returns **402** with `{ error: 'paywall' }` when the user is over cap or has no entitlement; the UI then renders `<Paywall />`.
+
 ---
 
 ## Tips for the best face-swap results

@@ -225,3 +225,26 @@
     gap: 16px;
   }
 }
+
+.banner {
+  max-width: 880px;
+  width: 100%;
+  margin: 0 auto 24px;
+  padding: 12px 18px;
+  border-radius: 10px;
+  background: rgba(224, 196, 136, 0.12);
+  border: 1px solid rgba(224, 196, 136, 0.35);
+  color: #e0c488;
+  font-size: 13px;
+  text-align: center;
+  letter-spacing: 0.04em;
+}
+
+.usage {
+  margin-top: 14px;
+  text-align: center;
+  font-size: 12px;
+  color: #888;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
