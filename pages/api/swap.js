@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 
 import { createJob, updateJob } from '../../lib/jobs';
-import { createKlingPrediction, normalizeStatus } from '../../lib/replicate';
+import { createMotionTransferPrediction, normalizeStatus } from '../../lib/replicate';
 import { getUserFromRequest } from '../../lib/supabaseServer';
 import { getEntitlement } from '../../lib/entitlement';
 
@@ -80,7 +80,7 @@ export default async function handler(req, res) {
       mode: safeMode,
     });
 
-    const prediction = await createKlingPrediction({
+    const prediction = await createMotionTransferPrediction({
       imageUrl,
       videoUrl,
       mode: safeMode,

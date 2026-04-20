@@ -12,6 +12,7 @@ import { uploadTempFile } from '../lib/uploader';
 import { extractFirstFrame } from '../lib/frameExtract';
 import { log } from '../lib/debugLog';
 import { getBrowserSupabase } from '../lib/supabase';
+import { bumpEntitlement } from '../lib/entitlementBus';
 
 export default function Home() {
   const [step, setStep] = useState('upload');
@@ -95,8 +96,8 @@ export default function Home() {
     });
   }, []);
 
-  // Stage 1: extract first frame, upload everything, ask Banana for hybrid frame.
-  const runBananaPrep = useCallback(async () => {
+  // Stage 1: extract first frame, upload everything, build the hybrid frame.
+  const runCharacterFrame = useCallback(async () => {
     if (!videoFile || !faceFile) return false;
     setError('');
     setSubmitting(true);
@@ -149,8 +150,8 @@ export default function Home() {
         sourceFrameUrl = fdata.frameUrl;
       }
 
-      log('info', 'banana request', { sourceFrameUrl, referenceImageUrl, swapMode });
-      const res = await fetch('/api/banana-prep', {
+      log('info', 'character frame request', { sourceFrameUrl, referenceImageUrl, swapMode });
+      const res = await fetch('/api/character-frame', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ firstFrameUrl: sourceFrameUrl, referenceImageUrl, swapMode }),
@@ -160,13 +161,13 @@ export default function Home() {
       try {
         data = rawText ? JSON.parse(rawText) : {};
       } catch {
-        log('error', 'banana response not JSON', {
+        log('error', 'character frame response not JSON', {
           httpStatus: res.status,
           bodyPreview: rawText.slice(0, 300),
         });
         throw new Error(`Server returned non-JSON (${res.status})`);
       }
-      log(res.ok ? 'info' : 'warn', 'banana response', { httpStatus: res.status, body: data });
+      log(res.ok ? 'info' : 'warn', 'character frame response', { httpStatus: res.status, body: data });
 
       if (res.status === 402) {
         await fetchEntitlement();
@@ -184,12 +185,13 @@ export default function Home() {
         hybridFrameUrl: data.hybridFrameUrl,
         swapMode,
       });
-      // Banana just consumed a slot — refresh the counter in the UI.
+      // First-stage call just consumed a credit — refresh the counter.
       fetchEntitlement();
+      bumpEntitlement();
       setStep('preview');
       return true;
     } catch (err) {
-      log('error', 'banana prep failed', { message: err.message });
+      log('error', 'character frame failed', { message: err.message });
       setError(err.message || 'Something went wrong while generating the preview.');
       return false;
     } finally {
@@ -197,7 +199,7 @@ export default function Home() {
     }
   }, [videoFile, faceFile, swapMode, fetchEntitlement]);
 
-  // Stage 2: kick off Kling using the approved hybrid frame + original source video.
+  // Stage 2: kick off the motion-transfer model using the approved frame + source video.
   const proceedWithSwap = useCallback(async () => {
     const { sourceVideoUrl, hybridFrameUrl } = uploadedUrls;
     if (!sourceVideoUrl || !hybridFrameUrl) return;
@@ -265,7 +267,7 @@ export default function Home() {
       setStep('paywall');
       return;
     }
-    await runBananaPrep();
+    await runCharacterFrame();
   };
 
   const handleTrialStarted = useCallback(async () => {
@@ -274,11 +276,11 @@ export default function Home() {
     if (ent && ent.canSwap && pendingSwapRef.current) {
       pendingSwapRef.current = false;
       setStep('upload');
-      setTimeout(() => runBananaPrep(), 0);
+      setTimeout(() => runCharacterFrame(), 0);
     } else {
       setStep('upload');
     }
-  }, [fetchEntitlement, runBananaPrep]);
+  }, [fetchEntitlement, runCharacterFrame]);
 
   const handleComplete = useCallback((job) => {
     setActiveJob((prev) => ({ ...(prev || {}), ...job }));
@@ -427,7 +429,7 @@ export default function Home() {
           Swap any face into <span className={styles.accent}>any video</span>
         </h1>
         <p className={styles.subtitle}>
-          Two-stage pipeline: Nano Banana Pro composes your character into the first frame, then Kling 3.0 motion control animates it through the rest of the clip.
+          We use our top-rated models to turn your photo and video into one new clip. First we paint your face into the very first frame of your source video. Then we teach that frame how to move &mdash; every blink, head turn, and expression flows onto your new face.
         </p>
       </div>
 

@@ -1,5 +1,31 @@
 import { stripe, getOrCreatePrice, getOrCreateTopupPrice, TOPUPS } from '../../lib/stripe';
-import { getUserFromRequest } from '../../lib/supabaseServer';
+import { getUserFromRequest, getSupabaseAdmin } from '../../lib/supabaseServer';
+
+function clientIp(req) {
+  const xff = req.headers['x-forwarded-for'];
+  if (typeof xff === 'string' && xff.length) return xff.split(',')[0].trim();
+  return req.socket?.remoteAddress || null;
+}
+
+async function isTrialBlockedForIp(userId, req) {
+  const ip = clientIp(req);
+  if (!ip) return false;
+  try {
+    const admin = getSupabaseAdmin();
+    const { data, error } = await admin
+      .from('signup_ips')
+      .select('user_id')
+      .eq('ip', ip);
+    if (error) {
+      console.warn('[checkout] ip lookup failed', error.message);
+      return false;
+    }
+    return Array.isArray(data) && data.some((row) => row.user_id !== userId);
+  } catch (err) {
+    console.warn('[checkout] admin client unavailable', err.message);
+    return false;
+  }
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -43,6 +69,9 @@ export default async function handler(req, res) {
         error: "Expected { plan: 'monthly'|'yearly' } or { mode: 'topup', pack: 's'|'m'|'l' }.",
       });
     }
+
+    const trialBlocked = await isTrialBlockedForIp(session.user.id, req);
+
     const price = await getOrCreatePrice(plan);
     const checkout = await stripe().checkout.sessions.create({
       mode: 'subscription',
@@ -54,12 +83,12 @@ export default async function handler(req, res) {
       allow_promotion_codes: true,
       billing_address_collection: 'auto',
       subscription_data: {
-        trial_period_days: 1,
+        ...(trialBlocked ? {} : { trial_period_days: 1 }),
         metadata: { supabase_user_id: session.user.id },
       },
       metadata: { supabase_user_id: session.user.id },
     });
-    return res.status(200).json({ url: checkout.url });
+    return res.status(200).json({ url: checkout.url, trialBlocked });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }

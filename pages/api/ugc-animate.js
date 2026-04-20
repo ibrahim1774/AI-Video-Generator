@@ -1,6 +1,6 @@
 import { createImageToVideoPrediction, ALLOWED_DURATIONS } from '../../lib/replicate';
 import { getUserFromRequest } from '../../lib/supabaseServer';
-import { getEntitlement, decrementCredits } from '../../lib/entitlement';
+import { getEntitlement, reserveCredits, refundCredits } from '../../lib/entitlement';
 
 function isHttpUrl(value) {
   if (typeof value !== 'string') return false;
@@ -12,9 +12,9 @@ function isHttpUrl(value) {
   }
 }
 
-// Cost rule: 1 credit per 3 seconds, rounded up. Kling outputs only 5
-// or 10 second videos, so the practical mapping is 5s = 2 credits and
-// 10s = 4 credits.
+// Cost rule: 1 credit per 3 seconds, rounded up. The model outputs
+// only 5 or 10 second videos, so the practical mapping is
+// 5s = 2 credits and 10s = 4 credits.
 function costFor(duration) {
   return Math.ceil(duration / 3);
 }
@@ -43,15 +43,18 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: `Entitlement check failed: ${err.message}` });
   }
 
-  const haveCredits =
-    entitlement.canSwap && (entitlement.creditsRemaining ?? 0) >= cost;
-  if (!haveCredits) {
-    return res.status(402).json({
-      error: 'paywall',
-      tier: entitlement.tier,
-      creditsRemaining: entitlement.creditsRemaining || 0,
-      cost,
-    });
+  try {
+    await reserveCredits(entitlement, cost);
+  } catch (err) {
+    if (err.code === 'INSUFFICIENT' || err.code === 'NO_PLAN') {
+      return res.status(402).json({
+        error: 'paywall',
+        tier: entitlement.tier,
+        creditsRemaining: err.remaining ?? entitlement.creditsRemaining ?? 0,
+        cost,
+      });
+    }
+    return res.status(500).json({ error: err.message });
   }
 
   try {
@@ -61,18 +64,14 @@ export default async function handler(req, res) {
       duration: dur,
       mode: q,
     });
-    try {
-      await decrementCredits(entitlement, cost);
-    } catch (e) {
-      console.warn('[ugc-animate] credit decrement failed', e?.message);
-    }
     return res.status(200).json({
       predictionId: prediction.id,
       status: prediction.status,
       cost,
     });
   } catch (err) {
-    console.error('[ugc-animate] failed', err);
+    console.error('[ugc-animate] failed; refunding credits', err);
+    try { await refundCredits(entitlement, cost); } catch {}
     return res.status(500).json({ error: err.message || 'UGC animation failed.' });
   }
 }

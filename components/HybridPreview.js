@@ -1,10 +1,9 @@
 import styles from './HybridPreview.module.css';
 
 /*
- * Stage-1 preview: shows the hybrid frame Nano Banana Pro produced,
- * with side-by-side thumbnails of the source frame + reference image
- * for comparison. User clicks Proceed to commit to the Kling stage
- * (which is the slow + billable step) or Regenerate to retry Banana.
+ * Stage-1 preview: shows the hybrid first frame, with side-by-side
+ * thumbnails of the source frame + reference image for comparison.
+ * User clicks Proceed to commit to the motion-transfer stage.
  */
 export default function HybridPreview({
   hybridFrameUrl,

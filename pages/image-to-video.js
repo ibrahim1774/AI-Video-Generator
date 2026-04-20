@@ -9,6 +9,7 @@ import Result from '../components/Result';
 import Paywall from '../components/Paywall';
 import { uploadTempFile } from '../lib/uploader';
 import { getBrowserSupabase } from '../lib/supabase';
+import { bumpEntitlement } from '../lib/entitlementBus';
 
 export default function ImageToVideoPage() {
   const router = useRouter();
@@ -83,6 +84,7 @@ export default function ImageToVideoPage() {
       }
       if (!res.ok) throw new Error(data.error || 'Failed to start.');
       setJob({ predictionId: data.predictionId, downloadName: 'image-to-video.mp4' });
+      bumpEntitlement();
       setStep('processing');
     } catch (err) {
       setError(err.message || 'Something went wrong.');

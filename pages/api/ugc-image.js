@@ -1,6 +1,6 @@
-import { createBananaImage } from '../../lib/replicate';
+import { createImage } from '../../lib/replicate';
 import { getUserFromRequest } from '../../lib/supabaseServer';
-import { getEntitlement, decrementCredits } from '../../lib/entitlement';
+import { getEntitlement, reserveCredits, refundCredits } from '../../lib/entitlement';
 
 const COST = 1;
 
@@ -20,33 +20,32 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: `Entitlement check failed: ${err.message}` });
   }
 
-  const haveCredits =
-    entitlement.canSwap && (entitlement.creditsRemaining ?? 0) >= COST;
-  if (!haveCredits) {
-    return res.status(402).json({
-      error: 'paywall',
-      tier: entitlement.tier,
-      creditsRemaining: entitlement.creditsRemaining || 0,
-      cost: COST,
-    });
-  }
-
   const { prompt } = req.body || {};
   if (typeof prompt !== 'string' || !prompt.trim()) {
     return res.status(400).json({ error: 'prompt is required.' });
   }
 
   try {
-    const imageUrl = await createBananaImage({ prompt });
-    if (!imageUrl) throw new Error('Image generation returned no result.');
-    try {
-      await decrementCredits(entitlement, COST);
-    } catch (e) {
-      console.warn('[ugc-image] credit decrement failed', e?.message);
+    await reserveCredits(entitlement, COST);
+  } catch (err) {
+    if (err.code === 'INSUFFICIENT' || err.code === 'NO_PLAN') {
+      return res.status(402).json({
+        error: 'paywall',
+        tier: entitlement.tier,
+        creditsRemaining: err.remaining ?? entitlement.creditsRemaining ?? 0,
+        cost: COST,
+      });
     }
+    return res.status(500).json({ error: err.message });
+  }
+
+  try {
+    const imageUrl = await createImage({ prompt });
+    if (!imageUrl) throw new Error('Image generation returned no result.');
     return res.status(200).json({ imageUrl });
   } catch (err) {
-    console.error('[ugc-image] failed', err);
+    console.error('[ugc-image] failed; refunding credit', err);
+    try { await refundCredits(entitlement, COST); } catch {}
     return res.status(500).json({ error: err.message || 'Image generation failed.' });
   }
 }

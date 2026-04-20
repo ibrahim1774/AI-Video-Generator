@@ -33,6 +33,9 @@ export default function AuthModal({ open, onClose, initialMode = 'signup' }) {
           token: response.credential,
         });
         if (err) throw err;
+        // Fire-and-forget IP record so the trial gate has data on file.
+        fetch('/api/signup-ip', { method: 'POST' }).catch(() => {});
+        if (typeof onClose === 'function') onClose();
         router.push('/');
       } catch (err) {
         if (!cancelled) {
@@ -73,7 +76,7 @@ export default function AuthModal({ open, onClose, initialMode = 'signup' }) {
       cancelled = true;
       if (pollId) clearInterval(pollId);
     };
-  }, [open, mode, googleClientId, router]);
+  }, [open, mode, googleClientId, router, onClose]);
 
   if (!open) return null;
 
@@ -99,6 +102,8 @@ export default function AuthModal({ open, onClose, initialMode = 'signup' }) {
         const { error: err } = await supabase.auth.signInWithPassword({ email, password });
         if (err) throw err;
       }
+      fetch('/api/signup-ip', { method: 'POST' }).catch(() => {});
+      if (typeof onClose === 'function') onClose();
       router.push('/');
     } catch (err) {
       setError(err.message || 'Authentication failed.');

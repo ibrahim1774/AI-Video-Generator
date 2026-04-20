@@ -9,6 +9,7 @@ import Result from '../components/Result';
 import Paywall from '../components/Paywall';
 import { uploadTempFile } from '../lib/uploader';
 import { getBrowserSupabase } from '../lib/supabase';
+import { bumpEntitlement } from '../lib/entitlementBus';
 
 function costForDuration(d) {
   return Math.ceil(d / 3);
@@ -105,6 +106,7 @@ export default function UgcPage() {
       }
       if (!r.ok || !data.imageUrl) throw new Error(data.error || 'Image generation failed.');
       setImageUrl(data.imageUrl);
+      bumpEntitlement();
       await fetchEntitlement();
       setStep('animate');
     } catch (err) {
@@ -133,6 +135,7 @@ export default function UgcPage() {
       }
       if (!r.ok) throw new Error(data.error || 'Failed to start.');
       setJob({ predictionId: data.predictionId, downloadName: 'ugc.mp4' });
+      bumpEntitlement();
       setStep('processing');
     } catch (err) {
       setError(err.message || 'Something went wrong.');

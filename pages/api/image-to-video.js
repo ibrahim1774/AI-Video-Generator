@@ -1,6 +1,6 @@
 import { createImageToVideoPrediction, ALLOWED_DURATIONS } from '../../lib/replicate';
 import { getUserFromRequest } from '../../lib/supabaseServer';
-import { getEntitlement, decrementCredits } from '../../lib/entitlement';
+import { getEntitlement, reserveCredits, refundCredits } from '../../lib/entitlement';
 
 function isHttpUrl(value) {
   if (typeof value !== 'string') return false;
@@ -30,17 +30,6 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: `Entitlement check failed: ${err.message}` });
   }
 
-  const haveCredits =
-    entitlement.canSwap && (entitlement.creditsRemaining ?? 0) >= COST;
-  if (!haveCredits) {
-    return res.status(402).json({
-      error: 'paywall',
-      tier: entitlement.tier,
-      creditsRemaining: entitlement.creditsRemaining || 0,
-      cost: COST,
-    });
-  }
-
   const { imageUrl, prompt, mode, duration } = req.body || {};
   if (!isHttpUrl(imageUrl)) {
     return res.status(400).json({ error: 'imageUrl is required (http/https URL).' });
@@ -49,23 +38,33 @@ export default async function handler(req, res) {
   const q = mode === 'pro' ? 'pro' : 'std';
 
   try {
+    await reserveCredits(entitlement, COST);
+  } catch (err) {
+    if (err.code === 'INSUFFICIENT' || err.code === 'NO_PLAN') {
+      return res.status(402).json({
+        error: 'paywall',
+        tier: entitlement.tier,
+        creditsRemaining: err.remaining ?? entitlement.creditsRemaining ?? 0,
+        cost: COST,
+      });
+    }
+    return res.status(500).json({ error: err.message });
+  }
+
+  try {
     const prediction = await createImageToVideoPrediction({
       imageUrl,
       prompt: prompt || '',
       duration: dur,
       mode: q,
     });
-    try {
-      await decrementCredits(entitlement, COST);
-    } catch (e) {
-      console.warn('[image-to-video] credit decrement failed', e?.message);
-    }
     return res.status(200).json({
       predictionId: prediction.id,
       status: prediction.status,
     });
   } catch (err) {
-    console.error('[image-to-video] failed', err);
+    console.error('[image-to-video] failed; refunding credit', err);
+    try { await refundCredits(entitlement, COST); } catch {}
     return res.status(500).json({ error: err.message || 'Image-to-video failed.' });
   }
 }

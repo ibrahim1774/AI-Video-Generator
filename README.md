@@ -2,7 +2,7 @@
 
 A luxury, minimal AI motion-control SaaS built on **Next.js 14** (Pages Router) and the **Replicate** API.
 
-Upload a character image + a motion reference video, and FaceForge sends both to Replicate's `kwaivgi/kling-v3-motion-control` (Kling 3.0) model, polls for completion, and gives you back a finished MP4 of your character performing the reference motion — wrapped in a dark, premium UI.
+Upload a character image + a motion reference video, and FaceForge generates a finished MP4 of your character performing the reference motion — wrapped in a dark, premium UI. Internally the app calls top-rated image and video generation models via Replicate (model IDs are kept in `lib/replicate.js` and never surface in the user-facing UI).
 
 ---
 

@@ -1,6 +1,6 @@
-import { createBananaPrep } from '../../lib/replicate';
+import { createCharacterFrame } from '../../lib/replicate';
 import { getUserFromRequest } from '../../lib/supabaseServer';
-import { getEntitlement, decrementCredits } from '../../lib/entitlement';
+import { getEntitlement, reserveCredits, refundCredits } from '../../lib/entitlement';
 
 function isHttpUrl(value) {
   if (typeof value !== 'string') return false;
@@ -11,6 +11,8 @@ function isHttpUrl(value) {
     return false;
   }
 }
+
+const COST = 1;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -30,16 +32,6 @@ export default async function handler(req, res) {
   } catch (err) {
     return res.status(500).json({ error: `Entitlement check failed: ${err.message}` });
   }
-  if (!entitlement.canSwap) {
-    return res.status(402).json({
-      error: 'paywall',
-      tier: entitlement.tier,
-      creditsRemaining: entitlement.creditsRemaining || 0,
-      videosUsed: entitlement.videosUsed,
-      videoCap: entitlement.videoCap,
-      expired: entitlement.expired || false,
-    });
-  }
 
   const { firstFrameUrl, referenceImageUrl, swapMode } = req.body || {};
   if (!isHttpUrl(firstFrameUrl) || !isHttpUrl(referenceImageUrl)) {
@@ -52,26 +44,40 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "swapMode must be 'face' or 'body'." });
   }
 
-  console.log('[banana-prep] running', { userId: session.user.id, mode });
+  // Reserve the credit BEFORE running the model. Closes the
+  // double-spend race that an after-success decrement opens.
+  try {
+    await reserveCredits(entitlement, COST);
+  } catch (err) {
+    if (err.code === 'INSUFFICIENT' || err.code === 'NO_PLAN') {
+      return res.status(402).json({
+        error: 'paywall',
+        tier: entitlement.tier,
+        creditsRemaining: err.remaining ?? entitlement.creditsRemaining ?? 0,
+        cost: COST,
+      });
+    }
+    return res.status(500).json({ error: err.message });
+  }
+
+  console.log('[character-frame] running', { userId: session.user.id, mode });
 
   try {
-    const hybridFrameUrl = await createBananaPrep({
+    const hybridFrameUrl = await createCharacterFrame({
       firstFrameUrl,
       referenceImageUrl,
       swapMode: mode,
     });
-    if (!hybridFrameUrl) throw new Error('Nano Banana Pro returned no image.');
-    console.log('[banana-prep] ok', { hybridFrameUrl });
-
-    try {
-      await decrementCredits(entitlement);
-    } catch (e) {
-      console.warn('[banana-prep] credit decrement failed', e?.message);
-    }
-
+    if (!hybridFrameUrl) throw new Error('Image model returned no result.');
+    console.log('[character-frame] ok', { hybridFrameUrl });
     return res.status(200).json({ hybridFrameUrl });
   } catch (err) {
-    console.error('[banana-prep] failed', err);
-    return res.status(500).json({ error: err.message || 'Hybrid frame generation failed.' });
+    console.error('[character-frame] failed; refunding credit', err);
+    try {
+      await refundCredits(entitlement, COST);
+    } catch (e) {
+      console.warn('[character-frame] refund failed', e?.message);
+    }
+    return res.status(500).json({ error: err.message || 'Image generation failed.' });
   }
 }

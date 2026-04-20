@@ -11,6 +11,7 @@ const TOPUPS = [
 export default function Paywall({ entitlement, onTrialStarted, onError }) {
   const [busy, setBusy] = useState(null); // 'monthly' | 'yearly' | 's' | 'm' | 'l'
   const [localError, setLocalError] = useState('');
+  const [trialBlocked, setTrialBlocked] = useState(false);
 
   const startCheckout = async (plan) => {
     if (busy) return;
@@ -25,6 +26,12 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
       const data = await res.json();
       if (!res.ok || !data.url) {
         throw new Error(data.error || 'Could not start checkout.');
+      }
+      if (data.trialBlocked) {
+        setTrialBlocked(true);
+        // Delay the redirect so the user sees the note before Stripe loads.
+        setTimeout(() => { window.location.href = data.url; }, 1500);
+        return;
       }
       window.location.href = data.url;
     } catch (err) {
@@ -79,6 +86,26 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
             that's the trade for high-quality output.
           </p>
         </header>
+
+        {trialBlocked && (
+          <div
+            style={{
+              margin: '12px 0',
+              padding: '10px 14px',
+              borderRadius: 8,
+              border: '1px solid rgba(224,196,136,0.35)',
+              background: 'rgba(224,196,136,0.08)',
+              color: '#e8d9af',
+              fontSize: 13,
+              lineHeight: 1.5,
+              textAlign: 'center',
+            }}
+          >
+            Looks like someone on this network already used the free trial.
+            Your plan will start charging immediately — redirecting to
+            checkout&hellip;
+          </div>
+        )}
 
         {!showTopups && (
           <div className={styles.tiersTwo}>

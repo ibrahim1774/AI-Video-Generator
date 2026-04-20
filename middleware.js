@@ -37,7 +37,7 @@ export async function middleware(req) {
 
   // Gate the private API routes.
   const privateApiPrefixes = [
-    '/api/banana-prep',
+    '/api/character-frame',
     '/api/swap',
     '/api/status',
     '/api/entitlement',
@@ -47,6 +47,7 @@ export async function middleware(req) {
     '/api/image-to-video',
     '/api/ugc-image',
     '/api/ugc-animate',
+    '/api/signup-ip',
   ];
   if (privateApiPrefixes.some((p) => pathname.startsWith(p))) {
     if (!user) {
@@ -73,7 +74,7 @@ export const config = {
     '/dashboard/:path*',
     '/image-to-video/:path*',
     '/ugc/:path*',
-    '/api/banana-prep/:path*',
+    '/api/character-frame/:path*',
     '/api/swap/:path*',
     '/api/status/:path*',
     '/api/entitlement/:path*',
@@ -83,5 +84,6 @@ export const config = {
     '/api/image-to-video/:path*',
     '/api/ugc-image/:path*',
     '/api/ugc-animate/:path*',
+    '/api/signup-ip/:path*',
   ],
 };

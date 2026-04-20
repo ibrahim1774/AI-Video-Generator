@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 
 import styles from './Navbar.module.css';
 import { getBrowserSupabase } from '../lib/supabase';
+import { subscribeEntitlement } from '../lib/entitlementBus';
 
 const FEATURE_TABS = [
   { href: '/', label: 'Face Swap' },
@@ -15,7 +16,36 @@ export default function Navbar() {
   const [user, setUser] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [entitlement, setEntitlement] = useState(null);
   const router = useRouter();
+
+  const fetchEntitlement = useCallback(async () => {
+    try {
+      const r = await fetch('/api/entitlement');
+      if (!r.ok) return;
+      const d = await r.json();
+      setEntitlement(d);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setEntitlement(null);
+      return undefined;
+    }
+    fetchEntitlement();
+    const unsub = subscribeEntitlement(fetchEntitlement);
+    return unsub;
+  }, [user, router.pathname, fetchEntitlement]);
+
+  const creditLabel = (() => {
+    if (!entitlement) return null;
+    if (entitlement.status === 'trialing') {
+      return `Free trial · ${entitlement.creditsRemaining || 0} credit`;
+    }
+    const n = entitlement.creditsRemaining ?? 0;
+    return `${n} credit${n === 1 ? '' : 's'}`;
+  })();
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
@@ -85,6 +115,24 @@ export default function Navbar() {
         )}
 
         <div className={styles.status}>
+          {user && creditLabel && (
+            <span
+              className={styles.desktopOnly}
+              style={{
+                fontSize: 12,
+                fontFamily: 'inherit',
+                color: '#e0c488',
+                background: 'rgba(224, 196, 136, 0.08)',
+                border: '1px solid rgba(224, 196, 136, 0.3)',
+                padding: '5px 12px',
+                borderRadius: 999,
+                whiteSpace: 'nowrap',
+              }}
+              aria-label="Credits remaining"
+            >
+              ◆ {creditLabel}
+            </span>
+          )}
           {user ? (
             <div style={{ position: 'relative' }} className={styles.desktopOnly}>
               <button
@@ -176,6 +224,19 @@ export default function Navbar() {
 
       {drawerOpen && showTabs && (
         <div className={styles.drawer}>
+          {creditLabel && (
+            <div
+              style={{
+                padding: '8px 14px',
+                fontSize: 13,
+                color: '#e0c488',
+                borderBottom: '1px solid rgba(255,255,255,0.08)',
+                marginBottom: 4,
+              }}
+            >
+              ◆ {creditLabel}
+            </div>
+          )}
           {FEATURE_TABS.map((tab) => (
             <Link
               key={tab.href}
