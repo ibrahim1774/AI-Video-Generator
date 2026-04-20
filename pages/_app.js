@@ -5,6 +5,7 @@ import AppHead from '../components/AppHead';
 import Navbar from '../components/Navbar';
 import DebugConsole from '../components/DebugConsole';
 import MetaPixel from '../components/MetaPixel';
+import ClarityTracker from '../components/ClarityTracker';
 
 export default function App({ Component, pageProps }) {
   const [activeTab, setActiveTab] = useState('create');
@@ -13,6 +14,7 @@ export default function App({ Component, pageProps }) {
     <>
       <AppHead />
       <MetaPixel />
+      <ClarityTracker />
       <Navbar activeTab={activeTab} onTabChange={setActiveTab} />
       <Component
         {...pageProps}
