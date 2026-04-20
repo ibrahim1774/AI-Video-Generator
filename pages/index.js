@@ -206,6 +206,8 @@ export default function Home({ activeTab, onTabChange }) {
         hybridFrameUrl: data.hybridFrameUrl,
         swapMode,
       });
+      // Banana just consumed a slot \u2014 refresh the counter in the UI.
+      fetchEntitlement();
       setStep('preview');
       return true;
     } catch (err) {
@@ -216,40 +218,6 @@ export default function Home({ activeTab, onTabChange }) {
       setSubmitting(false);
     }
   }, [videoFile, faceFile, swapMode, fetchEntitlement]);
-
-  // Regenerate just the Banana hybrid frame using the already-uploaded URLs.
-  const regenerateHybrid = useCallback(async () => {
-    const { sourceFrameUrl, referenceImageUrl, swapMode: storedMode } = uploadedUrls;
-    if (!sourceFrameUrl || !referenceImageUrl || !storedMode) return;
-    setPreviewBusy('regen');
-    setError('');
-    try {
-      log('info', 'banana regen request', { sourceFrameUrl, referenceImageUrl, swapMode: storedMode });
-      const res = await fetch('/api/banana-prep', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          firstFrameUrl: sourceFrameUrl,
-          referenceImageUrl,
-          swapMode: storedMode,
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      log(res.ok ? 'info' : 'warn', 'banana regen response', {
-        httpStatus: res.status,
-        body: data,
-      });
-      if (!res.ok || !data.hybridFrameUrl) {
-        throw new Error(data.error || 'Regeneration failed.');
-      }
-      setUploadedUrls((prev) => ({ ...prev, hybridFrameUrl: data.hybridFrameUrl }));
-    } catch (err) {
-      log('error', 'banana regen failed', { message: err.message });
-      setError(err.message || 'Regeneration failed.');
-    } finally {
-      setPreviewBusy(null);
-    }
-  }, [uploadedUrls]);
 
   // Stage 2: kick off Kling using the approved hybrid frame + original source video.
   const proceedWithSwap = useCallback(async () => {
@@ -385,7 +353,6 @@ export default function Home({ activeTab, onTabChange }) {
           referenceImageUrl={uploadedUrls.referenceImageUrl}
           busy={previewBusy}
           onProceed={proceedWithSwap}
-          onRegenerate={regenerateHybrid}
           onCancel={reset}
         />
       </main>

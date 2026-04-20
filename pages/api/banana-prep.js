@@ -1,5 +1,5 @@
 import { createBananaPrep } from '../../lib/replicate';
-import { getEntitlement } from '../../lib/entitlement';
+import { getEntitlement, incrementUsage } from '../../lib/entitlement';
 
 function isHttpUrl(value) {
   if (typeof value !== 'string') return false;
@@ -13,9 +13,11 @@ function isHttpUrl(value) {
 
 /**
  * Stage-1 endpoint: compose the user's reference character into the
- * source video's first frame using Nano Banana Pro. Does NOT
- * increment the user's swap usage \u2014 the swap counter ticks only when
- * the user clicks Proceed and we run Kling.
+ * source video's first frame using Nano Banana Pro. A successful
+ * Banana call consumes **one** of the user's entitlement slots \u2014
+ * that's how we enforce "upload once, stick with it". Proceed/Kling
+ * runs afterwards are free (the slot was already claimed here), and
+ * Banana API failures don't count.
  */
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -62,6 +64,14 @@ export default async function handler(req, res) {
       throw new Error('Nano Banana Pro returned no image.');
     }
     console.log('[banana-prep] ok', { hybridFrameUrl });
+
+    // Slot is consumed ONLY on successful Banana generation.
+    try {
+      await incrementUsage(req, res, entitlement);
+    } catch (e) {
+      console.warn('[banana-prep] usage increment failed', e?.message);
+    }
+
     return res.status(200).json({ hybridFrameUrl });
   } catch (err) {
     console.error('[banana-prep] failed', err);

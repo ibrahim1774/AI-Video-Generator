@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { createJob, updateJob } from '../../lib/jobs';
 import { createKlingPrediction, normalizeStatus } from '../../lib/replicate';
-import { getEntitlement, incrementUsage } from '../../lib/entitlement';
+import { getEntitlement } from '../../lib/entitlement';
 
 function isHttpUrl(value) {
   if (typeof value !== 'string') return false;
@@ -93,11 +93,8 @@ export default async function handler(req, res) {
       status: normalized.status === 'queued' ? 'processing' : normalized.status,
     });
 
-    try {
-      await incrementUsage(req, res, entitlement);
-    } catch {
-      // ignore
-    }
+    // Note: usage was already consumed at /api/banana-prep. The Kling
+    // run is the paid payoff for that slot; no extra increment here.
 
     return res.status(200).json({
       jobId,

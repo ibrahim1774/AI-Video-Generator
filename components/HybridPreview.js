@@ -12,7 +12,6 @@ export default function HybridPreview({
   referenceImageUrl,
   busy,
   onProceed,
-  onRegenerate,
   onCancel,
 }) {
   return (
@@ -60,14 +59,6 @@ export default function HybridPreview({
         </button>
         <button
           type="button"
-          className={`${styles.btn} ${styles.btnSecondary}`}
-          onClick={onRegenerate}
-          disabled={busy !== null}
-        >
-          {busy === 'regen' ? 'Regenerating\u2026' : 'Regenerate'}
-        </button>
-        <button
-          type="button"
           className={`${styles.btn} ${styles.btnPrimary}`}
           onClick={onProceed}
           disabled={busy !== null || !hybridFrameUrl}
@@ -77,7 +68,7 @@ export default function HybridPreview({
       </div>
 
       <p className={styles.note}>
-        \u25c6 Regenerating is free \u2014 you're only charged a swap when you click Proceed.
+        \u25c6 One attempt per upload. Proceed to finalize, or cancel and re-upload (counts as a new swap).
       </p>
     </section>
   );
