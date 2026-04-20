@@ -1,5 +1,5 @@
 import { createBananaPrep } from '../../lib/replicate';
-import { getEntitlement, incrementUsage } from '../../lib/entitlement';
+import { getEntitlement, decrementCredits } from '../../lib/entitlement';
 
 function isHttpUrl(value) {
   if (typeof value !== 'string') return false;
@@ -35,6 +35,7 @@ export default async function handler(req, res) {
     return res.status(402).json({
       error: 'paywall',
       tier: entitlement.tier,
+      creditsRemaining: entitlement.creditsRemaining || 0,
       videosUsed: entitlement.videosUsed,
       videoCap: entitlement.videoCap,
       expired: entitlement.expired || false,
@@ -65,11 +66,11 @@ export default async function handler(req, res) {
     }
     console.log('[banana-prep] ok', { hybridFrameUrl });
 
-    // Slot is consumed ONLY on successful Banana generation.
+    // One credit is consumed ONLY on successful Banana generation.
     try {
-      await incrementUsage(req, res, entitlement);
+      await decrementCredits(req, res, entitlement);
     } catch (e) {
-      console.warn('[banana-prep] usage increment failed', e?.message);
+      console.warn('[banana-prep] credit decrement failed', e?.message);
     }
 
     return res.status(200).json({ hybridFrameUrl });

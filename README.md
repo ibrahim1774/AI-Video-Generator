@@ -85,6 +85,9 @@ No webhook needed — `/api/entitlement` reads subscription status directly from
 |---|---|---|---|
 | Monthly | $9 / mo | 10 generations / mo | 1-day free trial included |
 | Yearly | $69 / yr | 100 generations / yr | 1-day free trial included |
+| Top-up pack S | $15 one-time | +9 generations | Stackable, never expires |
+| Top-up pack M | $50 one-time | +30 generations | Stackable, never expires |
+| Top-up pack L | $100 one-time | +60 generations | Stackable, never expires |
 
 Free-trial state lives in httpOnly cookies. Paid subscription state + usage counters live on the **Stripe Customer's `metadata`** — no separate database. The `/api/swap` route gates on `getEntitlement()` from `lib/entitlement.js` and returns **402** with `{ error: 'paywall' }` when the user is over cap or has no entitlement; the UI then renders `<Paywall />`.
 
