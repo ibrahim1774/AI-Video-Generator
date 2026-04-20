@@ -1,48 +1,84 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 
 import styles from './AuthModal.module.css';
 import { getBrowserSupabase } from '../lib/supabase';
 
-/*
- * Signup/signin overlay that appears on the home page when an
- * anonymous user clicks "Create face swap". Wraps Supabase's
- * signInWithOAuth (Google, redirect) and signInWithPassword /
- * signUp (email/password).
- *
- * On successful auth, redirects the user to /dashboard.
- */
 export default function AuthModal({ open, onClose, initialMode = 'signup' }) {
-  const [mode, setMode] = useState(initialMode); // 'signup' | 'signin'
+  const [mode, setMode] = useState(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(null); // 'google' | 'email' | null
   const [error, setError] = useState('');
   const router = useRouter();
+  const googleBtnRef = useRef(null);
+
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+
+  useEffect(() => {
+    if (!open || !googleClientId) return undefined;
+
+    let cancelled = false;
+    let pollId;
+
+    const handleCredential = async (response) => {
+      if (!response?.credential) return;
+      setBusy('google');
+      setError('');
+      try {
+        const supabase = getBrowserSupabase();
+        if (!supabase) throw new Error('Auth not configured. Contact support.');
+        const { error: err } = await supabase.auth.signInWithIdToken({
+          provider: 'google',
+          token: response.credential,
+        });
+        if (err) throw err;
+        router.push('/');
+      } catch (err) {
+        if (!cancelled) {
+          setError(err.message || 'Google sign-in failed.');
+          setBusy(null);
+        }
+      }
+    };
+
+    const tryInit = () => {
+      const google = typeof window !== 'undefined' ? window.google : null;
+      const container = googleBtnRef.current;
+      if (!google?.accounts?.id || !container) return false;
+      google.accounts.id.initialize({
+        client_id: googleClientId,
+        callback: handleCredential,
+        ux_mode: 'popup',
+      });
+      container.textContent = '';
+      google.accounts.id.renderButton(container, {
+        type: 'standard',
+        theme: 'filled_black',
+        size: 'large',
+        text: mode === 'signup' ? 'signup_with' : 'signin_with',
+        shape: 'pill',
+        width: 320,
+      });
+      return true;
+    };
+
+    if (!tryInit()) {
+      pollId = setInterval(() => {
+        if (tryInit()) clearInterval(pollId);
+      }, 200);
+    }
+
+    return () => {
+      cancelled = true;
+      if (pollId) clearInterval(pollId);
+    };
+  }, [open, mode, googleClientId, router]);
 
   if (!open) return null;
 
   const redirectTo =
     typeof window !== 'undefined' ? `${window.location.origin}/api/auth/callback` : undefined;
-
-  const handleGoogle = async () => {
-    if (busy) return;
-    setBusy('google');
-    setError('');
-    try {
-      const supabase = getBrowserSupabase();
-      if (!supabase) throw new Error('Auth not configured. Contact support.');
-      const { error: err } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo },
-      });
-      if (err) throw err;
-      // Browser is redirecting to Google; no further action needed.
-    } catch (err) {
-      setError(err.message || 'Google sign-in failed.');
-      setBusy(null);
-    }
-  };
 
   const handleEmail = async (e) => {
     e.preventDefault();
@@ -100,19 +136,16 @@ export default function AuthModal({ open, onClose, initialMode = 'signup' }) {
           </p>
         </header>
 
-        <button
-          type="button"
-          className={styles.googleBtn}
-          onClick={handleGoogle}
-          disabled={busy !== null}
-        >
-          <span className={styles.googleIcon} aria-hidden="true">G</span>
-          {busy === 'google'
-            ? 'Redirecting…'
-            : mode === 'signup'
-            ? 'Sign up with Google'
-            : 'Sign in with Google'}
-        </button>
+        {googleClientId ? (
+          <div
+            ref={googleBtnRef}
+            style={{ display: 'flex', justifyContent: 'center', minHeight: 44 }}
+          />
+        ) : (
+          <div className={styles.error}>
+            Google sign-in unavailable — NEXT_PUBLIC_GOOGLE_CLIENT_ID not set.
+          </div>
+        )}
 
         <div className={styles.divider}>
           <span>or</span>

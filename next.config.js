@@ -10,6 +10,9 @@ const nextConfig = {
     NEXT_PUBLIC_SUPABASE_ANON_KEY:
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
       process.env.VITE_SUPABASE_ANON_KEY,
+    NEXT_PUBLIC_GOOGLE_CLIENT_ID:
+      process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
+      process.env.VITE_GOOGLE_CLIENT_ID,
   },
 };
 
