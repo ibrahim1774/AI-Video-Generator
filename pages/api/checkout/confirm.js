@@ -51,11 +51,13 @@ export default async function handler(req, res) {
 
     setCustomerCookie(res, customerId);
 
-    // Meta CAPI: Subscribe event (deduped with client Pixel via eventId).
-    const eventId = `sub-${session.id}-${Date.now()}`;
+    // Meta CAPI: Purchase event (deduped with client Pixel via eventId).
+    // Fires on checkout completion \u2014 treats trial signup as the purchase
+    // moment for ad-attribution purposes (no Stripe webhook needed).
+    const eventId = `pur-${session.id}`;
     const value = plan ? PLANS[plan].amountCents / 100 : undefined;
     await sendCapiEvent({
-      eventName: 'Subscribe',
+      eventName: 'Purchase',
       eventId,
       value,
       currency: 'USD',
@@ -68,7 +70,7 @@ export default async function handler(req, res) {
       ok: true,
       tier: plan || 'unknown',
       videoCap: plan ? CAPS[plan] : 0,
-      meta: { eventId, eventName: 'Subscribe', value, currency: 'USD' },
+      meta: { eventId, eventName: 'Purchase', value, currency: 'USD' },
     });
   } catch (err) {
     return res.status(500).json({ error: err.message });
