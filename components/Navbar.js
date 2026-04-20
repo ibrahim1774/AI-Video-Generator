@@ -79,7 +79,7 @@ export default function Navbar({ activeTab, onTabChange }) {
                   fontFamily: 'inherit',
                 }}
               >
-                {user.email?.split('@')[0] || 'Account'} \u25be
+                {user.email?.split('@')[0] || 'Account'} ▾
               </button>
               {menuOpen && (
                 <div

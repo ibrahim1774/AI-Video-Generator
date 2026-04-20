@@ -65,7 +65,7 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
     <section className={styles.wrap}>
       <div className={styles.card}>
         <header className={styles.header}>
-          <span className={styles.kicker}>\u25c6 Pricing</span>
+          <span className={styles.kicker}>◆ Pricing</span>
           <h2 className={styles.title}>
             {showTopups ? 'Need more credits?' : 'Start with a 1-day free trial'}
           </h2>
@@ -99,12 +99,12 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
                 onClick={() => startCheckout('monthly')}
                 disabled={busy !== null}
               >
-                {busy === 'monthly' ? 'Redirecting\u2026' : 'Start free trial \u2192 $9/mo'}
+                {busy === 'monthly' ? 'Redirecting…' : 'Start free trial → $9/mo'}
               </button>
             </article>
 
             <article className={`${styles.tier} ${styles.tierFeatured}`}>
-              <div className={styles.tierBadge}>Best value \u00b7 1-day free trial</div>
+              <div className={styles.tierBadge}>Best value · 1-day free trial</div>
               <div className={styles.tierHead}>
                 <h3 className={styles.tierName}>Yearly</h3>
                 <div className={styles.price}>
@@ -124,7 +124,7 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
                 onClick={() => startCheckout('yearly')}
                 disabled={busy !== null}
               >
-                {busy === 'yearly' ? 'Redirecting\u2026' : 'Start free trial \u2192 $89/yr'}
+                {busy === 'yearly' ? 'Redirecting…' : 'Start free trial → $89/yr'}
               </button>
             </article>
           </div>
@@ -142,7 +142,7 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
               >
                 <span className={styles.topupPrice}>{t.label}</span>
                 <span className={styles.topupCredits}>
-                  {busy === t.pack ? 'Redirecting\u2026' : `${t.credits} credits`}
+                  {busy === t.pack ? 'Redirecting…' : `${t.credits} credits`}
                 </span>
               </button>
             ))}
@@ -152,10 +152,10 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
         {localError && <div className={styles.error}>{localError}</div>}
 
         <footer className={styles.footer}>
-          <span>\u25c6 Card required</span>
-          <span>\u25c6 Powered by Stripe</span>
+          <span>◆ Card required</span>
+          <span>◆ Powered by Stripe</span>
           <span>
-            \u25c6 {showTopups ? 'Top-up credits never expire' : 'Cancel during trial = no charge'}
+            ◆ {showTopups ? 'Top-up credits never expire' : 'Cancel during trial = no charge'}
           </span>
         </footer>
       </div>

@@ -6,7 +6,7 @@ import { log } from '../lib/debugLog';
 const PHASES = [
   { label: 'Uploading assets', detail: 'Securing your character image and motion video.' },
   { label: 'Analyzing motion', detail: 'Extracting motion vectors from your reference clip.' },
-  { label: 'Locking character', detail: 'Encoding your character\u2019s appearance.' },
+  { label: 'Locking character', detail: 'Encoding your character’s appearance.' },
   { label: 'Generating frames', detail: 'Rendering the new video frame-by-frame.' },
   { label: 'Post-processing', detail: 'Smoothing, color-matching and temporal blending.' },
   { label: 'Finalizing', detail: 'Encoding the final MP4 and preparing download.' },

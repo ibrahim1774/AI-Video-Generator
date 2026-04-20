@@ -86,10 +86,10 @@ export default function AuthModal({ open, onClose, initialMode = 'signup' }) {
           onClick={onClose}
           aria-label="Close"
         >
-          \u00d7
+          ×
         </button>
         <header className={styles.header}>
-          <span className={styles.kicker}>\u25c6 {mode === 'signup' ? 'Create account' : 'Welcome back'}</span>
+          <span className={styles.kicker}>◆ {mode === 'signup' ? 'Create account' : 'Welcome back'}</span>
           <h2 id="auth-modal-title" className={styles.title}>
             {mode === 'signup' ? 'Sign up to continue' : 'Sign in to continue'}
           </h2>
@@ -108,7 +108,7 @@ export default function AuthModal({ open, onClose, initialMode = 'signup' }) {
         >
           <span className={styles.googleIcon} aria-hidden="true">G</span>
           {busy === 'google'
-            ? 'Redirecting\u2026'
+            ? 'Redirecting…'
             : mode === 'signup'
             ? 'Sign up with Google'
             : 'Sign in with Google'}
@@ -145,7 +145,7 @@ export default function AuthModal({ open, onClose, initialMode = 'signup' }) {
           {error && <div className={styles.error}>{error}</div>}
           <button type="submit" className={styles.submitBtn} disabled={busy !== null}>
             {busy === 'email'
-              ? 'Working\u2026'
+              ? 'Working…'
               : mode === 'signup'
               ? 'Create account'
               : 'Sign in'}

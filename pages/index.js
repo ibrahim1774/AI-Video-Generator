@@ -25,7 +25,7 @@ export default function Home({ activeTab, onTabChange }) {
   const [entitlement, setEntitlement] = useState(null);
   const [paidBanner, setPaidBanner] = useState(false);
   const [mode, setMode] = useState('std');
-  const [swapMode, setSwapMode] = useState(null); // 'face' | 'body' \u2014 no default
+  const [swapMode, setSwapMode] = useState(null); // 'face' | 'body' — no default
   const [previewBusy, setPreviewBusy] = useState(null); // 'regen' | 'proceed' | null
   // URLs persist across upload -> preview -> processing transitions.
   const [uploadedUrls, setUploadedUrls] = useState({
@@ -110,7 +110,7 @@ export default function Home({ activeTab, onTabChange }) {
         log('info', 'frame extracted (browser)', { size: frameFile.size });
       } catch (err) {
         if (err && err.code === 'BROWSER_DECODE_FAILED') {
-          log('warn', 'browser decode failed \u2014 will use server ffmpeg', {
+          log('warn', 'browser decode failed — will use server ffmpeg', {
             message: err.message,
           });
           needsServerFallback = true;
@@ -185,7 +185,7 @@ export default function Home({ activeTab, onTabChange }) {
         hybridFrameUrl: data.hybridFrameUrl,
         swapMode,
       });
-      // Banana just consumed a slot \u2014 refresh the counter in the UI.
+      // Banana just consumed a slot — refresh the counter in the UI.
       fetchEntitlement();
       setStep('preview');
       return true;
@@ -261,7 +261,7 @@ export default function Home({ activeTab, onTabChange }) {
 
     const ent = entitlement || (await fetchEntitlement());
     if (!ent || !ent.canSwap) {
-      // Signed-in but no credits \u2014 show inline paywall; files stay in state.
+      // Signed-in but no credits — show inline paywall; files stay in state.
       pendingSwapRef.current = true;
       setStep('paywall');
       return;
@@ -292,7 +292,7 @@ export default function Home({ activeTab, onTabChange }) {
         typeof message === 'string' && /\bPA\b|prediction interrupted/i.test(message);
       if (isPa && !paRetryRef.current) {
         paRetryRef.current = true;
-        log('warn', 'PA error \u2014 auto-retrying once', { message });
+        log('warn', 'PA error — auto-retrying once', { message });
         setError('');
         setTimeout(() => proceedWithSwap(), 0);
         return;
@@ -344,12 +344,12 @@ export default function Home({ activeTab, onTabChange }) {
     return (
       <main className={styles.page}>
         <div className={styles.hero}>
-          <span className={styles.eyebrow}>\u25c6 Pick a plan</span>
+          <span className={styles.eyebrow}>◆ Pick a plan</span>
           <h1 className={styles.headline}>
             One step to <span className={styles.accent}>finish your swap</span>
           </h1>
           <p className={styles.subtitle}>
-            Your files are ready. Choose a plan and we\u2019ll run the swap right after.
+            Your files are ready. Choose a plan and we’ll run the swap right after.
           </p>
         </div>
         {error && <div className={styles.error}>{error}</div>}
@@ -373,7 +373,7 @@ export default function Home({ activeTab, onTabChange }) {
               fontFamily: 'inherit',
             }}
           >
-            \u2190 Back to upload
+            ← Back to upload
           </button>
         </div>
       </main>
@@ -398,7 +398,7 @@ export default function Home({ activeTab, onTabChange }) {
     return (
       <main className={styles.page}>
         <div className={styles.hero}>
-          <span className={styles.eyebrow}>\u25c6 AI Face Swap</span>
+          <span className={styles.eyebrow}>◆ AI Face Swap</span>
           <h1 className={styles.headline}>
             Swap any face into <span className={styles.accent}>any video</span>
           </h1>
@@ -413,7 +413,7 @@ export default function Home({ activeTab, onTabChange }) {
             className={`${styles.submit} ${styles.submitReady}`}
             style={{ maxWidth: 320, margin: '0 auto' }}
           >
-            Sign up to start \u2192
+            Sign up to start →
           </button>
           <p className={styles.subtitle} style={{ marginTop: 16, fontSize: 13 }}>
             Already have an account?{' '}
@@ -434,7 +434,7 @@ export default function Home({ activeTab, onTabChange }) {
   return (
     <main className={styles.page}>
       <div className={styles.hero}>
-        <span className={styles.eyebrow}>\u25c6 AI Face Swap</span>
+        <span className={styles.eyebrow}>◆ AI Face Swap</span>
         <h1 className={styles.headline}>
           Swap any face into <span className={styles.accent}>any video</span>
         </h1>
@@ -445,7 +445,7 @@ export default function Home({ activeTab, onTabChange }) {
 
       {paidBanner && (
         <div className={styles.banner}>
-          \u25c6 You're subscribed. Upload your files to start swapping.
+          ◆ You're subscribed. Upload your files to start swapping.
         </div>
       )}
 
@@ -455,8 +455,8 @@ export default function Home({ activeTab, onTabChange }) {
         <div className={styles.uploads}>
           <UploadZone
             label="Source video"
-            sublabel="MP4 or MOV \u00b7 3\u201330s \u00b7 Max 100MB"
-            icon="\ud83c\udfac"
+            sublabel="MP4 or MOV · 3–30s · Max 100MB"
+            icon="🎬"
             accept="video/mp4,video/quicktime"
             file={videoFile}
             onFileSelected={setVideoFile}
@@ -464,8 +464,8 @@ export default function Home({ activeTab, onTabChange }) {
           />
           <UploadZone
             label="Reference face"
-            sublabel="JPG or PNG \u00b7 Clear, front-facing"
-            icon="\ud83d\udc64"
+            sublabel="JPG or PNG · Clear, front-facing"
+            icon="👤"
             accept="image/jpeg,image/png"
             file={faceFile}
             onFileSelected={setFaceFile}
@@ -482,7 +482,7 @@ export default function Home({ activeTab, onTabChange }) {
             onClick={() => setMode('std')}
           >
             <span className={styles.modeName}>Standard</span>
-            <span className={styles.modeDetail}>720p \u00b7 faster</span>
+            <span className={styles.modeDetail}>720p · faster</span>
           </button>
           <button
             type="button"
@@ -492,7 +492,7 @@ export default function Home({ activeTab, onTabChange }) {
             onClick={() => setMode('pro')}
           >
             <span className={styles.modeName}>Pro</span>
-            <span className={styles.modeDetail}>1080p \u00b7 sharper</span>
+            <span className={styles.modeDetail}>1080p · sharper</span>
           </button>
         </div>
 
@@ -535,12 +535,12 @@ export default function Home({ activeTab, onTabChange }) {
             className={`${styles.checkbox} ${consent ? styles.checkboxOn : ''}`}
             aria-hidden="true"
           >
-            \u2713
+            ✓
           </span>
           <span className={styles.consentText}>
             I have consent to use this likeness.
             <span className={styles.consentDetail}>
-              Misuse \u2014 including impersonation, harassment, or non-consensual content \u2014 results in
+              Misuse — including impersonation, harassment, or non-consensual content — results in
               immediate termination.
             </span>
           </span>
@@ -556,26 +556,26 @@ export default function Home({ activeTab, onTabChange }) {
           disabled={!canSubmit}
         >
           {submitting && <span className={styles.spinner} aria-hidden="true" />}
-          {submitting ? 'Generating preview\u2026' : 'Create face swap'}
+          {submitting ? 'Generating preview…' : 'Create face swap'}
         </button>
 
         {entitlement && entitlement.canSwap && (
           <div className={styles.usage}>
             {entitlement.status === 'trialing'
-              ? `Free trial \u2014 ${entitlement.creditsRemaining} credit${entitlement.creditsRemaining === 1 ? '' : 's'} remaining`
-              : `${entitlement.tier === 'monthly' ? 'Monthly' : 'Yearly'} plan \u2014 ${entitlement.creditsRemaining} credits remaining`}
+              ? `Free trial — ${entitlement.creditsRemaining} credit${entitlement.creditsRemaining === 1 ? '' : 's'} remaining`
+              : `${entitlement.tier === 'monthly' ? 'Monthly' : 'Yearly'} plan — ${entitlement.creditsRemaining} credits remaining`}
           </div>
         )}
 
         <div className={styles.footerRow}>
           <span className={styles.footerItem}>
-            <span className={styles.diamond}>\u25c6</span> Encrypted upload
+            <span className={styles.diamond}>◆</span> Encrypted upload
           </span>
           <span className={styles.footerItem}>
-            <span className={styles.diamond}>\u25c6</span> Two-stage pipeline
+            <span className={styles.diamond}>◆</span> Two-stage pipeline
           </span>
           <span className={styles.footerItem}>
-            <span className={styles.diamond}>\u25c6</span> Auto-deleted in 7 days
+            <span className={styles.diamond}>◆</span> Auto-deleted in 7 days
           </span>
         </div>
       </form>

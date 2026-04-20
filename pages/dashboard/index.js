@@ -107,7 +107,7 @@ export default function DashboardPage() {
     return (
       <main className={styles.page}>
         <div className={styles.hero}>
-          <p className={styles.subtitle}>Loading\u2026</p>
+          <p className={styles.subtitle}>Loading…</p>
         </div>
       </main>
     );
@@ -118,20 +118,20 @@ export default function DashboardPage() {
   return (
     <>
       <Head>
-        <title>Dashboard \u2014 FaceForge</title>
+        <title>Dashboard — FaceForge</title>
       </Head>
       <main className={styles.page}>
         <div className={styles.hero}>
-          <span className={styles.eyebrow}>\u25c6 Dashboard</span>
+          <span className={styles.eyebrow}>◆ Dashboard</span>
           <h1 className={styles.headline}>
             Welcome, <span className={styles.accent}>{user.email}</span>
           </h1>
           {entitlement && (
             <p className={styles.subtitle}>
               {entitlement.tier === 'trial' || entitlement.status === 'trialing'
-                ? `Free trial \u2014 ${entitlement.creditsRemaining || 0} credit${entitlement.creditsRemaining === 1 ? '' : 's'} remaining`
+                ? `Free trial — ${entitlement.creditsRemaining || 0} credit${entitlement.creditsRemaining === 1 ? '' : 's'} remaining`
                 : entitlement.tier === 'monthly' || entitlement.tier === 'yearly'
-                ? `${entitlement.tier === 'monthly' ? 'Monthly' : 'Yearly'} plan \u2014 ${entitlement.creditsRemaining} credits remaining`
+                ? `${entitlement.tier === 'monthly' ? 'Monthly' : 'Yearly'} plan — ${entitlement.creditsRemaining} credits remaining`
                 : 'No active plan. Pick one below to get started.'}
             </p>
           )}
@@ -139,12 +139,12 @@ export default function DashboardPage() {
 
         {paidBanner && (
           <div className={styles.banner}>
-            \u25c6 You're subscribed. Head to the upload page to make your first swap.
+            ◆ You're subscribed. Head to the upload page to make your first swap.
           </div>
         )}
 
         {confirming && (
-          <div className={styles.banner}>\u25c6 Finalizing your subscription\u2026</div>
+          <div className={styles.banner}>◆ Finalizing your subscription…</div>
         )}
 
         {error && <div className={styles.error}>{error}</div>}
@@ -152,7 +152,7 @@ export default function DashboardPage() {
         {canSwap ? (
           <div style={{ textAlign: 'center', marginTop: 24 }}>
             <a href="/" className={styles.submit + ' ' + styles.submitReady}>
-              Go to upload \u2192
+              Go to upload →
             </a>
           </div>
         ) : (

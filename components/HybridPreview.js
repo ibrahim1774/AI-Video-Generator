@@ -17,7 +17,7 @@ export default function HybridPreview({
   return (
     <section className={styles.wrap}>
       <header className={styles.header}>
-        <span className={styles.kicker}>\u25c6 Step 1 of 2 \u00b7 Preview</span>
+        <span className={styles.kicker}>◆ Step 1 of 2 · Preview</span>
         <h2 className={styles.title}>Does this look right?</h2>
         <p className={styles.subtitle}>
           We composed your character into the first frame of your source video. If it looks good, click Proceed and we'll animate the rest. Regenerate if the face isn't quite right.
@@ -29,7 +29,7 @@ export default function HybridPreview({
           {hybridFrameUrl ? (
             <img src={hybridFrameUrl} alt="Generated hybrid frame" />
           ) : (
-            <div className={styles.placeholder}>Generating\u2026</div>
+            <div className={styles.placeholder}>Generating…</div>
           )}
           <figcaption>Hybrid frame</figcaption>
         </figure>
@@ -63,12 +63,12 @@ export default function HybridPreview({
           onClick={onProceed}
           disabled={busy !== null || !hybridFrameUrl}
         >
-          {busy === 'proceed' ? 'Starting\u2026' : 'Proceed \u2192'}
+          {busy === 'proceed' ? 'Starting…' : 'Proceed →'}
         </button>
       </div>
 
       <p className={styles.note}>
-        \u25c6 One attempt per upload. Proceed to finalize, or cancel and re-upload (counts as a new swap).
+        ◆ One attempt per upload. Proceed to finalize, or cancel and re-upload (counts as a new swap).
       </p>
     </section>
   );

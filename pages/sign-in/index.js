@@ -8,7 +8,7 @@ export default function SignInPage() {
   return (
     <>
       <Head>
-        <title>Sign in \u2014 FaceForge</title>
+        <title>Sign in — FaceForge</title>
       </Head>
       <main style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <AuthModal open={open} onClose={() => (window.location.href = '/')} initialMode="signin" />
