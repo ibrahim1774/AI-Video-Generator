@@ -1,8 +1,8 @@
 {
-  "name": "faceforge",
+  "name": "haelabs",
   "version": "0.1.0",
   "private": true,
-  "description": "FaceForge — a luxury, minimal face-swap SaaS powered by Replicate.",
+  "description": "Haelabs — a luxury, minimal face-swap SaaS powered by Replicate.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

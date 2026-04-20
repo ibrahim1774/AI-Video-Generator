@@ -8,7 +8,7 @@ export default function SignUpPage() {
   return (
     <>
       <Head>
-        <title>Sign up — FaceForge</title>
+        <title>Sign up — Haelabs</title>
       </Head>
       <main style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <AuthModal open={open} onClose={() => (window.location.href = '/')} initialMode="signup" />

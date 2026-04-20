@@ -177,7 +177,7 @@ export default function ImageToVideoPage() {
   return (
     <>
       <Head>
-        <title>Image to Video — FaceForge</title>
+        <title>Image to Video — Haelabs</title>
       </Head>
       <main className={styles.page}>
         <div className={styles.hero}>

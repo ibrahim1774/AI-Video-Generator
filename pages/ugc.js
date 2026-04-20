@@ -232,7 +232,7 @@ export default function UgcPage() {
   if (step === 'animate' && imageUrl) {
     return (
       <>
-        <Head><title>UGC Creator — FaceForge</title></Head>
+        <Head><title>UGC Creator — Haelabs</title></Head>
         <main className={styles.page}>
           <div className={styles.hero}>
             <span className={styles.eyebrow}>◆ Step 2 of 2 — Animate</span>
@@ -365,7 +365,7 @@ export default function UgcPage() {
   // step === 'choose'
   return (
     <>
-      <Head><title>UGC Creator — FaceForge</title></Head>
+      <Head><title>UGC Creator — Haelabs</title></Head>
       <main className={styles.page}>
         <div className={styles.hero}>
           <span className={styles.eyebrow}>◆ Step 1 of 2 — Pick your character</span>

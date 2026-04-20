@@ -3,10 +3,10 @@ import Head from 'next/head';
 export default function AppHead() {
   return (
     <Head>
-      <title>FaceForge — AI Face Swap</title>
+      <title>Haelabs — AI Face Swap</title>
       <meta
         name="description"
-        content="FaceForge is a luxury face-swap studio. Upload a video and a reference photo, and get a finished swap in seconds."
+        content="Haelabs is a luxury face-swap studio. Upload a video and a reference photo, and get a finished swap in seconds."
       />
       <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       <meta name="theme-color" content="#060608" />

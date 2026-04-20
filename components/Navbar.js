@@ -95,7 +95,7 @@ export default function Navbar() {
 
         <Link href="/" className={styles.brand}>
           <div className={styles.mark} aria-hidden="true">F</div>
-          <span className={styles.wordmark}>FaceForge</span>
+          <span className={styles.wordmark}>Haelabs</span>
         </Link>
 
         {showTabs && (

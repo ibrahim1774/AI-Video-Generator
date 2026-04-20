@@ -118,7 +118,7 @@ export default function DashboardPage() {
   return (
     <>
       <Head>
-        <title>Dashboard — FaceForge</title>
+        <title>Dashboard — Haelabs</title>
       </Head>
       <main className={styles.page}>
         <div className={styles.hero}>

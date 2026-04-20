@@ -7,7 +7,7 @@ export default function Result({ job, onNewSwap }) {
   const resultUrl = job && job.resultUrl;
   const videoName = (job && job.videoFileName) || 'source.mp4';
   const faceName = (job && job.faceFileName) || 'face.jpg';
-  const downloadName = (job && job.downloadName) || 'faceforge.mp4';
+  const downloadName = (job && job.downloadName) || 'haelabs.mp4';
   const downloadedRef = useRef(false);
 
   useEffect(() => {
