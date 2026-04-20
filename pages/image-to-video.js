@@ -1,0 +1,313 @@
+import { useCallback, useEffect, useState } from 'react';
+import Head from 'next/head';
+import { useRouter } from 'next/router';
+
+import styles from '../styles/Home.module.css';
+import UploadZone from '../components/UploadZone';
+import Processing from '../components/Processing';
+import Result from '../components/Result';
+import Paywall from '../components/Paywall';
+import { uploadTempFile } from '../lib/uploader';
+import { getBrowserSupabase } from '../lib/supabase';
+
+export default function ImageToVideoPage() {
+  const router = useRouter();
+  const [authUser, setAuthUser] = useState(null);
+  const [authLoaded, setAuthLoaded] = useState(false);
+
+  const [step, setStep] = useState('upload'); // 'upload' | 'paywall' | 'processing' | 'result'
+  const [imageFile, setImageFile] = useState(null);
+  const [prompt, setPrompt] = useState('');
+  const [mode, setMode] = useState('std');
+  const [duration, setDuration] = useState(5);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [job, setJob] = useState(null);
+  const [entitlement, setEntitlement] = useState(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const supabase = getBrowserSupabase();
+    if (!supabase) {
+      setAuthLoaded(true);
+      return undefined;
+    }
+    supabase.auth.getUser().then(({ data }) => {
+      setAuthUser(data?.user || null);
+      setAuthLoaded(true);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_e, session) => {
+      setAuthUser(session?.user || null);
+    });
+    return () => listener?.subscription?.unsubscribe?.();
+  }, []);
+
+  useEffect(() => {
+    if (authLoaded && !authUser) router.replace('/sign-in');
+  }, [authLoaded, authUser, router]);
+
+  const fetchEntitlement = useCallback(async () => {
+    try {
+      const res = await fetch('/api/entitlement');
+      const data = await res.json();
+      setEntitlement(data);
+      return data;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (authUser) fetchEntitlement();
+  }, [authUser, fetchEntitlement]);
+
+  const canSubmit = Boolean(imageFile && !submitting);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!canSubmit) return;
+    setSubmitting(true);
+    setError('');
+    try {
+      const imageUrl = await uploadTempFile(imageFile);
+      const res = await fetch('/api/image-to-video', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl, prompt, mode, duration }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 402) {
+        await fetchEntitlement();
+        setStep('paywall');
+        return;
+      }
+      if (!res.ok) throw new Error(data.error || 'Failed to start.');
+      setJob({ predictionId: data.predictionId, downloadName: 'image-to-video.mp4' });
+      setStep('processing');
+    } catch (err) {
+      setError(err.message || 'Something went wrong.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const reset = () => {
+    setStep('upload');
+    setImageFile(null);
+    setPrompt('');
+    setJob(null);
+    setError('');
+  };
+
+  if (!authLoaded || !authUser) {
+    return (
+      <main className={styles.page}>
+        <div className={styles.hero}>
+          <p className={styles.subtitle}>Loading…</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (step === 'processing' && job) {
+    return (
+      <main className={styles.page}>
+        <Processing
+          predictionId={job.predictionId}
+          onComplete={(data) => {
+            setJob((prev) => ({ ...prev, resultUrl: data.resultUrl }));
+            setStep('result');
+          }}
+          onError={(msg) => {
+            setError(msg);
+            setStep('upload');
+          }}
+        />
+      </main>
+    );
+  }
+
+  if (step === 'result' && job) {
+    return (
+      <main className={styles.page}>
+        <Result job={{ ...job, videoFileName: imageFile?.name }} onNewSwap={reset} />
+      </main>
+    );
+  }
+
+  if (step === 'paywall') {
+    return (
+      <main className={styles.page}>
+        <div className={styles.hero}>
+          <span className={styles.eyebrow}>◆ Out of credits</span>
+          <h1 className={styles.headline}>Pick a plan to keep going</h1>
+        </div>
+        <Paywall
+          entitlement={entitlement}
+          onError={(msg) => setError(msg)}
+          onTrialStarted={() => {
+            fetchEntitlement();
+            setStep('upload');
+          }}
+        />
+        <div style={{ textAlign: 'center', marginTop: 16 }}>
+          <button
+            type="button"
+            onClick={() => setStep('upload')}
+            style={{
+              background: 'transparent',
+              border: '1px solid rgba(255,255,255,0.15)',
+              color: '#ddd',
+              padding: '8px 16px',
+              borderRadius: 6,
+              cursor: 'pointer',
+              fontSize: 13,
+              fontFamily: 'inherit',
+            }}
+          >
+            ← Back
+          </button>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <>
+      <Head>
+        <title>Image to Video — FaceForge</title>
+      </Head>
+      <main className={styles.page}>
+        <div className={styles.hero}>
+          <span className={styles.eyebrow}>◆ Image to Video</span>
+          <h1 className={styles.headline}>
+            Turn a photo into a <span className={styles.accent}>moving clip</span>
+          </h1>
+          <p className={styles.subtitle}>
+            Upload one image and tell us the motion you want. Our top-rated
+            video model paints it to life &mdash; <strong>1 credit per generation</strong>.
+          </p>
+        </div>
+
+        <div
+          style={{
+            maxWidth: 720,
+            margin: '12px auto 20px',
+            padding: '12px 16px',
+            border: '1px solid rgba(224, 196, 136, 0.35)',
+            borderRadius: 10,
+            background: 'rgba(224, 196, 136, 0.06)',
+            color: '#e8d9af',
+            fontSize: 13,
+            lineHeight: 1.5,
+            textAlign: 'center',
+          }}
+        >
+          ◆ This uses our most expensive AI model. Each clip takes{' '}
+          <strong>2&ndash;4 minutes</strong> and auto-downloads when ready.
+        </div>
+
+        <form className={styles.shell} onSubmit={handleSubmit}>
+          <div className={styles.uploads} style={{ gridTemplateColumns: '1fr' }}>
+            <UploadZone
+              label="Starting image"
+              sublabel="JPG or PNG · clear subject, good lighting"
+              icon="🖼️"
+              accept="image/jpeg,image/png"
+              file={imageFile}
+              onFileSelected={setImageFile}
+              onRemove={() => setImageFile(null)}
+            />
+          </div>
+
+          <label className={styles.field} style={{ display: 'block', marginTop: 16 }}>
+            <span className={styles.swapModeLabel}>Describe the motion</span>
+            <textarea
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              rows={3}
+              placeholder="e.g. The woman smiles and slowly turns her head toward the camera."
+              style={{
+                width: '100%',
+                padding: 12,
+                borderRadius: 8,
+                background: '#0f0f11',
+                color: '#eee',
+                border: '1px solid rgba(255,255,255,0.12)',
+                fontFamily: 'inherit',
+                fontSize: 14,
+                resize: 'vertical',
+              }}
+            />
+          </label>
+
+          <div className={styles.swapModeLabel} style={{ marginTop: 16 }}>Length</div>
+          <div className={styles.modeRow} role="radiogroup" aria-label="Duration">
+            <button
+              type="button"
+              role="radio"
+              aria-checked={duration === 5}
+              className={`${styles.modeBtn} ${duration === 5 ? styles.modeBtnActive : ''}`}
+              onClick={() => setDuration(5)}
+            >
+              <span className={styles.modeName}>5 seconds</span>
+              <span className={styles.modeDetail}>1 credit</span>
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={duration === 10}
+              className={`${styles.modeBtn} ${duration === 10 ? styles.modeBtnActive : ''}`}
+              onClick={() => setDuration(10)}
+            >
+              <span className={styles.modeName}>10 seconds</span>
+              <span className={styles.modeDetail}>1 credit</span>
+            </button>
+          </div>
+
+          <div className={styles.swapModeLabel} style={{ marginTop: 16 }}>Quality</div>
+          <div className={styles.modeRow} role="radiogroup" aria-label="Quality">
+            <button
+              type="button"
+              role="radio"
+              aria-checked={mode === 'std'}
+              className={`${styles.modeBtn} ${mode === 'std' ? styles.modeBtnActive : ''}`}
+              onClick={() => setMode('std')}
+            >
+              <span className={styles.modeName}>Standard</span>
+              <span className={styles.modeDetail}>720p · faster</span>
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={mode === 'pro'}
+              className={`${styles.modeBtn} ${mode === 'pro' ? styles.modeBtnActive : ''}`}
+              onClick={() => setMode('pro')}
+            >
+              <span className={styles.modeName}>Pro</span>
+              <span className={styles.modeDetail}>1080p · sharper</span>
+            </button>
+          </div>
+
+          {error && <div className={styles.error}>{error}</div>}
+
+          <button
+            type="submit"
+            className={`${styles.submit} ${canSubmit ? styles.submitReady : ''} ${submitting ? styles.submitLoading : ''}`}
+            disabled={!canSubmit}
+          >
+            {submitting && <span className={styles.spinner} aria-hidden="true" />}
+            {submitting ? 'Starting…' : 'Generate (1 credit)'}
+          </button>
+
+          {entitlement && entitlement.canSwap && (
+            <div className={styles.usage}>
+              {entitlement.creditsRemaining} credit
+              {entitlement.creditsRemaining === 1 ? '' : 's'} remaining
+            </div>
+          )}
+        </form>
+      </main>
+    </>
+  );
+}

@@ -4,12 +4,12 @@ import styles from './Processing.module.css';
 import { log } from '../lib/debugLog';
 
 const PHASES = [
-  { label: 'Uploading assets', detail: 'Securing your character image and motion video.' },
-  { label: 'Analyzing motion', detail: 'Extracting motion vectors from your reference clip.' },
-  { label: 'Locking character', detail: 'Encoding your character’s appearance.' },
-  { label: 'Generating frames', detail: 'Rendering the new video frame-by-frame.' },
-  { label: 'Post-processing', detail: 'Smoothing, color-matching and temporal blending.' },
-  { label: 'Finalizing', detail: 'Encoding the final MP4 and preparing download.' },
+  { label: 'Uploading your files', detail: 'Sending your image and video to our render machines.' },
+  { label: 'Reading the motion', detail: 'Watching how everything moves in your source clip.' },
+  { label: 'Painting the new face', detail: 'Putting your character into the very first frame.' },
+  { label: 'Animating the clip', detail: 'Teaching every frame to move like the original.' },
+  { label: 'Polishing', detail: 'Smoothing the edges and matching the colors.' },
+  { label: 'Saving', detail: 'Wrapping up the video so it can download to your device.' },
 ];
 
 const RADIUS = 52;
@@ -137,7 +137,9 @@ export default function Processing({ predictionId, onComplete, onError }) {
         </div>
 
         <div className={styles.note}>
-          This usually takes 20–60 seconds. Keep this tab open.
+          This usually takes <strong>2–4 minutes</strong> depending on how long
+          your source video is. Don't close this tab — your finished file will
+          download to your device automatically.
         </div>
       </div>
     </section>

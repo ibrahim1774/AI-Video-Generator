@@ -74,6 +74,10 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
               ? 'Buy a top-up pack. Credits never expire and stack on your plan.'
               : "Both plans start with 24 hours free. Cancel anytime during the trial and you won't be charged."}
           </p>
+          <p className={styles.subtitle} style={{ marginTop: 8, fontSize: 13, opacity: 0.85 }}>
+            Each generation uses our most powerful (and pricey) AI models &mdash;
+            that's the trade for high-quality output.
+          </p>
         </header>
 
         {!showTopups && (
@@ -88,7 +92,7 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
                 </div>
               </div>
               <ul className={styles.feats}>
-                <li>6 video generations / month</li>
+                <li>10 video generations / month</li>
                 <li>1 day free, then $9/month</li>
                 <li>Cancel anytime</li>
                 <li>720p or 1080p, no watermark</li>

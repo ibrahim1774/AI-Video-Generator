@@ -5,9 +5,16 @@ import { useRouter } from 'next/router';
 import styles from './Navbar.module.css';
 import { getBrowserSupabase } from '../lib/supabase';
 
-export default function Navbar({ activeTab, onTabChange }) {
+const FEATURE_TABS = [
+  { href: '/', label: 'Face Swap' },
+  { href: '/image-to-video', label: 'Image to Video' },
+  { href: '/ugc', label: 'UGC Creator' },
+];
+
+export default function Navbar() {
   const [user, setUser] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -23,48 +30,63 @@ export default function Navbar({ activeTab, onTabChange }) {
     return () => listener?.subscription?.unsubscribe?.();
   }, []);
 
+  useEffect(() => {
+    setDrawerOpen(false);
+    setMenuOpen(false);
+  }, [router.pathname]);
+
   const handleSignOut = async () => {
     setMenuOpen(false);
+    setDrawerOpen(false);
     const supabase = getBrowserSupabase();
     if (!supabase) return;
     await supabase.auth.signOut();
     router.push('/');
   };
 
+  const showTabs = Boolean(user);
+  const activePath = router.pathname;
+
   return (
     <nav className={styles.nav}>
       <div className={styles.inner}>
+        {showTabs && (
+          <button
+            type="button"
+            aria-label="Open menu"
+            onClick={() => setDrawerOpen((v) => !v)}
+            className={styles.hamburger}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+        )}
+
         <Link href="/" className={styles.brand}>
           <div className={styles.mark} aria-hidden="true">F</div>
           <span className={styles.wordmark}>FaceForge</span>
         </Link>
 
-        {user && router.pathname === '/' && (
+        {showTabs && (
           <div className={styles.tabs} role="tablist">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === 'create'}
-              className={`${styles.tab} ${activeTab === 'create' ? styles.tabActive : ''}`}
-              onClick={() => onTabChange('create')}
-            >
-              Create
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === 'history'}
-              className={`${styles.tab} ${activeTab === 'history' ? styles.tabActive : ''}`}
-              onClick={() => onTabChange('history')}
-            >
-              History
-            </button>
+            {FEATURE_TABS.map((tab) => (
+              <Link
+                key={tab.href}
+                href={tab.href}
+                role="tab"
+                aria-selected={activePath === tab.href}
+                className={`${styles.tab} ${activePath === tab.href ? styles.tabActive : ''}`}
+              >
+                {tab.label}
+              </Link>
+            ))}
           </div>
         )}
 
         <div className={styles.status}>
           {user ? (
-            <div style={{ position: 'relative' }}>
+            <div style={{ position: 'relative' }} className={styles.desktopOnly}>
               <button
                 type="button"
                 onClick={() => setMenuOpen((v) => !v)}
@@ -151,6 +173,32 @@ export default function Navbar({ activeTab, onTabChange }) {
           )}
         </div>
       </div>
+
+      {drawerOpen && showTabs && (
+        <div className={styles.drawer}>
+          {FEATURE_TABS.map((tab) => (
+            <Link
+              key={tab.href}
+              href={tab.href}
+              className={`${styles.drawerItem} ${activePath === tab.href ? styles.drawerItemActive : ''}`}
+              onClick={() => setDrawerOpen(false)}
+            >
+              {tab.label}
+            </Link>
+          ))}
+          <div className={styles.drawerDivider} />
+          <Link
+            href="/dashboard"
+            className={styles.drawerItem}
+            onClick={() => setDrawerOpen(false)}
+          >
+            Dashboard
+          </Link>
+          <button type="button" onClick={handleSignOut} className={styles.drawerItem}>
+            Sign out
+          </button>
+        </div>
+      )}
     </nav>
   );
 }

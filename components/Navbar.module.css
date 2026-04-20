@@ -98,17 +98,91 @@
   color: var(--text-dim);
 }
 
+.hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.hamburger span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  margin: 0 auto;
+  background: #ddd;
+  border-radius: 1px;
+}
+
+.drawer {
+  position: absolute;
+  top: 64px;
+  left: 0;
+  right: 0;
+  background: #0f0f11;
+  border-bottom: 1px solid var(--border);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  z-index: 60;
+}
+
+.drawerItem {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  color: #ddd;
+  background: transparent;
+  border: none;
+  font-size: 14px;
+  font-family: inherit;
+  text-decoration: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.drawerItem:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.drawerItemActive {
+  background: rgba(224, 196, 136, 0.12);
+  color: #e0c488;
+}
+
+.drawerDivider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 4px 0;
+}
+
+@media (max-width: 768px) {
+  .tabs {
+    display: none;
+  }
+  .hamburger {
+    display: flex;
+  }
+  .desktopOnly {
+    display: none;
+  }
+}
+
 @media (max-width: 640px) {
   .inner {
     padding: 0 16px;
   }
-  .status {
-    display: none;
-  }
   .wordmark {
     display: none;
-  }
-  .tab {
-    padding: 6px 14px;
   }
 }

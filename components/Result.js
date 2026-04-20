@@ -1,15 +1,26 @@
+import { useEffect, useRef } from 'react';
+
 import styles from './Result.module.css';
+import { downloadVideo } from '../lib/downloadResult';
 
 export default function Result({ job, onNewSwap }) {
   const resultUrl = job && job.resultUrl;
   const videoName = (job && job.videoFileName) || 'source.mp4';
   const faceName = (job && job.faceFileName) || 'face.jpg';
+  const downloadName = (job && job.downloadName) || 'faceforge.mp4';
+  const downloadedRef = useRef(false);
+
+  useEffect(() => {
+    if (!resultUrl || downloadedRef.current) return;
+    downloadedRef.current = true;
+    downloadVideo(resultUrl, downloadName);
+  }, [resultUrl, downloadName]);
 
   return (
     <section className={styles.wrap}>
       <div className={styles.badge}>
         <span className={styles.badgeDot} aria-hidden="true" />
-        Swap complete
+        Done — saved to your device
       </div>
 
       <h2 className={styles.title}>
@@ -43,7 +54,7 @@ export default function Result({ job, onNewSwap }) {
         </div>
         <div className={styles.stat}>
           <span className={styles.statLabel}>Status</span>
-          <span className={`${styles.statValue} ${styles.statusOk}`}>Complete</span>
+          <span className={`${styles.statValue} ${styles.statusOk}`}>Saved</span>
         </div>
       </div>
 
@@ -51,7 +62,7 @@ export default function Result({ job, onNewSwap }) {
         <a
           className={`${styles.btn} ${styles.btnPrimary}`}
           href={resultUrl || '#'}
-          download
+          download={downloadName}
           target="_blank"
           rel="noreferrer"
           aria-disabled={!resultUrl}
@@ -59,14 +70,14 @@ export default function Result({ job, onNewSwap }) {
             if (!resultUrl) e.preventDefault();
           }}
         >
-          ↓ Download MP4
+          ↓ Download again
         </a>
         <button
           type="button"
           className={`${styles.btn} ${styles.btnGhost}`}
           onClick={onNewSwap}
         >
-          + New swap
+          + New
         </button>
       </div>
     </section>

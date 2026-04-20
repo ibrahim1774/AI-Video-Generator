@@ -4,7 +4,6 @@ import styles from '../styles/Home.module.css';
 import UploadZone from '../components/UploadZone';
 import Processing from '../components/Processing';
 import Result from '../components/Result';
-import JobHistory from '../components/JobHistory';
 import UploadGuide from '../components/UploadGuide';
 import Paywall from '../components/Paywall';
 import HybridPreview from '../components/HybridPreview';
@@ -14,7 +13,7 @@ import { extractFirstFrame } from '../lib/frameExtract';
 import { log } from '../lib/debugLog';
 import { getBrowserSupabase } from '../lib/supabase';
 
-export default function Home({ activeTab, onTabChange }) {
+export default function Home() {
   const [step, setStep] = useState('upload');
   const [videoFile, setVideoFile] = useState(null);
   const [faceFile, setFaceFile] = useState(null);
@@ -304,14 +303,6 @@ export default function Home({ activeTab, onTabChange }) {
     [proceedWithSwap]
   );
 
-  if (activeTab === 'history') {
-    return (
-      <main className={styles.page}>
-        <JobHistory />
-      </main>
-    );
-  }
-
   if (step === 'preview') {
     return (
       <main className={styles.page}>
@@ -385,10 +376,7 @@ export default function Home({ activeTab, onTabChange }) {
       <main className={styles.page}>
         <Result
           job={activeJob}
-          onNewSwap={() => {
-            reset();
-            onTabChange && onTabChange('create');
-          }}
+          onNewSwap={reset}
         />
       </main>
     );
@@ -403,7 +391,7 @@ export default function Home({ activeTab, onTabChange }) {
             Swap any face into <span className={styles.accent}>any video</span>
           </h1>
           <p className={styles.subtitle}>
-            Two-stage pipeline: Nano Banana Pro composes your character into the first frame, then Kling 3.0 motion control animates it through the rest of the clip.
+            We use our top-rated models to turn your photo and video into one new clip. First we paint your face into the very first frame of your source video. Then we teach that frame how to move &mdash; every blink, head turn, and expression flows onto your new face.
           </p>
         </div>
         <div style={{ textAlign: 'center', marginTop: 32 }}>
@@ -450,6 +438,26 @@ export default function Home({ activeTab, onTabChange }) {
       )}
 
       <UploadGuide />
+
+      <div
+        style={{
+          maxWidth: 720,
+          margin: '12px auto 20px',
+          padding: '12px 16px',
+          border: '1px solid rgba(224, 196, 136, 0.35)',
+          borderRadius: 10,
+          background: 'rgba(224, 196, 136, 0.06)',
+          color: '#e8d9af',
+          fontSize: 13,
+          lineHeight: 1.5,
+          textAlign: 'center',
+        }}
+      >
+        ◆ Heads-up: every swap runs on our most powerful (and most expensive)
+        AI models. That's why the result looks studio-clean &mdash; and why
+        each generation takes <strong>2&ndash;4 minutes</strong> after you
+        click below.
+      </div>
 
       <form className={styles.shell} onSubmit={handleSubmit}>
         <div className={styles.uploads}>

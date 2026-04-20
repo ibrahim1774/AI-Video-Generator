@@ -44,6 +44,9 @@ export async function middleware(req) {
     '/api/checkout',
     '/api/extract-frame',
     '/api/upload-token',
+    '/api/image-to-video',
+    '/api/ugc-image',
+    '/api/ugc-animate',
   ];
   if (privateApiPrefixes.some((p) => pathname.startsWith(p))) {
     if (!user) {
@@ -54,8 +57,9 @@ export async function middleware(req) {
     }
   }
 
-  // Dashboard requires login too \u2014 redirect to sign-in if not.
-  if (pathname.startsWith('/dashboard') && !user) {
+  // Protected pages \u2014 redirect anonymous users to sign-in.
+  const protectedPages = ['/dashboard', '/image-to-video', '/ugc'];
+  if (protectedPages.some((p) => pathname.startsWith(p)) && !user) {
     const redirect = req.nextUrl.clone();
     redirect.pathname = '/sign-in';
     return NextResponse.redirect(redirect);
@@ -67,6 +71,8 @@ export async function middleware(req) {
 export const config = {
   matcher: [
     '/dashboard/:path*',
+    '/image-to-video/:path*',
+    '/ugc/:path*',
     '/api/banana-prep/:path*',
     '/api/swap/:path*',
     '/api/status/:path*',
@@ -74,5 +80,8 @@ export const config = {
     '/api/checkout/:path*',
     '/api/extract-frame/:path*',
     '/api/upload-token/:path*',
+    '/api/image-to-video/:path*',
+    '/api/ugc-image/:path*',
+    '/api/ugc-animate/:path*',
   ],
 };
