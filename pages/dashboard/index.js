@@ -31,7 +31,10 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    if (!supabase) return undefined;
+    if (!supabase) {
+      setError('Auth not configured yet. Set NEXT_PUBLIC_SUPABASE_URL + NEXT_PUBLIC_SUPABASE_ANON_KEY in Vercel.');
+      return undefined;
+    }
     let mounted = true;
 
     (async () => {

@@ -13,6 +13,7 @@ export default function Navbar({ activeTab, onTabChange }) {
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     const supabase = getBrowserSupabase();
+    if (!supabase) return undefined;
 
     supabase.auth.getUser().then(({ data }) => setUser(data?.user || null));
 
@@ -25,6 +26,7 @@ export default function Navbar({ activeTab, onTabChange }) {
   const handleSignOut = async () => {
     setMenuOpen(false);
     const supabase = getBrowserSupabase();
+    if (!supabase) return;
     await supabase.auth.signOut();
     router.push('/');
   };

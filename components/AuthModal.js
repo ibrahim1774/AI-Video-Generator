@@ -31,6 +31,7 @@ export default function AuthModal({ open, onClose, initialMode = 'signup' }) {
     setError('');
     try {
       const supabase = getBrowserSupabase();
+      if (!supabase) throw new Error('Auth not configured. Contact support.');
       const { error: err } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo },
@@ -50,6 +51,7 @@ export default function AuthModal({ open, onClose, initialMode = 'signup' }) {
     setError('');
     try {
       const supabase = getBrowserSupabase();
+      if (!supabase) throw new Error('Auth not configured. Contact support.');
       if (mode === 'signup') {
         const { error: err } = await supabase.auth.signUp({
           email,

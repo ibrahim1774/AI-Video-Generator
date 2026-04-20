@@ -44,6 +44,10 @@ export default function Home({ activeTab, onTabChange }) {
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     const supabase = getBrowserSupabase();
+    if (!supabase) {
+      setAuthLoaded(true);
+      return undefined;
+    }
     supabase.auth.getUser().then(({ data }) => {
       setAuthUser(data?.user || null);
       setAuthLoaded(true);
