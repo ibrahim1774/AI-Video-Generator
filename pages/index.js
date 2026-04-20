@@ -471,6 +471,7 @@ export default function Home() {
             file={videoFile}
             onFileSelected={setVideoFile}
             onRemove={() => setVideoFile(null)}
+            maxSizeMB={100}
           />
           <UploadZone
             label="Reference face"
@@ -480,6 +481,7 @@ export default function Home() {
             file={faceFile}
             onFileSelected={setFaceFile}
             onRemove={() => setFaceFile(null)}
+            maxSizeMB={25}
           />
         </div>
 

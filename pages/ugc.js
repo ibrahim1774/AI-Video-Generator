@@ -394,6 +394,7 @@ export default function UgcPage() {
                 file={uploadFile}
                 onFileSelected={handleUpload}
                 onRemove={() => { setUploadFile(null); setImageUrl(null); }}
+                maxSizeMB={25}
               />
               {imageBusy === 'upload' && (
                 <div className={styles.usage} style={{ marginTop: 8 }}>Uploading…</div>

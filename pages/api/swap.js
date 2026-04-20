@@ -3,7 +3,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { createJob, updateJob } from '../../lib/jobs';
 import { createMotionTransferPrediction, normalizeStatus } from '../../lib/replicate';
 import { getUserFromRequest } from '../../lib/supabaseServer';
-import { getEntitlement } from '../../lib/entitlement';
 
 function isHttpUrl(value) {
   if (typeof value !== 'string') return false;
@@ -26,26 +25,9 @@ export default async function handler(req, res) {
   const session = await getUserFromRequest(req, res);
   if (!session) return res.status(401).json({ error: 'Authentication required.' });
 
-  let entitlement;
-  try {
-    entitlement = await getEntitlement({
-      supabase: session.supabase,
-      userId: session.user.id,
-    });
-  } catch (err) {
-    return res.status(500).json({ error: `Entitlement check failed: ${err.message}` });
-  }
-
-  if (!entitlement.canSwap) {
-    return res.status(402).json({
-      error: 'paywall',
-      tier: entitlement.tier,
-      creditsRemaining: entitlement.creditsRemaining || 0,
-      videosUsed: entitlement.videosUsed,
-      videoCap: entitlement.videoCap,
-      expired: entitlement.expired || false,
-    });
-  }
+  // No credit gate here: stage 1 (/api/character-frame) already
+  // reserved the credit. Re-gating here would 402 mid-flow when the
+  // user spent their last credit on stage 1 and never get a result.
 
   try {
     const {

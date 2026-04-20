@@ -18,15 +18,29 @@ export default function UploadZone({
   file,
   onFileSelected,
   onRemove,
+  maxSizeMB,
 }) {
   const inputRef = useRef(null);
   const [dragOver, setDragOver] = useState(false);
+  const [sizeError, setSizeError] = useState('');
 
   const openPicker = () => inputRef.current && inputRef.current.click();
 
+  const tryAccept = (selected) => {
+    if (!selected) return;
+    if (maxSizeMB && selected.size > maxSizeMB * 1024 * 1024) {
+      setSizeError(
+        `File too large (${formatSize(selected.size)}) — max ${maxSizeMB} MB.`
+      );
+      return;
+    }
+    setSizeError('');
+    onFileSelected(selected);
+  };
+
   const handleInputChange = (e) => {
     const selected = e.target.files && e.target.files[0];
-    if (selected) onFileSelected(selected);
+    tryAccept(selected);
     e.target.value = '';
   };
 
@@ -45,7 +59,7 @@ export default function UploadZone({
     e.stopPropagation();
     setDragOver(false);
     const dropped = e.dataTransfer.files && e.dataTransfer.files[0];
-    if (dropped) onFileSelected(dropped);
+    tryAccept(dropped);
   };
 
   const hasFile = Boolean(file);
@@ -88,6 +102,7 @@ export default function UploadZone({
           aria-label="Remove file"
           onClick={(e) => {
             e.stopPropagation();
+            setSizeError('');
             onRemove();
           }}
         >
@@ -106,6 +121,19 @@ export default function UploadZone({
         </div>
       ) : (
         <div className={styles.sublabel}>{sublabel}</div>
+      )}
+      {sizeError && (
+        <div
+          style={{
+            marginTop: 8,
+            color: '#ff8a8a',
+            fontSize: 12,
+            textAlign: 'center',
+            padding: '0 12px',
+          }}
+        >
+          {sizeError}
+        </div>
       )}
     </div>
   );
