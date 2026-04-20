@@ -3,7 +3,6 @@ import { useState } from 'react';
 import '../styles/globals.css';
 import AppHead from '../components/AppHead';
 import Navbar from '../components/Navbar';
-import DebugConsole from '../components/DebugConsole';
 import MetaPixel from '../components/MetaPixel';
 import ClarityTracker from '../components/ClarityTracker';
 
@@ -21,7 +20,6 @@ export default function App({ Component, pageProps }) {
         activeTab={activeTab}
         onTabChange={setActiveTab}
       />
-      <DebugConsole />
     </>
   );
 }
