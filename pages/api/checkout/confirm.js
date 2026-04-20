@@ -1,12 +1,15 @@
-import { stripe, planFromPrice, CAPS } from '../../../lib/stripe';
+import { v4 as uuidv4 } from 'uuid';
+
+import { stripe, planFromPrice, PLANS, CAPS } from '../../../lib/stripe';
 import { setCustomerCookie } from '../../../lib/entitlement';
+import { sendCapiEvent } from '../../../lib/meta';
 
 /**
  * Called by the client right after Stripe Checkout returns to the
  * app with ?session_id=cs_xxx. Looks up the session, sets the
- * ff_customer cookie, and initializes the customer's metadata so
- * the very first /api/entitlement read after this call already
- * sees the right plan + period start.
+ * ff_customer cookie, initializes the customer's metadata, and
+ * fires a Meta CAPI 'Subscribe' event (deduped against the client
+ * Pixel via shared eventId).
  */
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -20,13 +23,17 @@ export default async function handler(req, res) {
 
   try {
     const session = await stripe().checkout.sessions.retrieve(sessionId, {
-      expand: ['line_items.data.price', 'subscription'],
+      expand: ['line_items.data.price', 'subscription', 'customer'],
     });
     const customerId =
       typeof session.customer === 'string' ? session.customer : session.customer?.id;
     if (!customerId) {
       return res.status(400).json({ error: 'Session has no customer.' });
     }
+
+    const customerEmail =
+      session.customer_details?.email ||
+      (typeof session.customer === 'object' ? session.customer?.email : null);
 
     const price = session.line_items?.data?.[0]?.price;
     const plan = planFromPrice(price);
@@ -43,10 +50,25 @@ export default async function handler(req, res) {
     }
 
     setCustomerCookie(res, customerId);
+
+    // Meta CAPI: Subscribe event (deduped with client Pixel via eventId).
+    const eventId = `sub-${session.id}-${Date.now()}`;
+    const value = plan ? PLANS[plan].amountCents / 100 : undefined;
+    await sendCapiEvent({
+      eventName: 'Subscribe',
+      eventId,
+      value,
+      currency: 'USD',
+      email: customerEmail,
+      req,
+      customData: { plan: plan || 'unknown' },
+    });
+
     return res.status(200).json({
       ok: true,
       tier: plan || 'unknown',
       videoCap: plan ? CAPS[plan] : 0,
+      meta: { eventId, eventName: 'Subscribe', value, currency: 'USD' },
     });
   } catch (err) {
     return res.status(500).json({ error: err.message });

@@ -65,7 +65,28 @@ export default function Home({ activeTab, onTabChange }) {
           });
           const data = await res.json();
           log(res.ok ? 'info' : 'error', 'checkout confirm', data);
-          if (res.ok) setPaidBanner(true);
+          if (res.ok) {
+            setPaidBanner(true);
+            // Fire client-side Pixel Subscribe event with same eventId the
+            // server CAPI used \u2014 Meta dedupes by eventId.
+            const meta = data.meta || {};
+            if (meta.eventId && typeof window !== 'undefined' && typeof window.fbq === 'function') {
+              try {
+                window.fbq(
+                  'track',
+                  meta.eventName || 'Subscribe',
+                  {
+                    value: meta.value,
+                    currency: meta.currency || 'USD',
+                  },
+                  { eventID: meta.eventId }
+                );
+                log('info', 'pixel Subscribe fired', meta);
+              } catch (err) {
+                log('warn', 'pixel Subscribe threw', { message: err.message });
+              }
+            }
+          }
         } catch (err) {
           log('error', 'checkout confirm threw', { message: err.message });
         }
