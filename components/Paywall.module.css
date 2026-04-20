@@ -204,30 +204,6 @@
   text-transform: uppercase;
 }
 
-.devBtn {
-  display: block;
-  margin: 14px auto 0;
-  background: transparent;
-  border: 1px dashed rgba(139, 115, 64, 0.5);
-  color: #6b6052;
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  padding: 6px 14px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-family: inherit;
-}
-
-.devBtn:hover:not(:disabled) {
-  color: #1c170f;
-  border-color: #1c170f;
-}
-
-.devBtn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .tiersTwo {
   display: grid;
   grid-template-columns: 1fr 1fr;

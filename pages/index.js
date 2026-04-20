@@ -548,11 +548,7 @@ export default function Home({ activeTab, onTabChange }) {
 
         {entitlement && entitlement.canSwap && (
           <div className={styles.usage}>
-            {entitlement.tier === 'dev'
-              ? 'Dev mode \u2014 unlimited swaps'
-              : entitlement.tier === 'trial'
-              ? `Free trial: ${entitlement.videosUsed}/${entitlement.videoCap} swaps used`
-              : `${entitlement.tier === 'monthly' ? 'Monthly' : 'Yearly'} plan: ${entitlement.videosUsed}/${entitlement.videoCap} swaps used`}
+            {`${entitlement.tier === 'monthly' ? 'Monthly' : 'Yearly'} plan: ${entitlement.videosUsed}/${entitlement.videoCap} swaps used`}
           </div>
         )}
 

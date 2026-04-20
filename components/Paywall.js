@@ -3,27 +3,8 @@ import { useState } from 'react';
 import styles from './Paywall.module.css';
 
 export default function Paywall({ onTrialStarted, onError }) {
-  const [busy, setBusy] = useState(null); // 'monthly' | 'yearly' | 'dev'
+  const [busy, setBusy] = useState(null); // 'monthly' | 'yearly'
   const [localError, setLocalError] = useState('');
-
-  const startDev = async () => {
-    if (busy) return;
-    setBusy('dev');
-    setLocalError('');
-    try {
-      const res = await fetch('/api/start-dev', { method: 'POST' });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'Failed to enable dev mode.');
-      }
-      onTrialStarted && onTrialStarted();
-    } catch (err) {
-      setLocalError(err.message);
-      onError && onError(err.message);
-    } finally {
-      setBusy(null);
-    }
-  };
 
   const startCheckout = async (plan) => {
     if (busy) return;
@@ -117,15 +98,6 @@ export default function Paywall({ onTrialStarted, onError }) {
           <span>\u25c6 Powered by Stripe</span>
           <span>\u25c6 Cancel during trial = no charge</span>
         </footer>
-
-        <button
-          type="button"
-          className={styles.devBtn}
-          onClick={startDev}
-          disabled={busy !== null}
-        >
-          {busy === 'dev' ? 'Enabling\u2026' : 'Dev: enable unlimited (testing only)'}
-        </button>
       </div>
     </section>
   );
