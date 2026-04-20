@@ -88,7 +88,7 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
                 </div>
               </div>
               <ul className={styles.feats}>
-                <li>10 video generations / month</li>
+                <li>6 video generations / month</li>
                 <li>1 day free, then $9/month</li>
                 <li>Cancel anytime</li>
                 <li>720p or 1080p, no watermark</li>
@@ -108,14 +108,14 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
               <div className={styles.tierHead}>
                 <h3 className={styles.tierName}>Yearly</h3>
                 <div className={styles.price}>
-                  <span className={styles.amount}>$69</span>
+                  <span className={styles.amount}>$89</span>
                   <span className={styles.period}>/ year</span>
                 </div>
               </div>
               <ul className={styles.feats}>
-                <li>100 video generations / year</li>
-                <li>1 day free, then $69/year</li>
-                <li>~36% cheaper than monthly</li>
+                <li>50 video generations / year</li>
+                <li>1 day free, then $89/year</li>
+                <li>~18% cheaper than monthly</li>
                 <li>One charge, cancel anytime</li>
               </ul>
               <button
@@ -124,7 +124,7 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
                 onClick={() => startCheckout('yearly')}
                 disabled={busy !== null}
               >
-                {busy === 'yearly' ? 'Redirecting\u2026' : 'Start free trial \u2192 $69/yr'}
+                {busy === 'yearly' ? 'Redirecting\u2026' : 'Start free trial \u2192 $89/yr'}
               </button>
             </article>
           </div>

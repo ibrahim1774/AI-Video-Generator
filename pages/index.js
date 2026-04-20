@@ -8,9 +8,11 @@ import JobHistory from '../components/JobHistory';
 import UploadGuide from '../components/UploadGuide';
 import Paywall from '../components/Paywall';
 import HybridPreview from '../components/HybridPreview';
+import AuthModal from '../components/AuthModal';
 import { uploadTempFile } from '../lib/uploader';
 import { extractFirstFrame } from '../lib/frameExtract';
 import { log } from '../lib/debugLog';
+import { getBrowserSupabase } from '../lib/supabase';
 
 export default function Home({ activeTab, onTabChange }) {
   const [step, setStep] = useState('upload');
@@ -35,6 +37,22 @@ export default function Home({ activeTab, onTabChange }) {
   });
   const pendingSwapRef = useRef(false);
   const paRetryRef = useRef(false);
+  const [authUser, setAuthUser] = useState(null);
+  const [authLoaded, setAuthLoaded] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const supabase = getBrowserSupabase();
+    supabase.auth.getUser().then(({ data }) => {
+      setAuthUser(data?.user || null);
+      setAuthLoaded(true);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setAuthUser(session?.user || null);
+    });
+    return () => listener?.subscription?.unsubscribe?.();
+  }, []);
 
   const canSubmit = Boolean(videoFile && faceFile && consent && swapMode && !submitting);
 
@@ -52,52 +70,9 @@ export default function Home({ activeTab, onTabChange }) {
   }, []);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const params = new URLSearchParams(window.location.search);
-    const sessionId = params.get('session_id');
-    const paid = params.get('paid');
-
-    (async () => {
-      if (paid === '1' && sessionId) {
-        try {
-          const res = await fetch(`/api/checkout/confirm?session_id=${encodeURIComponent(sessionId)}`, {
-            method: 'POST',
-          });
-          const data = await res.json();
-          log(res.ok ? 'info' : 'error', 'checkout confirm', data);
-          if (res.ok) {
-            setPaidBanner(true);
-            // Fire client-side Pixel Subscribe event with same eventId the
-            // server CAPI used \u2014 Meta dedupes by eventId.
-            const meta = data.meta || {};
-            if (meta.eventId && typeof window !== 'undefined' && typeof window.fbq === 'function') {
-              try {
-                window.fbq(
-                  'track',
-                  meta.eventName || 'Subscribe',
-                  {
-                    value: meta.value,
-                    currency: meta.currency || 'USD',
-                  },
-                  { eventID: meta.eventId }
-                );
-                log('info', 'pixel Subscribe fired', meta);
-              } catch (err) {
-                log('warn', 'pixel Subscribe threw', { message: err.message });
-              }
-            }
-          }
-        } catch (err) {
-          log('error', 'checkout confirm threw', { message: err.message });
-        }
-        const url = new URL(window.location.href);
-        url.searchParams.delete('paid');
-        url.searchParams.delete('session_id');
-        window.history.replaceState({}, '', url.toString());
-      }
-      await fetchEntitlement();
-    })();
-  }, [fetchEntitlement]);
+    if (!authLoaded || !authUser) return;
+    fetchEntitlement();
+  }, [authLoaded, authUser, fetchEntitlement]);
 
   const reset = useCallback(() => {
     setStep('upload');
@@ -277,12 +252,19 @@ export default function Home({ activeTab, onTabChange }) {
       videoSize: videoFile?.size,
       faceName: faceFile?.name,
       faceSize: faceFile?.size,
+      authed: Boolean(authUser),
     });
+
+    // Anonymous users \u2014 prompt signup instead of running the swap.
+    if (!authUser) {
+      setAuthModalOpen(true);
+      return;
+    }
 
     const ent = entitlement || (await fetchEntitlement());
     if (!ent || !ent.canSwap) {
-      pendingSwapRef.current = true;
-      setStep('paywall');
+      // Signed-in but no credits \u2014 send them to the dashboard to pick a plan / top up.
+      window.location.href = '/dashboard';
       return;
     }
     await runBananaPrep();
@@ -327,18 +309,6 @@ export default function Home({ activeTab, onTabChange }) {
     return (
       <main className={styles.page}>
         <JobHistory />
-      </main>
-    );
-  }
-
-  if (step === 'paywall') {
-    return (
-      <main className={styles.page}>
-        <Paywall
-          entitlement={entitlement}
-          onTrialStarted={handleTrialStarted}
-          onError={(msg) => setError(msg)}
-        />
       </main>
     );
   }
@@ -510,7 +480,11 @@ export default function Home({ activeTab, onTabChange }) {
           disabled={!canSubmit}
         >
           {submitting && <span className={styles.spinner} aria-hidden="true" />}
-          {submitting ? 'Generating preview\u2026' : 'Create face swap'}
+          {submitting
+            ? 'Generating preview\u2026'
+            : authLoaded && !authUser
+            ? 'Sign up to create face swap'
+            : 'Create face swap'}
         </button>
 
         {entitlement && entitlement.canSwap && (
@@ -533,6 +507,12 @@ export default function Home({ activeTab, onTabChange }) {
           </span>
         </div>
       </form>
+
+      <AuthModal
+        open={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        initialMode="signup"
+      />
     </main>
   );
 }

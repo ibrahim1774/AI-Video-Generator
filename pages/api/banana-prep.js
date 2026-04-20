@@ -1,4 +1,5 @@
 import { createBananaPrep } from '../../lib/replicate';
+import { getUserFromRequest } from '../../lib/supabaseServer';
 import { getEntitlement, decrementCredits } from '../../lib/entitlement';
 
 function isHttpUrl(value) {
@@ -11,23 +12,21 @@ function isHttpUrl(value) {
   }
 }
 
-/**
- * Stage-1 endpoint: compose the user's reference character into the
- * source video's first frame using Nano Banana Pro. A successful
- * Banana call consumes **one** of the user's entitlement slots \u2014
- * that's how we enforce "upload once, stick with it". Proceed/Kling
- * runs afterwards are free (the slot was already claimed here), and
- * Banana API failures don't count.
- */
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  const session = await getUserFromRequest(req, res);
+  if (!session) return res.status(401).json({ error: 'Authentication required.' });
+
   let entitlement;
   try {
-    entitlement = await getEntitlement(req);
+    entitlement = await getEntitlement({
+      supabase: session.supabase,
+      userId: session.user.id,
+    });
   } catch (err) {
     return res.status(500).json({ error: `Entitlement check failed: ${err.message}` });
   }
@@ -53,7 +52,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "swapMode must be 'face' or 'body'." });
   }
 
-  console.log('[banana-prep] running', { firstFrameUrl, referenceImageUrl, mode });
+  console.log('[banana-prep] running', { userId: session.user.id, mode });
 
   try {
     const hybridFrameUrl = await createBananaPrep({
@@ -61,14 +60,11 @@ export default async function handler(req, res) {
       referenceImageUrl,
       swapMode: mode,
     });
-    if (!hybridFrameUrl) {
-      throw new Error('Nano Banana Pro returned no image.');
-    }
+    if (!hybridFrameUrl) throw new Error('Nano Banana Pro returned no image.');
     console.log('[banana-prep] ok', { hybridFrameUrl });
 
-    // One credit is consumed ONLY on successful Banana generation.
     try {
-      await decrementCredits(req, res, entitlement);
+      await decrementCredits(entitlement);
     } catch (e) {
       console.warn('[banana-prep] credit decrement failed', e?.message);
     }

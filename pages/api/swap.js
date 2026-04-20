@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { createJob, updateJob } from '../../lib/jobs';
 import { createKlingPrediction, normalizeStatus } from '../../lib/replicate';
+import { getUserFromRequest } from '../../lib/supabaseServer';
 import { getEntitlement } from '../../lib/entitlement';
 
 function isHttpUrl(value) {
@@ -22,9 +23,15 @@ export default async function handler(req, res) {
 
   const jobId = uuidv4();
 
+  const session = await getUserFromRequest(req, res);
+  if (!session) return res.status(401).json({ error: 'Authentication required.' });
+
   let entitlement;
   try {
-    entitlement = await getEntitlement(req);
+    entitlement = await getEntitlement({
+      supabase: session.supabase,
+      userId: session.user.id,
+    });
   } catch (err) {
     return res.status(500).json({ error: `Entitlement check failed: ${err.message}` });
   }
@@ -33,6 +40,7 @@ export default async function handler(req, res) {
     return res.status(402).json({
       error: 'paywall',
       tier: entitlement.tier,
+      creditsRemaining: entitlement.creditsRemaining || 0,
       videosUsed: entitlement.videosUsed,
       videoCap: entitlement.videoCap,
       expired: entitlement.expired || false,
@@ -68,10 +76,8 @@ export default async function handler(req, res) {
 
     console.log('[swap] creating prediction', {
       jobId,
-      imageUrl,
-      videoUrl,
+      userId: session.user.id,
       mode: safeMode,
-      characterOrientation: 'video',
     });
 
     const prediction = await createKlingPrediction({
@@ -92,9 +98,6 @@ export default async function handler(req, res) {
       predictionId: prediction.id,
       status: normalized.status === 'queued' ? 'processing' : normalized.status,
     });
-
-    // Note: usage was already consumed at /api/banana-prep. The Kling
-    // run is the paid payoff for that slot; no extra increment here.
 
     return res.status(200).json({
       jobId,
