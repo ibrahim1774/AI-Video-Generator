@@ -63,7 +63,7 @@ export default function AuthModal({ open, onClose, initialMode = 'signup' }) {
         const { error: err } = await supabase.auth.signInWithPassword({ email, password });
         if (err) throw err;
       }
-      router.push('/dashboard');
+      router.push('/');
     } catch (err) {
       setError(err.message || 'Authentication failed.');
     } finally {

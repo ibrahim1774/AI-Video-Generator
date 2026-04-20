@@ -259,16 +259,11 @@ export default function Home({ activeTab, onTabChange }) {
       authed: Boolean(authUser),
     });
 
-    // Anonymous users \u2014 prompt signup instead of running the swap.
-    if (!authUser) {
-      setAuthModalOpen(true);
-      return;
-    }
-
     const ent = entitlement || (await fetchEntitlement());
     if (!ent || !ent.canSwap) {
-      // Signed-in but no credits \u2014 send them to the dashboard to pick a plan / top up.
-      window.location.href = '/dashboard';
+      // Signed-in but no credits \u2014 show inline paywall; files stay in state.
+      pendingSwapRef.current = true;
+      setStep('paywall');
       return;
     }
     await runBananaPrep();
@@ -345,6 +340,46 @@ export default function Home({ activeTab, onTabChange }) {
     );
   }
 
+  if (step === 'paywall') {
+    return (
+      <main className={styles.page}>
+        <div className={styles.hero}>
+          <span className={styles.eyebrow}>\u25c6 Pick a plan</span>
+          <h1 className={styles.headline}>
+            One step to <span className={styles.accent}>finish your swap</span>
+          </h1>
+          <p className={styles.subtitle}>
+            Your files are ready. Choose a plan and we\u2019ll run the swap right after.
+          </p>
+        </div>
+        {error && <div className={styles.error}>{error}</div>}
+        <Paywall
+          entitlement={entitlement}
+          onError={(msg) => setError(msg)}
+          onTrialStarted={handleTrialStarted}
+        />
+        <div style={{ textAlign: 'center', marginTop: 16 }}>
+          <button
+            type="button"
+            onClick={() => setStep('upload')}
+            style={{
+              background: 'transparent',
+              border: '1px solid rgba(255,255,255,0.15)',
+              color: '#ddd',
+              padding: '8px 16px',
+              borderRadius: 6,
+              cursor: 'pointer',
+              fontSize: 13,
+              fontFamily: 'inherit',
+            }}
+          >
+            \u2190 Back to upload
+          </button>
+        </div>
+      </main>
+    );
+  }
+
   if (step === 'result' && activeJob) {
     return (
       <main className={styles.page}>
@@ -354,6 +389,43 @@ export default function Home({ activeTab, onTabChange }) {
             reset();
             onTabChange && onTabChange('create');
           }}
+        />
+      </main>
+    );
+  }
+
+  if (authLoaded && !authUser) {
+    return (
+      <main className={styles.page}>
+        <div className={styles.hero}>
+          <span className={styles.eyebrow}>\u25c6 AI Face Swap</span>
+          <h1 className={styles.headline}>
+            Swap any face into <span className={styles.accent}>any video</span>
+          </h1>
+          <p className={styles.subtitle}>
+            Two-stage pipeline: Nano Banana Pro composes your character into the first frame, then Kling 3.0 motion control animates it through the rest of the clip.
+          </p>
+        </div>
+        <div style={{ textAlign: 'center', marginTop: 32 }}>
+          <button
+            type="button"
+            onClick={() => setAuthModalOpen(true)}
+            className={`${styles.submit} ${styles.submitReady}`}
+            style={{ maxWidth: 320, margin: '0 auto' }}
+          >
+            Sign up to start \u2192
+          </button>
+          <p className={styles.subtitle} style={{ marginTop: 16, fontSize: 13 }}>
+            Already have an account?{' '}
+            <a href="/sign-in" style={{ color: '#e0c488' }}>
+              Sign in
+            </a>
+          </p>
+        </div>
+        <AuthModal
+          open={authModalOpen}
+          onClose={() => setAuthModalOpen(false)}
+          initialMode="signup"
         />
       </main>
     );
@@ -484,11 +556,7 @@ export default function Home({ activeTab, onTabChange }) {
           disabled={!canSubmit}
         >
           {submitting && <span className={styles.spinner} aria-hidden="true" />}
-          {submitting
-            ? 'Generating preview\u2026'
-            : authLoaded && !authUser
-            ? 'Sign up to create face swap'
-            : 'Create face swap'}
+          {submitting ? 'Generating preview\u2026' : 'Create face swap'}
         </button>
 
         {entitlement && entitlement.canSwap && (

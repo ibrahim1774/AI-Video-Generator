@@ -18,7 +18,8 @@ export default async function handler(req, res) {
     }
   }
 
-  // Go to dashboard; if the user has a pending swap, the home page
-  // handles it from sessionStorage when they navigate back.
-  return res.redirect(302, '/dashboard');
+  const next = typeof req.query.next === 'string' && req.query.next.startsWith('/')
+    ? req.query.next
+    : '/';
+  return res.redirect(302, next);
 }
