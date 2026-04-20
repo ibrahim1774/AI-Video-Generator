@@ -17,7 +17,7 @@ export default async function handler(req, res) {
     });
   }
   try {
-    const ent = await getEntitlement({ supabase: session.supabase, userId: session.user.id });
+    const ent = await getEntitlement({ supabase: session.supabase, userId: session.user.id, email: session.user.email });
     return res.status(200).json(ent);
   } catch (err) {
     return res.status(200).json({

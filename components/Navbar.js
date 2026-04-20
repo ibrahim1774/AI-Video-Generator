@@ -40,6 +40,7 @@ export default function Navbar() {
 
   const creditLabel = (() => {
     if (!entitlement) return null;
+    if (entitlement.isAdmin) return 'Admin · Unlimited';
     if (entitlement.status === 'trialing') {
       return `Free trial · ${entitlement.creditsRemaining || 0} credit`;
     }
