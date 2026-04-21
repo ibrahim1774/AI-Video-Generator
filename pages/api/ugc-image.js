@@ -1,4 +1,4 @@
-import { createImage } from '../../lib/replicate';
+import { createImagePrediction } from '../../lib/replicate';
 import { getUserFromRequest } from '../../lib/supabaseServer';
 import { getEntitlement, reserveCredits, refundCredits } from '../../lib/entitlement';
 
@@ -40,9 +40,11 @@ export default async function handler(req, res) {
   }
 
   try {
-    const imageUrl = await createImage({ prompt });
-    if (!imageUrl) throw new Error('Image generation returned no result.');
-    return res.status(200).json({ imageUrl });
+    const prediction = await createImagePrediction({ prompt });
+    return res.status(200).json({
+      predictionId: prediction.id,
+      status: prediction.status,
+    });
   } catch (err) {
     console.error('[ugc-image] failed; refunding credit', err);
     try { await refundCredits(entitlement, COST); } catch {}

@@ -10,6 +10,10 @@ import Paywall from '../components/Paywall';
 import { uploadTempFile } from '../lib/uploader';
 import { getBrowserSupabase } from '../lib/supabase';
 import { bumpEntitlement } from '../lib/entitlementBus';
+import { saveJob, loadJob, clearJob } from '../lib/jobPersist';
+import { maybeCompressImage } from '../lib/imageCompress';
+
+const FEATURE = 'ugc';
 
 function costForDuration(d) {
   return Math.ceil(d / 3);
@@ -20,12 +24,13 @@ export default function UgcPage() {
   const [authUser, setAuthUser] = useState(null);
   const [authLoaded, setAuthLoaded] = useState(false);
 
-  // 'choose' = pick image; 'animate' = script + slider; 'processing' | 'result' | 'paywall'
+  // 'choose' | 'gen-image' | 'animate' | 'processing' | 'result' | 'paywall'
   const [step, setStep] = useState('choose');
   const [imageUrl, setImageUrl] = useState(null);
   const [imageBusy, setImageBusy] = useState(null); // 'upload' | 'generate' | null
   const [imagePrompt, setImagePrompt] = useState('');
   const [uploadFile, setUploadFile] = useState(null);
+  const [imageJob, setImageJob] = useState(null); // { predictionId, startedAt }
 
   const [script, setScript] = useState('');
   const [duration, setDuration] = useState(5); // 5 or 10
@@ -56,6 +61,29 @@ export default function UgcPage() {
     if (authLoaded && !authUser) router.replace('/sign-in');
   }, [authLoaded, authUser, router]);
 
+  // Resume an in-flight job from localStorage. UGC has two kinds of
+  // job — image generation (kind='ugc-image') and animation (kind='ugc-animate').
+  useEffect(() => {
+    if (!authLoaded || !authUser) return;
+    const saved = loadJob(FEATURE);
+    if (!saved || !saved.predictionId) return;
+    if (saved.kind === 'ugc-image') {
+      setImageJob({
+        predictionId: saved.predictionId,
+        startedAt: saved.startedAt,
+      });
+      setStep('gen-image');
+    } else if (saved.kind === 'ugc-animate') {
+      setJob({
+        predictionId: saved.predictionId,
+        downloadName: saved.downloadName || 'ugc.mp4',
+        startedAt: saved.startedAt,
+      });
+      setImageUrl(saved.imageUrl || null);
+      setStep('processing');
+    }
+  }, [authLoaded, authUser]);
+
   const fetchEntitlement = useCallback(async () => {
     try {
       const r = await fetch('/api/entitlement');
@@ -78,7 +106,8 @@ export default function UgcPage() {
     setError('');
     setImageBusy('upload');
     try {
-      const url = await uploadTempFile(file);
+      const compressed = await maybeCompressImage(file);
+      const url = await uploadTempFile(compressed);
       setImageUrl(url);
       setStep('animate');
     } catch (err) {
@@ -104,11 +133,16 @@ export default function UgcPage() {
         setStep('paywall');
         return;
       }
-      if (!r.ok || !data.imageUrl) throw new Error(data.error || 'Image generation failed.');
-      setImageUrl(data.imageUrl);
+      if (!r.ok || !data.predictionId) throw new Error(data.error || 'Image generation failed.');
+      const startedAt = Date.now();
+      saveJob(FEATURE, {
+        kind: 'ugc-image',
+        predictionId: data.predictionId,
+        startedAt,
+      });
+      setImageJob({ predictionId: data.predictionId, startedAt });
       bumpEntitlement();
-      await fetchEntitlement();
-      setStep('animate');
+      setStep('gen-image');
     } catch (err) {
       setError(err.message || 'Image generation failed.');
     } finally {
@@ -134,7 +168,18 @@ export default function UgcPage() {
         return;
       }
       if (!r.ok) throw new Error(data.error || 'Failed to start.');
-      setJob({ predictionId: data.predictionId, downloadName: 'ugc.mp4' });
+      const startedAt = Date.now();
+      const newJob = {
+        predictionId: data.predictionId,
+        downloadName: 'ugc.mp4',
+        startedAt,
+      };
+      saveJob(FEATURE, {
+        kind: 'ugc-animate',
+        ...newJob,
+        imageUrl,
+      });
+      setJob(newJob);
       bumpEntitlement();
       setStep('processing');
     } catch (err) {
@@ -145,12 +190,14 @@ export default function UgcPage() {
   };
 
   const reset = () => {
+    clearJob(FEATURE);
     setStep('choose');
     setImageUrl(null);
     setImagePrompt('');
     setUploadFile(null);
     setScript('');
     setJob(null);
+    setImageJob(null);
     setError('');
   };
 
@@ -162,13 +209,53 @@ export default function UgcPage() {
     );
   }
 
+  if (step === 'gen-image' && imageJob) {
+    return (
+      <main className={styles.page}>
+        <Processing
+          predictionId={imageJob.predictionId}
+          startedAt={imageJob.startedAt}
+          kind="image"
+          onComplete={(data) => {
+            clearJob(FEATURE);
+            if (!data.resultUrl) {
+              setError('Image generation returned no result.');
+              setStep('choose');
+              return;
+            }
+            setImageUrl(data.resultUrl);
+            setImageJob(null);
+            fetchEntitlement();
+            setStep('animate');
+          }}
+          onError={(msg) => {
+            clearJob(FEATURE);
+            setImageJob(null);
+            setError(msg);
+            setStep('choose');
+          }}
+        />
+      </main>
+    );
+  }
+
   if (step === 'processing' && job) {
     return (
       <main className={styles.page}>
         <Processing
           predictionId={job.predictionId}
-          onComplete={(d) => { setJob((p) => ({ ...p, resultUrl: d.resultUrl })); setStep('result'); }}
-          onError={(msg) => { setError(msg); setStep('animate'); }}
+          startedAt={job.startedAt}
+          kind="video"
+          onComplete={(d) => {
+            clearJob(FEATURE);
+            setJob((p) => ({ ...p, resultUrl: d.resultUrl }));
+            setStep('result');
+          }}
+          onError={(msg) => {
+            clearJob(FEATURE);
+            setError(msg);
+            setStep('animate');
+          }}
         />
       </main>
     );
@@ -394,7 +481,7 @@ export default function UgcPage() {
                 file={uploadFile}
                 onFileSelected={handleUpload}
                 onRemove={() => { setUploadFile(null); setImageUrl(null); }}
-                maxSizeMB={25}
+                maxSizeMB={50}
               />
               {imageBusy === 'upload' && (
                 <div className={styles.usage} style={{ marginTop: 8 }}>Uploading…</div>
@@ -438,7 +525,7 @@ export default function UgcPage() {
                 style={{ marginTop: 12 }}
               >
                 {imageBusy === 'generate' && <span className={styles.spinner} aria-hidden="true" />}
-                {imageBusy === 'generate' ? 'Generating…' : 'Generate image (1 credit)'}
+                {imageBusy === 'generate' ? 'Starting…' : 'Generate image (1 credit)'}
               </button>
             </div>
           </div>

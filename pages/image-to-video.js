@@ -10,6 +10,10 @@ import Paywall from '../components/Paywall';
 import { uploadTempFile } from '../lib/uploader';
 import { getBrowserSupabase } from '../lib/supabase';
 import { bumpEntitlement } from '../lib/entitlementBus';
+import { saveJob, loadJob, clearJob } from '../lib/jobPersist';
+import { maybeCompressImage } from '../lib/imageCompress';
+
+const FEATURE = 'image-to-video';
 
 export default function ImageToVideoPage() {
   const router = useRouter();
@@ -47,6 +51,21 @@ export default function ImageToVideoPage() {
     if (authLoaded && !authUser) router.replace('/sign-in');
   }, [authLoaded, authUser, router]);
 
+  // Resume any in-flight job from localStorage so the user can leave
+  // the page mid-generation and come back to the same state.
+  useEffect(() => {
+    if (!authLoaded || !authUser) return;
+    const saved = loadJob(FEATURE);
+    if (saved && saved.predictionId) {
+      setJob({
+        predictionId: saved.predictionId,
+        downloadName: saved.downloadName || 'image-to-video.mp4',
+        startedAt: saved.startedAt,
+      });
+      setStep('processing');
+    }
+  }, [authLoaded, authUser]);
+
   const fetchEntitlement = useCallback(async () => {
     try {
       const res = await fetch('/api/entitlement');
@@ -70,7 +89,8 @@ export default function ImageToVideoPage() {
     setSubmitting(true);
     setError('');
     try {
-      const imageUrl = await uploadTempFile(imageFile);
+      const compressed = await maybeCompressImage(imageFile);
+      const imageUrl = await uploadTempFile(compressed);
       const res = await fetch('/api/image-to-video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -83,7 +103,14 @@ export default function ImageToVideoPage() {
         return;
       }
       if (!res.ok) throw new Error(data.error || 'Failed to start.');
-      setJob({ predictionId: data.predictionId, downloadName: 'image-to-video.mp4' });
+      const startedAt = Date.now();
+      const newJob = {
+        predictionId: data.predictionId,
+        downloadName: 'image-to-video.mp4',
+        startedAt,
+      };
+      saveJob(FEATURE, { ...newJob, kind: 'image-to-video' });
+      setJob(newJob);
       bumpEntitlement();
       setStep('processing');
     } catch (err) {
@@ -94,6 +121,7 @@ export default function ImageToVideoPage() {
   };
 
   const reset = () => {
+    clearJob(FEATURE);
     setStep('upload');
     setImageFile(null);
     setPrompt('');
@@ -116,11 +144,15 @@ export default function ImageToVideoPage() {
       <main className={styles.page}>
         <Processing
           predictionId={job.predictionId}
+          startedAt={job.startedAt}
+          kind="video"
           onComplete={(data) => {
+            clearJob(FEATURE);
             setJob((prev) => ({ ...prev, resultUrl: data.resultUrl }));
             setStep('result');
           }}
           onError={(msg) => {
+            clearJob(FEATURE);
             setError(msg);
             setStep('upload');
           }}
@@ -219,7 +251,7 @@ export default function ImageToVideoPage() {
               file={imageFile}
               onFileSelected={setImageFile}
               onRemove={() => setImageFile(null)}
-              maxSizeMB={25}
+              maxSizeMB={50}
             />
           </div>
 

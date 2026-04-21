@@ -90,6 +90,31 @@
   color: var(--text-faint);
 }
 
+.comeback {
+  margin-top: 20px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: rgba(255, 215, 100, 0.08);
+  border: 1px solid rgba(255, 215, 100, 0.35);
+  color: #ffe27a;
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 420px;
+}
+
+.comeback strong {
+  color: #fff3b0;
+  font-weight: 600;
+}
+
+.elapsed {
+  margin-top: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+}
+
 @media (max-width: 640px) {
   .card {
     padding: 36px 24px 28px;

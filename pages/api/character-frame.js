@@ -1,4 +1,4 @@
-import { createCharacterFrame } from '../../lib/replicate';
+import { createCharacterFramePrediction } from '../../lib/replicate';
 import { getUserFromRequest } from '../../lib/supabaseServer';
 import { getEntitlement, reserveCredits, refundCredits } from '../../lib/entitlement';
 
@@ -45,8 +45,10 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "swapMode must be 'face' or 'body'." });
   }
 
-  // Reserve the credit BEFORE running the model. Closes the
-  // double-spend race that an after-success decrement opens.
+  // Reserve the credit BEFORE creating the prediction. If Replicate
+  // refuses to accept the job we refund. After acceptance we hand back
+  // the predictionId and let the client poll /api/status — survives
+  // tab close because Replicate keeps running on its own.
   try {
     await reserveCredits(entitlement, COST);
   } catch (err) {
@@ -61,17 +63,19 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: err.message });
   }
 
-  console.log('[character-frame] running', { userId: session.user.id, mode });
+  console.log('[character-frame] creating prediction', { userId: session.user.id, mode });
 
   try {
-    const hybridFrameUrl = await createCharacterFrame({
+    const prediction = await createCharacterFramePrediction({
       firstFrameUrl,
       referenceImageUrl,
       swapMode: mode,
     });
-    if (!hybridFrameUrl) throw new Error('Image model returned no result.');
-    console.log('[character-frame] ok', { hybridFrameUrl });
-    return res.status(200).json({ hybridFrameUrl });
+    console.log('[character-frame] prediction created', { id: prediction.id });
+    return res.status(200).json({
+      predictionId: prediction.id,
+      status: prediction.status,
+    });
   } catch (err) {
     console.error('[character-frame] failed; refunding credit', err);
     try {

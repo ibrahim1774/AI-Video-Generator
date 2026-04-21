@@ -13,6 +13,10 @@ import { extractFirstFrame } from '../lib/frameExtract';
 import { log } from '../lib/debugLog';
 import { getBrowserSupabase } from '../lib/supabase';
 import { bumpEntitlement } from '../lib/entitlementBus';
+import { saveJob, loadJob, clearJob } from '../lib/jobPersist';
+import { maybeCompressImage } from '../lib/imageCompress';
+
+const FEATURE = 'face-swap';
 
 export default function Home() {
   const [step, setStep] = useState('upload');
@@ -22,6 +26,7 @@ export default function Home() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [activeJob, setActiveJob] = useState(null);
+  const [frameJob, setFrameJob] = useState(null); // { predictionId, startedAt } for stage 1
   const [entitlement, setEntitlement] = useState(null);
   const [paidBanner, setPaidBanner] = useState(false);
   const [mode, setMode] = useState('std');
@@ -78,7 +83,45 @@ export default function Home() {
     fetchEntitlement();
   }, [authLoaded, authUser, fetchEntitlement]);
 
+  // Resume an in-flight job from localStorage. Two kinds:
+  //   character-frame → Processing(image) → preview when complete
+  //   swap            → Processing(video) → result   when complete
+  useEffect(() => {
+    if (!authLoaded || !authUser) return;
+    const saved = loadJob(FEATURE);
+    if (!saved || !saved.predictionId) return;
+    if (saved.kind === 'character-frame') {
+      setUploadedUrls({
+        sourceVideoUrl: saved.sourceVideoUrl || null,
+        sourceFrameUrl: saved.sourceFrameUrl || null,
+        referenceImageUrl: saved.referenceImageUrl || null,
+        hybridFrameUrl: null,
+        swapMode: saved.swapMode || null,
+      });
+      setSwapMode(saved.swapMode || null);
+      setFrameJob({
+        predictionId: saved.predictionId,
+        startedAt: saved.startedAt,
+      });
+      setStep('gen-frame');
+    } else if (saved.kind === 'swap') {
+      setUploadedUrls((prev) => ({
+        ...prev,
+        sourceVideoUrl: saved.sourceVideoUrl || prev.sourceVideoUrl,
+        hybridFrameUrl: saved.hybridFrameUrl || prev.hybridFrameUrl,
+      }));
+      setActiveJob({
+        predictionId: saved.predictionId,
+        videoFileName: saved.videoFileName,
+        faceFileName: saved.faceFileName,
+        startedAt: saved.startedAt,
+      });
+      setStep('processing');
+    }
+  }, [authLoaded, authUser]);
+
   const reset = useCallback(() => {
+    clearJob(FEATURE);
     setStep('upload');
     setVideoFile(null);
     setFaceFile(null);
@@ -86,6 +129,7 @@ export default function Home() {
     setError('');
     setSubmitting(false);
     setActiveJob(null);
+    setFrameJob(null);
     setSwapMode(null);
     setUploadedUrls({
       sourceVideoUrl: null,
@@ -96,7 +140,10 @@ export default function Home() {
     });
   }, []);
 
-  // Stage 1: extract first frame, upload everything, build the hybrid frame.
+  // Stage 1: extract first frame, upload everything, kick off the
+  // character-frame prediction (async). Returns true if the prediction
+  // was successfully created — caller transitions to 'gen-frame' which
+  // polls until the hybrid frame is ready.
   const runCharacterFrame = useCallback(async () => {
     if (!videoFile || !faceFile) return false;
     setError('');
@@ -122,7 +169,8 @@ export default function Home() {
       // Always upload the source video and reference image. The frame
       // is either uploaded from the browser (fast path) or generated
       // server-side from the source URL (codec fallback).
-      const uploadPromises = [uploadTempFile(videoFile), uploadTempFile(faceFile)];
+      const compressedFace = await maybeCompressImage(faceFile);
+      const uploadPromises = [uploadTempFile(videoFile), uploadTempFile(compressedFace)];
       if (frameFile) uploadPromises.push(uploadTempFile(frameFile));
       const uploaded = await Promise.all(uploadPromises);
       const sourceVideoUrl = uploaded[0];
@@ -174,7 +222,7 @@ export default function Home() {
         setStep('paywall');
         return false;
       }
-      if (!res.ok || !data.hybridFrameUrl) {
+      if (!res.ok || !data.predictionId) {
         throw new Error(data.error || 'Hybrid frame generation failed.');
       }
 
@@ -182,13 +230,26 @@ export default function Home() {
         sourceVideoUrl,
         sourceFrameUrl,
         referenceImageUrl,
-        hybridFrameUrl: data.hybridFrameUrl,
+        hybridFrameUrl: null,
         swapMode,
       });
+
+      const startedAt = Date.now();
+      saveJob(FEATURE, {
+        kind: 'character-frame',
+        predictionId: data.predictionId,
+        startedAt,
+        sourceVideoUrl,
+        sourceFrameUrl,
+        referenceImageUrl,
+        swapMode,
+      });
+      setFrameJob({ predictionId: data.predictionId, startedAt });
+
       // First-stage call just consumed a credit — refresh the counter.
       fetchEntitlement();
       bumpEntitlement();
-      setStep('preview');
+      setStep('gen-frame');
       return true;
     } catch (err) {
       log('error', 'character frame failed', { message: err.message });
@@ -230,10 +291,21 @@ export default function Home() {
         throw new Error(data.error || 'Failed to start the swap.');
       }
 
+      const startedAt = Date.now();
       setActiveJob({
         jobId: data.jobId,
         predictionId: data.predictionId,
         status: data.status,
+        videoFileName: videoFile?.name,
+        faceFileName: faceFile?.name,
+        startedAt,
+      });
+      saveJob(FEATURE, {
+        kind: 'swap',
+        predictionId: data.predictionId,
+        startedAt,
+        sourceVideoUrl,
+        hybridFrameUrl,
         videoFileName: videoFile?.name,
         faceFileName: faceFile?.name,
       });
@@ -283,6 +355,7 @@ export default function Home() {
   }, [fetchEntitlement, runCharacterFrame]);
 
   const handleComplete = useCallback((job) => {
+    clearJob(FEATURE);
     setActiveJob((prev) => ({ ...(prev || {}), ...job }));
     setStep('result');
   }, []);
@@ -299,11 +372,34 @@ export default function Home() {
         return;
       }
       paRetryRef.current = false;
+      clearJob(FEATURE);
       setError(message);
       setStep('preview'); // back to preview so user can retry without re-uploading
     },
     [proceedWithSwap]
   );
+
+  // Stage 1 (character-frame) completion handler. Different from
+  // handleComplete because this kind of job lands the user on the
+  // preview screen, not the result screen.
+  const handleFrameComplete = useCallback((data) => {
+    clearJob(FEATURE);
+    setFrameJob(null);
+    if (!data.resultUrl) {
+      setError('Hybrid frame generation returned no result.');
+      setStep('upload');
+      return;
+    }
+    setUploadedUrls((prev) => ({ ...prev, hybridFrameUrl: data.resultUrl }));
+    setStep('preview');
+  }, []);
+
+  const handleFrameError = useCallback((message) => {
+    clearJob(FEATURE);
+    setFrameJob(null);
+    setError(message);
+    setStep('upload');
+  }, []);
 
   if (step === 'preview') {
     return (
@@ -321,11 +417,27 @@ export default function Home() {
     );
   }
 
+  if (step === 'gen-frame' && frameJob) {
+    return (
+      <main className={styles.page}>
+        <Processing
+          predictionId={frameJob.predictionId}
+          startedAt={frameJob.startedAt}
+          kind="image"
+          onComplete={handleFrameComplete}
+          onError={handleFrameError}
+        />
+      </main>
+    );
+  }
+
   if (step === 'processing' && activeJob) {
     return (
       <main className={styles.page}>
         <Processing
           predictionId={activeJob.predictionId}
+          startedAt={activeJob.startedAt}
+          kind="video"
           onComplete={handleComplete}
           onError={handleError}
         />
@@ -481,7 +593,7 @@ export default function Home() {
             file={faceFile}
             onFileSelected={setFaceFile}
             onRemove={() => setFaceFile(null)}
-            maxSizeMB={25}
+            maxSizeMB={50}
           />
         </div>
 
