@@ -5,22 +5,36 @@ import { useRouter } from 'next/router';
 import styles from '../styles/Home.module.css';
 import UploadZone from '../components/UploadZone';
 import Processing from '../components/Processing';
-import Result from '../components/Result';
 import Paywall from '../components/Paywall';
 import DurationSlider, { costForDuration } from '../components/DurationSlider';
 import { uploadTempFile } from '../lib/uploader';
 import { getBrowserSupabase } from '../lib/supabase';
 import { bumpEntitlement } from '../lib/entitlementBus';
 import { saveJob, loadJob, clearJob } from '../lib/jobPersist';
+import {
+  loadStory,
+  saveStory,
+  clearStory,
+  appendScene,
+  popScene,
+  setCombinedUrl,
+} from '../lib/storyPersist';
 import { maybeCompressImage } from '../lib/imageCompress';
 
 const FEATURE = 'ugc';
 const MAX_SCENES = 5;
 
-let sceneIdSeed = 1;
-function newScene(duration = 5) {
-  sceneIdSeed += 1;
-  return { id: sceneIdSeed, prompt: '', duration };
+function triggerDownload(url, filename) {
+  try {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || 'video.mp4';
+    a.rel = 'noopener';
+    a.target = '_blank';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } catch {}
 }
 
 export default function UgcPage() {
@@ -28,24 +42,33 @@ export default function UgcPage() {
   const [authUser, setAuthUser] = useState(null);
   const [authLoaded, setAuthLoaded] = useState(false);
 
-  // 'choose' | 'gen-image' | 'animate' | 'processing' | 'result' | 'paywall'
+  // 'choose' | 'gen-image' | 'animate' | 'processing'
+  // | 'result' | 'extending' | 'combining' | 'final' | 'paywall'
   const [step, setStep] = useState('choose');
   const [imageUrl, setImageUrl] = useState(null);
-  const [imageBusy, setImageBusy] = useState(null); // 'upload' | 'generate' | null
+  const [imageBusy, setImageBusy] = useState(null);
   const [imagePrompt, setImagePrompt] = useState('');
   const [uploadFile, setUploadFile] = useState(null);
-  const [imageJob, setImageJob] = useState(null); // { predictionId, startedAt }
+  const [imageJob, setImageJob] = useState(null);
 
   const [script, setScript] = useState('');
-  const [duration, setDuration] = useState(5); // 3–15
+  const [duration, setDuration] = useState(5);
   const [mode, setMode] = useState('std');
   const [audio, setAudio] = useState(true);
-  const [animateMode, setAnimateMode] = useState('single'); // 'single' | 'storyboard'
-  const [scenes, setScenes] = useState(() => [newScene()]);
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [job, setJob] = useState(null);
   const [entitlement, setEntitlement] = useState(null);
+
+  // Chain state. `story` is the persisted list of completed scenes.
+  // `nextSceneType` tells handleAnimate how to build the saved-scene
+  // metadata (initial / extend / new). `pendingStartImage` is the
+  // image URL to use for the NEXT animation (an extracted last frame
+  // or a freshly uploaded image for a New scene).
+  const [story, setStory] = useState(null);
+  const [nextSceneType, setNextSceneType] = useState('initial');
+  const [pendingStartImage, setPendingStartImage] = useState(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
@@ -68,26 +91,35 @@ export default function UgcPage() {
     if (authLoaded && !authUser) router.replace('/sign-in');
   }, [authLoaded, authUser, router]);
 
-  // Resume an in-flight job from localStorage. UGC has two kinds of
-  // job — image generation (kind='ugc-image') and animation (kind='ugc-animate').
+  // Resume in-flight jobs + rehydrate the story on mount.
   useEffect(() => {
     if (!authLoaded || !authUser) return;
+    const savedStory = loadStory(FEATURE);
+    if (savedStory && savedStory.scenes.length > 0) {
+      setStory(savedStory);
+      // If no active job mid-flight, land the user on the result/final
+      // screen of the stored story.
+      setImageUrl(savedStory.startingImageUrl || null);
+    }
     const saved = loadJob(FEATURE);
-    if (!saved || !saved.predictionId) return;
+    if (!saved || !saved.predictionId) {
+      if (savedStory && savedStory.scenes.length > 0) {
+        setStep(savedStory.combinedUrl ? 'final' : 'result');
+      }
+      return;
+    }
     if (saved.kind === 'ugc-image') {
-      setImageJob({
-        predictionId: saved.predictionId,
-        startedAt: saved.startedAt,
-      });
+      setImageJob({ predictionId: saved.predictionId, startedAt: saved.startedAt });
       setStep('gen-image');
     } else if (saved.kind === 'ugc-animate') {
       setJob({
         predictionId: saved.predictionId,
         downloadName: saved.downloadName || 'ugc.mp4',
         startedAt: saved.startedAt,
-        vendor: saved.vendor || 'replicate',
+        vendor: saved.vendor || 'kie',
+        sceneMeta: saved.sceneMeta || null,
       });
-      setImageUrl(saved.imageUrl || null);
+      if (saved.imageUrl) setImageUrl(saved.imageUrl);
       setStep('processing');
     }
   }, [authLoaded, authUser]);
@@ -107,24 +139,10 @@ export default function UgcPage() {
     if (authUser) fetchEntitlement();
   }, [authUser, fetchEntitlement]);
 
-  const totalSeconds =
-    animateMode === 'storyboard'
-      ? scenes.reduce((a, s) => a + s.duration, 0)
-      : duration;
-  const cost = costForDuration(totalSeconds);
-  const storyboardValid =
-    animateMode !== 'storyboard' ||
-    (scenes.length > 0 && scenes.every((s) => s.prompt.trim().length > 0));
-
-  const updateScene = (id, patch) => {
-    setScenes((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
-  };
-  const addScene = () => {
-    setScenes((prev) => (prev.length >= MAX_SCENES ? prev : [...prev, newScene()]));
-  };
-  const removeScene = (id) => {
-    setScenes((prev) => (prev.length <= 1 ? prev : prev.filter((s) => s.id !== id)));
-  };
+  const cost = costForDuration(duration);
+  const storyScenes = story?.scenes || [];
+  const latestScene = storyScenes[storyScenes.length - 1] || null;
+  const atSceneCap = storyScenes.length >= MAX_SCENES;
 
   const handleUpload = async (file) => {
     setUploadFile(file);
@@ -134,6 +152,12 @@ export default function UgcPage() {
       const compressed = await maybeCompressImage(file);
       const url = await uploadTempFile(compressed);
       setImageUrl(url);
+      // If this upload is a "New scene" image, use it as the start
+      // image for the next animation instead of replacing the story's
+      // anchor character.
+      if (nextSceneType === 'new') {
+        setPendingStartImage(url);
+      }
       setStep('animate');
     } catch (err) {
       setError(err.message || 'Upload failed.');
@@ -175,29 +199,26 @@ export default function UgcPage() {
     }
   };
 
+  // The image to use as the starting frame for the next animate call.
+  // pendingStartImage > imageUrl. After success we clear pendingStartImage.
+  const effectiveStartImage = pendingStartImage || imageUrl;
+
   const handleAnimate = async (e) => {
     e.preventDefault();
-    if (!imageUrl || submitting) return;
-    if (animateMode === 'storyboard' && !storyboardValid) {
-      setError('Each scene needs a prompt before generating.');
-      return;
-    }
+    if (!effectiveStartImage || submitting) return;
     setSubmitting(true);
     setError('');
     try {
-      const body =
-        animateMode === 'storyboard'
-          ? {
-              imageUrl,
-              mode,
-              audio,
-              scenes: scenes.map((s) => ({ prompt: s.prompt, duration: s.duration })),
-            }
-          : { imageUrl, script, duration, mode, audio };
       const r = await fetch('/api/ugc-animate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          imageUrl: effectiveStartImage,
+          script,
+          duration,
+          mode,
+          audio,
+        }),
       });
       const data = await r.json().catch(() => ({}));
       if (r.status === 402) {
@@ -207,16 +228,25 @@ export default function UgcPage() {
       }
       if (!r.ok) throw new Error(data.error || 'Failed to start.');
       const startedAt = Date.now();
+      const sceneMeta = {
+        startImageUrl: effectiveStartImage,
+        prompt: script,
+        duration,
+        mode,
+        audio,
+        type: nextSceneType,
+      };
       const newJob = {
         predictionId: data.predictionId,
         downloadName: 'ugc.mp4',
         startedAt,
         vendor: 'kie',
+        sceneMeta,
       };
       saveJob(FEATURE, {
         kind: 'ugc-animate',
         ...newJob,
-        imageUrl,
+        imageUrl: effectiveStartImage,
       });
       setJob(newJob);
       bumpEntitlement();
@@ -228,8 +258,119 @@ export default function UgcPage() {
     }
   };
 
-  const reset = () => {
+  const onSceneComplete = useCallback(
+    (resultUrl) => {
+      clearJob(FEATURE);
+      const meta = job?.sceneMeta || {
+        startImageUrl: effectiveStartImage,
+        prompt: script,
+        duration,
+        mode,
+        audio,
+        type: nextSceneType,
+      };
+      const scene = {
+        id: `scene_${Date.now()}`,
+        predictionId: job?.predictionId,
+        videoUrl: resultUrl,
+        ...meta,
+        startedAt: job?.startedAt || Date.now(),
+      };
+      const next = appendScene(FEATURE, scene, story?.startingImageUrl || imageUrl);
+      setStory(next);
+      setJob(null);
+      // Reset per-scene state so the next Extend/New opens a clean form.
+      setScript('');
+      setPendingStartImage(null);
+      setNextSceneType('initial');
+      setStep('result');
+    },
+    [job, effectiveStartImage, script, duration, mode, audio, nextSceneType, story, imageUrl]
+  );
+
+  const onSceneError = useCallback((msg) => {
     clearJob(FEATURE);
+    setError(msg);
+    setJob(null);
+    // If we already have at least one scene, return the user to the
+    // result panel so they can retry; otherwise back to the animate
+    // form.
+    setStep(storyScenes.length > 0 ? 'result' : 'animate');
+  }, [storyScenes.length]);
+
+  const handleExtend = async () => {
+    if (!latestScene?.videoUrl || atSceneCap) return;
+    setError('');
+    setStep('extending');
+    try {
+      const r = await fetch('/api/extract-last-frame', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ videoUrl: latestScene.videoUrl }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok || !data.frameUrl) {
+        throw new Error(data.error || 'Could not read the last frame of the previous scene.');
+      }
+      setPendingStartImage(data.frameUrl);
+      setNextSceneType('extend');
+      setScript('');
+      setStep('animate');
+    } catch (err) {
+      setError(err.message || 'Extend failed.');
+      setStep('result');
+    }
+  };
+
+  const handleNewScene = () => {
+    if (atSceneCap) return;
+    setError('');
+    setPendingStartImage(null);
+    setNextSceneType('new');
+    setUploadFile(null);
+    setImagePrompt('');
+    setStep('choose');
+  };
+
+  const handleCombine = async () => {
+    if (storyScenes.length < 2) return;
+    setError('');
+    setStep('combining');
+    try {
+      const r = await fetch('/api/concat-videos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          videoUrls: storyScenes.map((s) => s.videoUrl).filter(Boolean),
+        }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok || !data.combinedUrl) {
+        throw new Error(data.error || 'Could not combine scenes.');
+      }
+      const next = setCombinedUrl(FEATURE, data.combinedUrl);
+      if (next) setStory(next);
+      setStep('final');
+    } catch (err) {
+      setError(err.message || 'Combine failed.');
+      setStep('result');
+    }
+  };
+
+  const handleUndo = () => {
+    const next = popScene(FEATURE);
+    setStory(next || null);
+    if (!next || next.scenes.length === 0) {
+      resetStory();
+    } else {
+      setStep('result');
+    }
+  };
+
+  const resetStory = () => {
+    clearJob(FEATURE);
+    clearStory(FEATURE);
+    setStory(null);
     setStep('choose');
     setImageUrl(null);
     setImagePrompt('');
@@ -237,9 +378,11 @@ export default function UgcPage() {
     setScript('');
     setJob(null);
     setImageJob(null);
-    setAnimateMode('single');
-    setScenes([newScene()]);
     setAudio(true);
+    setMode('std');
+    setDuration(5);
+    setPendingStartImage(null);
+    setNextSceneType('initial');
     setError('');
   };
 
@@ -266,6 +409,7 @@ export default function UgcPage() {
               return;
             }
             setImageUrl(data.resultUrl);
+            if (nextSceneType === 'new') setPendingStartImage(data.resultUrl);
             setImageJob(null);
             fetchEntitlement();
             setStep('animate');
@@ -289,25 +433,310 @@ export default function UgcPage() {
           startedAt={job.startedAt}
           vendor={job.vendor || 'kie'}
           kind="video"
-          onComplete={(d) => {
-            clearJob(FEATURE);
-            setJob((p) => ({ ...p, resultUrl: d.resultUrl }));
-            setStep('result');
-          }}
-          onError={(msg) => {
-            clearJob(FEATURE);
-            setError(msg);
-            setStep('animate');
-          }}
+          onComplete={(d) => onSceneComplete(d.resultUrl)}
+          onError={onSceneError}
         />
       </main>
     );
   }
 
-  if (step === 'result' && job) {
+  if (step === 'extending') {
     return (
       <main className={styles.page}>
-        <Result job={{ ...job, videoFileName: 'character.png' }} onNewSwap={reset} />
+        <div className={styles.hero}>
+          <span className={styles.eyebrow}>◆ Extending</span>
+          <h1 className={styles.headline}>
+            Reading the <span className={styles.accent}>last frame</span>
+          </h1>
+          <p className={styles.subtitle}>
+            Grabbing the final frame from your last scene so the next one starts
+            exactly where that one ended. Usually under 15 seconds.
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  if (step === 'combining') {
+    return (
+      <main className={styles.page}>
+        <div className={styles.hero}>
+          <span className={styles.eyebrow}>◆ Combining</span>
+          <h1 className={styles.headline}>
+            Stitching your <span className={styles.accent}>scenes together</span>
+          </h1>
+          <p className={styles.subtitle}>
+            Concatenating {storyScenes.length} clips into one MP4. Usually under
+            30 seconds.
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  if (step === 'final' && story?.combinedUrl) {
+    return (
+      <main className={styles.page}>
+        <div className={styles.hero}>
+          <span className={styles.eyebrow}>◆ Done</span>
+          <h1 className={styles.headline}>
+            Your story is <span className={styles.accent}>ready</span>
+          </h1>
+          <p className={styles.subtitle}>
+            {storyScenes.length} scenes combined into one video.
+          </p>
+        </div>
+        <div style={{ maxWidth: 720, margin: '0 auto', padding: '0 16px' }}>
+          <video
+            src={story.combinedUrl}
+            controls
+            style={{ width: '100%', borderRadius: 12, background: '#000' }}
+          />
+          <div style={{ display: 'flex', gap: 12, marginTop: 20, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => triggerDownload(story.combinedUrl, 'haelabs-story.mp4')}
+              className={`${styles.submit} ${styles.submitReady}`}
+              style={{ flex: 1, minWidth: 200 }}
+            >
+              ↓ Download combined
+            </button>
+            <button
+              type="button"
+              onClick={() => setStep('result')}
+              style={{
+                flex: 1, minWidth: 160,
+                background: 'transparent',
+                border: '1px solid rgba(255,255,255,0.15)',
+                color: '#ddd',
+                padding: '10px 16px',
+                borderRadius: 6,
+                cursor: 'pointer',
+                fontSize: 13,
+                fontFamily: 'inherit',
+              }}
+            >
+              ← Back to scenes
+            </button>
+            <button
+              type="button"
+              onClick={resetStory}
+              style={{
+                flex: 1, minWidth: 160,
+                background: 'transparent',
+                border: '1px solid rgba(255,255,255,0.15)',
+                color: '#ddd',
+                padding: '10px 16px',
+                borderRadius: 6,
+                cursor: 'pointer',
+                fontSize: 13,
+                fontFamily: 'inherit',
+              }}
+            >
+              + New story
+            </button>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (step === 'result' && storyScenes.length > 0) {
+    const featured = latestScene;
+    return (
+      <main className={styles.page}>
+        <div className={styles.hero}>
+          <span className={styles.eyebrow}>
+            ◆ Scene {storyScenes.length} of {MAX_SCENES} &middot; saved
+          </span>
+          <h1 className={styles.headline}>
+            Your scene is <span className={styles.accent}>ready</span>
+          </h1>
+        </div>
+
+        <div style={{ maxWidth: 720, margin: '0 auto', padding: '0 16px' }}>
+          {/* Latest scene video */}
+          <video
+            key={featured?.id}
+            src={featured?.videoUrl}
+            controls
+            style={{ width: '100%', borderRadius: 12, background: '#000' }}
+          />
+
+          {/* Story rail */}
+          {storyScenes.length > 1 && (
+            <div
+              style={{
+                display: 'flex',
+                gap: 8,
+                marginTop: 16,
+                overflowX: 'auto',
+                padding: '4px 0',
+              }}
+            >
+              {storyScenes.map((s, i) => (
+                <div
+                  key={s.id}
+                  style={{
+                    flex: '0 0 auto',
+                    width: 120,
+                    border: `1px solid ${s.id === featured.id ? 'rgba(224,196,136,0.6)' : 'rgba(255,255,255,0.12)'}`,
+                    borderRadius: 8,
+                    overflow: 'hidden',
+                    background: '#0f0f11',
+                  }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={s.startImageUrl}
+                    alt={`Scene ${i + 1}`}
+                    style={{ width: '100%', height: 80, objectFit: 'cover', display: 'block' }}
+                  />
+                  <div style={{ padding: '6px 8px', fontSize: 11, color: '#bbb' }}>
+                    Scene {i + 1} · {s.duration}s {s.type === 'extend' ? '↪' : s.type === 'new' ? '+' : ''}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {error && <div className={styles.error} style={{ marginTop: 16 }}>{error}</div>}
+
+          <div
+            style={{
+              marginTop: 10,
+              padding: '10px 14px',
+              background: 'rgba(224, 196, 136, 0.06)',
+              border: '1px solid rgba(224, 196, 136, 0.25)',
+              borderRadius: 8,
+              fontSize: 12,
+              color: '#e8d9af',
+              lineHeight: 1.5,
+            }}
+          >
+            Each scene generates its own audio track. Voice and ambient sound
+            will change at the scene seam.
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 16 }}>
+            <button
+              type="button"
+              onClick={handleExtend}
+              disabled={atSceneCap}
+              className={`${styles.submit} ${styles.submitReady}`}
+              style={atSceneCap ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}
+            >
+              ↪ Extend scene
+            </button>
+            <button
+              type="button"
+              onClick={handleNewScene}
+              disabled={atSceneCap}
+              style={{
+                background: 'transparent',
+                border: '1px solid rgba(224, 196, 136, 0.4)',
+                color: '#e0c488',
+                padding: '12px 16px',
+                borderRadius: 6,
+                cursor: atSceneCap ? 'not-allowed' : 'pointer',
+                opacity: atSceneCap ? 0.4 : 1,
+                fontSize: 14,
+                fontFamily: 'inherit',
+                fontWeight: 500,
+              }}
+            >
+              + New scene
+            </button>
+          </div>
+
+          {atSceneCap && (
+            <div style={{ marginTop: 8, fontSize: 11, color: '#888', textAlign: 'center' }}>
+              5-scene cap reached. Combine or start a new story.
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: 10, marginTop: 12, flexWrap: 'wrap' }}>
+            {storyScenes.length >= 2 && (
+              <button
+                type="button"
+                onClick={handleCombine}
+                style={{
+                  flex: 1, minWidth: 180,
+                  background: 'transparent',
+                  border: '1px solid rgba(255,255,255,0.18)',
+                  color: '#ddd',
+                  padding: '10px 14px',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  fontFamily: 'inherit',
+                }}
+              >
+                ↓ Combine &amp; download ({storyScenes.length} scenes)
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => triggerDownload(featured.videoUrl, `scene-${storyScenes.length}.mp4`)}
+              style={{
+                flex: 1, minWidth: 140,
+                background: 'transparent',
+                border: '1px solid rgba(255,255,255,0.15)',
+                color: '#ddd',
+                padding: '10px 14px',
+                borderRadius: 6,
+                cursor: 'pointer',
+                fontSize: 13,
+                fontFamily: 'inherit',
+              }}
+            >
+              ↓ Scene {storyScenes.length}
+            </button>
+            {storyScenes.length > 0 && (
+              <button
+                type="button"
+                onClick={handleUndo}
+                style={{
+                  flex: 1, minWidth: 120,
+                  background: 'transparent',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  color: '#bbb',
+                  padding: '10px 14px',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  fontFamily: 'inherit',
+                }}
+              >
+                ⌫ Undo last
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={resetStory}
+              style={{
+                flex: 1, minWidth: 120,
+                background: 'transparent',
+                border: '1px solid rgba(255,255,255,0.15)',
+                color: '#bbb',
+                padding: '10px 14px',
+                borderRadius: 6,
+                cursor: 'pointer',
+                fontSize: 13,
+                fontFamily: 'inherit',
+              }}
+            >
+              + New story
+            </button>
+          </div>
+
+          {entitlement && entitlement.canSwap && (
+            <div className={styles.usage} style={{ marginTop: 16 }}>
+              {entitlement.creditsRemaining} credit
+              {entitlement.creditsRemaining === 1 ? '' : 's'} remaining
+            </div>
+          )}
+        </div>
       </main>
     );
   }
@@ -322,12 +751,12 @@ export default function UgcPage() {
         <Paywall
           entitlement={entitlement}
           onError={(msg) => setError(msg)}
-          onTrialStarted={() => { fetchEntitlement(); setStep('choose'); }}
+          onTrialStarted={() => { fetchEntitlement(); setStep(storyScenes.length > 0 ? 'result' : 'choose'); }}
         />
         <div style={{ textAlign: 'center', marginTop: 16 }}>
           <button
             type="button"
-            onClick={() => setStep(imageUrl ? 'animate' : 'choose')}
+            onClick={() => setStep(storyScenes.length > 0 ? 'result' : (imageUrl ? 'animate' : 'choose'))}
             style={{
               background: 'transparent',
               border: '1px solid rgba(255,255,255,0.15)',
@@ -359,13 +788,20 @@ export default function UgcPage() {
     textAlign: 'center',
   };
 
-  if (step === 'animate' && imageUrl) {
+  if (step === 'animate' && effectiveStartImage) {
+    const eyebrow =
+      nextSceneType === 'extend'
+        ? `◆ Scene ${storyScenes.length + 1} of ${MAX_SCENES} — continuing from last frame`
+        : nextSceneType === 'new'
+          ? `◆ Scene ${storyScenes.length + 1} of ${MAX_SCENES} — new image`
+          : '◆ Step 2 of 2 — Animate';
+
     return (
       <>
         <Head><title>UGC Creator — Haelabs</title></Head>
         <main className={styles.page}>
           <div className={styles.hero}>
-            <span className={styles.eyebrow}>◆ Step 2 of 2 — Animate</span>
+            <span className={styles.eyebrow}>{eyebrow}</span>
             <h1 className={styles.headline}>
               Tell your character what to <span className={styles.accent}>do and say</span>
             </h1>
@@ -381,185 +817,37 @@ export default function UgcPage() {
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={imageUrl}
-                alt="Character"
+                src={effectiveStartImage}
+                alt="Starting frame"
                 style={{ maxWidth: 320, maxHeight: 320, borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)' }}
               />
             </div>
 
-            <div className={styles.modeRow} role="radiogroup" aria-label="Animate mode">
-              <button
-                type="button"
-                role="radio"
-                aria-checked={animateMode === 'single'}
-                className={`${styles.modeBtn} ${animateMode === 'single' ? styles.modeBtnActive : ''}`}
-                onClick={() => setAnimateMode('single')}
-              >
-                <span className={styles.modeName}>Single scene</span>
-                <span className={styles.modeDetail}>One clip, 3&ndash;15 seconds</span>
-              </button>
-              <button
-                type="button"
-                role="radio"
-                aria-checked={animateMode === 'storyboard'}
-                className={`${styles.modeBtn} ${animateMode === 'storyboard' ? styles.modeBtnActive : ''}`}
-                onClick={() => setAnimateMode('storyboard')}
-              >
-                <span className={styles.modeName}>Storyboard</span>
-                <span className={styles.modeDetail}>Up to 5 scenes, continuous audio</span>
-              </button>
-            </div>
-
-            {animateMode === 'single' ? (
-              <>
-                <label className={styles.field} style={{ display: 'block', marginTop: 16 }}>
-                  <span className={styles.swapModeLabel}>Script / direction</span>
-                  <textarea
-                    value={script}
-                    onChange={(e) => setScript(e.target.value)}
-                    rows={4}
-                    placeholder='e.g. Smiles and waves at the camera, then says: "Hey everyone, today I am reviewing my favorite coffee."'
-                    style={{
-                      width: '100%',
-                      padding: 12,
-                      borderRadius: 8,
-                      background: '#0f0f11',
-                      color: '#eee',
-                      border: '1px solid rgba(255,255,255,0.12)',
-                      fontFamily: 'inherit',
-                      fontSize: 14,
-                      resize: 'vertical',
-                    }}
-                  />
-                  <div style={{ marginTop: 6, fontSize: 11, color: '#888' }}>
-                    Tip: put dialogue in &ldquo;quotes&rdquo; so the model lip-syncs it.
-                  </div>
-                </label>
-
-                <DurationSlider value={duration} onChange={setDuration} />
-              </>
-            ) : (
-              <div style={{ marginTop: 16 }}>
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: '#bbb',
-                    marginBottom: 12,
-                    lineHeight: 1.5,
-                  }}
-                >
-                  Chain up to 5 scenes into one continuous video. Your character carries
-                  through every shot, and audio flows across scenes.
-                </div>
-                {scenes.map((scene, idx) => (
-                  <div
-                    key={scene.id}
-                    style={{
-                      border: '1px solid rgba(255,255,255,0.12)',
-                      borderRadius: 10,
-                      padding: 14,
-                      marginBottom: 12,
-                      background: 'rgba(255,255,255,0.02)',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
-                      <span
-                        style={{
-                          fontSize: 12,
-                          color: '#e0c488',
-                          letterSpacing: '0.08em',
-                          textTransform: 'uppercase',
-                          flex: 1,
-                        }}
-                      >
-                        Scene {idx + 1}
-                      </span>
-                      {scenes.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeScene(scene.id)}
-                          aria-label={`Remove scene ${idx + 1}`}
-                          style={{
-                            background: 'transparent',
-                            border: '1px solid rgba(255,255,255,0.15)',
-                            color: '#bbb',
-                            borderRadius: 6,
-                            padding: '4px 10px',
-                            fontSize: 11,
-                            cursor: 'pointer',
-                            fontFamily: 'inherit',
-                          }}
-                        >
-                          Remove
-                        </button>
-                      )}
-                    </div>
-                    <textarea
-                      value={scene.prompt}
-                      onChange={(e) => updateScene(scene.id, { prompt: e.target.value })}
-                      rows={3}
-                      placeholder={
-                        idx === 0
-                          ? 'e.g. Walks into a sunlit kitchen and says: "Today I\'m showing you my morning routine."'
-                          : 'What happens next? Describe the action and any dialogue in "quotes".'
-                      }
-                      style={{
-                        width: '100%',
-                        padding: 10,
-                        borderRadius: 8,
-                        background: '#0f0f11',
-                        color: '#eee',
-                        border: '1px solid rgba(255,255,255,0.12)',
-                        fontFamily: 'inherit',
-                        fontSize: 14,
-                        resize: 'vertical',
-                      }}
-                    />
-                    <DurationSlider
-                      value={scene.duration}
-                      onChange={(v) => updateScene(scene.id, { duration: v })}
-                      label={`Scene ${idx + 1} length`}
-                      min={1}
-                      max={12}
-                      ariaLabel={`Scene ${idx + 1} duration`}
-                    />
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={addScene}
-                  disabled={scenes.length >= MAX_SCENES}
-                  style={{
-                    width: '100%',
-                    padding: 10,
-                    background: 'transparent',
-                    border: '1px dashed rgba(224, 196, 136, 0.4)',
-                    color: '#e0c488',
-                    borderRadius: 8,
-                    cursor: scenes.length >= MAX_SCENES ? 'not-allowed' : 'pointer',
-                    opacity: scenes.length >= MAX_SCENES ? 0.4 : 1,
-                    fontFamily: 'inherit',
-                    fontSize: 13,
-                  }}
-                >
-                  + Add scene {scenes.length >= MAX_SCENES ? '(max 5)' : ''}
-                </button>
-                <div
-                  style={{
-                    marginTop: 12,
-                    padding: '10px 14px',
-                    background: 'rgba(224, 196, 136, 0.06)',
-                    border: '1px solid rgba(224, 196, 136, 0.25)',
-                    borderRadius: 8,
-                    fontSize: 12,
-                    color: '#e8d9af',
-                    textAlign: 'center',
-                  }}
-                >
-                  Total {totalSeconds}s · {cost} credit{cost === 1 ? '' : 's'}
-                </div>
+            <label className={styles.field} style={{ display: 'block' }}>
+              <span className={styles.swapModeLabel}>Script / direction</span>
+              <textarea
+                value={script}
+                onChange={(e) => setScript(e.target.value)}
+                rows={4}
+                placeholder='e.g. Smiles and waves at the camera, then says: "Hey everyone, today I am reviewing my favorite coffee."'
+                style={{
+                  width: '100%',
+                  padding: 12,
+                  borderRadius: 8,
+                  background: '#0f0f11',
+                  color: '#eee',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  fontFamily: 'inherit',
+                  fontSize: 14,
+                  resize: 'vertical',
+                }}
+              />
+              <div style={{ marginTop: 6, fontSize: 11, color: '#888' }}>
+                Tip: put dialogue in &ldquo;quotes&rdquo; so the model lip-syncs it.
               </div>
-            )}
+            </label>
+
+            <DurationSlider value={duration} onChange={setDuration} />
 
             <div className={styles.swapModeLabel} style={{ marginTop: 16 }}>Audio</div>
             <div className={styles.modeRow} role="radiogroup" aria-label="Audio">
@@ -595,7 +883,7 @@ export default function UgcPage() {
                 onClick={() => setMode('std')}
               >
                 <span className={styles.modeName}>Standard</span>
-                <span className={styles.modeDetail}>720p · faster</span>
+                <span className={styles.modeDetail}>720p &middot; faster</span>
               </button>
               <button
                 type="button"
@@ -605,7 +893,7 @@ export default function UgcPage() {
                 onClick={() => setMode('pro')}
               >
                 <span className={styles.modeName}>Pro</span>
-                <span className={styles.modeDetail}>1080p · sharper</span>
+                <span className={styles.modeDetail}>1080p &middot; sharper</span>
               </button>
             </div>
 
@@ -622,7 +910,17 @@ export default function UgcPage() {
 
             <button
               type="button"
-              onClick={() => { setImageUrl(null); setStep('choose'); }}
+              onClick={() => {
+                if (storyScenes.length > 0) {
+                  // Back to story instead of losing state.
+                  setPendingStartImage(null);
+                  setNextSceneType('initial');
+                  setStep('result');
+                } else {
+                  setImageUrl(null);
+                  setStep('choose');
+                }
+              }}
               style={{
                 marginTop: 12,
                 background: 'transparent',
@@ -636,7 +934,7 @@ export default function UgcPage() {
                 width: '100%',
               }}
             >
-              ← Use a different image
+              ← {storyScenes.length > 0 ? 'Back to scenes' : 'Use a different image'}
             </button>
 
             {entitlement && entitlement.canSwap && (
@@ -652,12 +950,16 @@ export default function UgcPage() {
   }
 
   // step === 'choose'
+  const chooseEyebrow =
+    nextSceneType === 'new'
+      ? `◆ Scene ${storyScenes.length + 1} of ${MAX_SCENES} — pick a new image`
+      : '◆ Step 1 of 2 — Pick your character';
   return (
     <>
       <Head><title>UGC Creator — Haelabs</title></Head>
       <main className={styles.page}>
         <div className={styles.hero}>
-          <span className={styles.eyebrow}>◆ Step 1 of 2 — Pick your character</span>
+          <span className={styles.eyebrow}>{chooseEyebrow}</span>
           <h1 className={styles.headline}>
             Make a <span className={styles.accent}>UGC clip</span> in two steps
           </h1>
@@ -731,6 +1033,27 @@ export default function UgcPage() {
               </button>
             </div>
           </div>
+
+          {nextSceneType === 'new' && storyScenes.length > 0 && (
+            <div style={{ textAlign: 'center', marginTop: 12 }}>
+              <button
+                type="button"
+                onClick={() => setStep('result')}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  color: '#bbb',
+                  padding: '8px 16px',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  fontFamily: 'inherit',
+                }}
+              >
+                ← Back to scenes
+              </button>
+            </div>
+          )}
 
           {error && <div className={styles.error}>{error}</div>}
 
