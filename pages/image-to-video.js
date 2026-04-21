@@ -7,7 +7,9 @@ import UploadZone from '../components/UploadZone';
 import Processing from '../components/Processing';
 import Result from '../components/Result';
 import Paywall from '../components/Paywall';
-import DurationSlider, { costForDuration } from '../components/DurationSlider';
+function costForDuration(d) {
+  return Math.max(1, Math.ceil(Number(d) / 3));
+}
 import { uploadTempFile } from '../lib/uploader';
 import { getBrowserSupabase } from '../lib/supabase';
 import { bumpEntitlement } from '../lib/entitlementBus';
@@ -25,8 +27,7 @@ export default function ImageToVideoPage() {
   const [imageFile, setImageFile] = useState(null);
   const [prompt, setPrompt] = useState('');
   const [mode, setMode] = useState('std');
-  const [duration, setDuration] = useState(5);
-  const [audio, setAudio] = useState(true);
+  const [duration, setDuration] = useState(6);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [job, setJob] = useState(null);
@@ -96,7 +97,7 @@ export default function ImageToVideoPage() {
       const res = await fetch('/api/image-to-video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageUrl, prompt, mode, duration, audio }),
+        body: JSON.stringify({ imageUrl, prompt, mode, duration }),
       });
       const data = await res.json().catch(() => ({}));
       if (res.status === 402) {
@@ -239,9 +240,9 @@ export default function ImageToVideoPage() {
             textAlign: 'center',
           }}
         >
-          ◆ Powered by Kling v3 — <strong>3&ndash;15 seconds</strong>, with optional native
-          audio (dialogue, lip-sync, sound effects). 1 credit per 3s of video.
-          Each clip takes <strong>2&ndash;4 minutes</strong> and auto-downloads when ready.
+          ◆ Powered by Google Veo 3.1 — pick <strong>4, 6, or 8 seconds</strong>. Native audio
+          (dialogue, lip-sync, sound effects) is included on every clip. 1 credit
+          per 3 seconds of video. Generation takes <strong>2&ndash;4 minutes</strong>.
         </div>
 
         <form className={styles.shell} onSubmit={handleSubmit}>
@@ -279,31 +280,35 @@ export default function ImageToVideoPage() {
             />
           </label>
 
-          <DurationSlider value={duration} onChange={setDuration} />
-
-          <div className={styles.swapModeLabel} style={{ marginTop: 16 }}>Audio</div>
-          <div className={styles.modeRow} role="radiogroup" aria-label="Audio">
-            <button
-              type="button"
-              role="radio"
-              aria-checked={audio === true}
-              className={`${styles.modeBtn} ${audio === true ? styles.modeBtnActive : ''}`}
-              onClick={() => setAudio(true)}
-            >
-              <span className={styles.modeName}>With audio</span>
-              <span className={styles.modeDetail}>Dialogue, lip-sync, ambient SFX</span>
-            </button>
-            <button
-              type="button"
-              role="radio"
-              aria-checked={audio === false}
-              className={`${styles.modeBtn} ${audio === false ? styles.modeBtnActive : ''}`}
-              onClick={() => setAudio(false)}
-            >
-              <span className={styles.modeName}>Silent</span>
-              <span className={styles.modeDetail}>Video only · no audio track</span>
-            </button>
+          <div className={styles.swapModeLabel} style={{ marginTop: 16 }}>Length</div>
+          <div className={styles.modeRow} role="radiogroup" aria-label="Duration">
+            {[4, 6, 8].map((d) => {
+              const c = costForDuration(d);
+              const disabled = mode === 'pro' && d !== 8;
+              return (
+                <button
+                  key={d}
+                  type="button"
+                  role="radio"
+                  aria-checked={duration === d}
+                  disabled={disabled}
+                  className={`${styles.modeBtn} ${duration === d ? styles.modeBtnActive : ''}`}
+                  onClick={() => setDuration(d)}
+                  style={disabled ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}
+                >
+                  <span className={styles.modeName}>{d} seconds</span>
+                  <span className={styles.modeDetail}>
+                    {c} credit{c === 1 ? '' : 's'}
+                  </span>
+                </button>
+              );
+            })}
           </div>
+          {mode === 'pro' && (
+            <div style={{ fontSize: 11, color: '#888', marginTop: 6 }}>
+              Pro tier is 1080p &mdash; locked to 8 seconds.
+            </div>
+          )}
 
           <div className={styles.swapModeLabel} style={{ marginTop: 16 }}>Quality</div>
           <div className={styles.modeRow} role="radiogroup" aria-label="Quality">
@@ -322,7 +327,7 @@ export default function ImageToVideoPage() {
               role="radio"
               aria-checked={mode === 'pro'}
               className={`${styles.modeBtn} ${mode === 'pro' ? styles.modeBtnActive : ''}`}
-              onClick={() => setMode('pro')}
+              onClick={() => { setMode('pro'); setDuration(8); }}
             >
               <span className={styles.modeName}>Pro</span>
               <span className={styles.modeDetail}>1080p · sharper</span>

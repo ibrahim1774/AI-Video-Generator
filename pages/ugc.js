@@ -7,7 +7,6 @@ import UploadZone from '../components/UploadZone';
 import Processing from '../components/Processing';
 import Result from '../components/Result';
 import Paywall from '../components/Paywall';
-import DurationSlider, { costForDuration } from '../components/DurationSlider';
 import { uploadTempFile } from '../lib/uploader';
 import { getBrowserSupabase } from '../lib/supabase';
 import { bumpEntitlement } from '../lib/entitlementBus';
@@ -15,12 +14,9 @@ import { saveJob, loadJob, clearJob } from '../lib/jobPersist';
 import { maybeCompressImage } from '../lib/imageCompress';
 
 const FEATURE = 'ugc';
-const MAX_SCENES = 6;
 
-let sceneIdSeed = 1;
-function newScene(durationDefault = 5) {
-  sceneIdSeed += 1;
-  return { id: sceneIdSeed, prompt: '', duration: durationDefault };
+function costForDuration(d) {
+  return Math.max(1, Math.ceil(Number(d) / 3));
 }
 
 export default function UgcPage() {
@@ -37,11 +33,8 @@ export default function UgcPage() {
   const [imageJob, setImageJob] = useState(null); // { predictionId, startedAt }
 
   const [script, setScript] = useState('');
-  const [duration, setDuration] = useState(5); // 3–15
+  const [duration, setDuration] = useState(6); // 4 | 6 | 8
   const [mode, setMode] = useState('std');
-  const [audio, setAudio] = useState(true);
-  const [animateMode, setAnimateMode] = useState('single'); // 'single' | 'storyboard'
-  const [scenes, setScenes] = useState(() => [newScene()]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [job, setJob] = useState(null);
@@ -106,24 +99,7 @@ export default function UgcPage() {
     if (authUser) fetchEntitlement();
   }, [authUser, fetchEntitlement]);
 
-  const totalSeconds =
-    animateMode === 'storyboard'
-      ? scenes.reduce((a, s) => a + s.duration, 0)
-      : duration;
-  const cost = costForDuration(totalSeconds);
-  const storyboardValid =
-    animateMode !== 'storyboard' ||
-    (scenes.length > 0 && scenes.every((s) => s.prompt.trim().length > 0));
-
-  const updateScene = (id, patch) => {
-    setScenes((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
-  };
-  const addScene = () => {
-    setScenes((prev) => (prev.length >= MAX_SCENES ? prev : [...prev, newScene()]));
-  };
-  const removeScene = (id) => {
-    setScenes((prev) => (prev.length <= 1 ? prev : prev.filter((s) => s.id !== id)));
-  };
+  const cost = costForDuration(duration);
 
   const handleUpload = async (file) => {
     setUploadFile(file);
@@ -177,26 +153,13 @@ export default function UgcPage() {
   const handleAnimate = async (e) => {
     e.preventDefault();
     if (!imageUrl || submitting) return;
-    if (animateMode === 'storyboard' && !storyboardValid) {
-      setError('Each scene needs a prompt before generating.');
-      return;
-    }
     setSubmitting(true);
     setError('');
     try {
-      const body =
-        animateMode === 'storyboard'
-          ? {
-              imageUrl,
-              mode,
-              audio,
-              scenes: scenes.map((s) => ({ prompt: s.prompt, duration: s.duration })),
-            }
-          : { imageUrl, script, duration, mode, audio };
       const r = await fetch('/api/ugc-animate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ imageUrl, script, duration, mode }),
       });
       const data = await r.json().catch(() => ({}));
       if (r.status === 402) {
@@ -235,9 +198,6 @@ export default function UgcPage() {
     setScript('');
     setJob(null);
     setImageJob(null);
-    setAnimateMode('single');
-    setScenes([newScene()]);
-    setAudio(true);
     setError('');
   };
 
@@ -369,9 +329,9 @@ export default function UgcPage() {
           </div>
 
           <div style={calloutStyle}>
-            ◆ Powered by Kling v3 — <strong>3&ndash;15 seconds</strong> per scene with
-            optional native audio. <strong>1 credit per 3 seconds</strong> of video.
-            Generation takes 2&ndash;4 minutes.
+            ◆ Powered by Google Veo 3.1 — pick <strong>4, 6, or 8 seconds</strong>. Native
+            audio (dialogue, lip-sync, sound effects) is included on every clip.
+            <strong> 1 credit per 3 seconds</strong> of video. Generation takes 2&ndash;4 minutes.
           </div>
 
           <form className={styles.shell} onSubmit={handleAnimate}>
@@ -384,201 +344,59 @@ export default function UgcPage() {
               />
             </div>
 
-            <div className={styles.modeRow} role="radiogroup" aria-label="Animate mode">
-              <button
-                type="button"
-                role="radio"
-                aria-checked={animateMode === 'single'}
-                className={`${styles.modeBtn} ${animateMode === 'single' ? styles.modeBtnActive : ''}`}
-                onClick={() => setAnimateMode('single')}
-              >
-                <span className={styles.modeName}>Single scene</span>
-                <span className={styles.modeDetail}>One clip, 3&ndash;15 seconds</span>
-              </button>
-              <button
-                type="button"
-                role="radio"
-                aria-checked={animateMode === 'storyboard'}
-                className={`${styles.modeBtn} ${animateMode === 'storyboard' ? styles.modeBtnActive : ''}`}
-                onClick={() => setAnimateMode('storyboard')}
-              >
-                <span className={styles.modeName}>Storyboard</span>
-                <span className={styles.modeDetail}>Up to 6 scenes, continuous audio</span>
-              </button>
-            </div>
+            <label className={styles.field} style={{ display: 'block', marginTop: 16 }}>
+              <span className={styles.swapModeLabel}>Script / direction</span>
+              <textarea
+                value={script}
+                onChange={(e) => setScript(e.target.value)}
+                rows={4}
+                placeholder='e.g. Smiles and waves at the camera, then says: "Hey everyone, today I am reviewing my favorite coffee."'
+                style={{
+                  width: '100%',
+                  padding: 12,
+                  borderRadius: 8,
+                  background: '#0f0f11',
+                  color: '#eee',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  fontFamily: 'inherit',
+                  fontSize: 14,
+                  resize: 'vertical',
+                }}
+              />
+              <div style={{ marginTop: 6, fontSize: 11, color: '#888' }}>
+                Tip: put dialogue in &ldquo;quotes&rdquo; so the model lip-syncs it.
+              </div>
+            </label>
 
-            {animateMode === 'single' ? (
-              <>
-                <label className={styles.field} style={{ display: 'block', marginTop: 16 }}>
-                  <span className={styles.swapModeLabel}>Script / direction</span>
-                  <textarea
-                    value={script}
-                    onChange={(e) => setScript(e.target.value)}
-                    rows={4}
-                    placeholder='e.g. Smiles and waves at the camera, then says: "Hey everyone, today I am reviewing my favorite coffee."'
-                    style={{
-                      width: '100%',
-                      padding: 12,
-                      borderRadius: 8,
-                      background: '#0f0f11',
-                      color: '#eee',
-                      border: '1px solid rgba(255,255,255,0.12)',
-                      fontFamily: 'inherit',
-                      fontSize: 14,
-                      resize: 'vertical',
-                    }}
-                  />
-                  <div style={{ marginTop: 6, fontSize: 11, color: '#888' }}>
-                    Tip: put dialogue in &ldquo;quotes&rdquo; so the model lip-syncs it.
-                  </div>
-                </label>
-
-                <DurationSlider value={duration} onChange={setDuration} />
-              </>
-            ) : (
-              <div style={{ marginTop: 16 }}>
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: '#bbb',
-                    marginBottom: 12,
-                    lineHeight: 1.5,
-                  }}
-                >
-                  Chain up to 6 scenes into one continuous video. Your character carries
-                  through every shot, and audio flows across scenes.
-                </div>
-                {scenes.map((scene, idx) => (
-                  <div
-                    key={scene.id}
-                    style={{
-                      border: '1px solid rgba(255,255,255,0.12)',
-                      borderRadius: 10,
-                      padding: 14,
-                      marginBottom: 12,
-                      background: 'rgba(255,255,255,0.02)',
-                    }}
+            <div className={styles.swapModeLabel} style={{ marginTop: 16 }}>Length</div>
+            <div className={styles.modeRow} role="radiogroup" aria-label="Duration">
+              {[4, 6, 8].map((d) => {
+                const c = costForDuration(d);
+                const disabled = mode === 'pro' && d !== 8;
+                return (
+                  <button
+                    key={d}
+                    type="button"
+                    role="radio"
+                    aria-checked={duration === d}
+                    disabled={disabled}
+                    className={`${styles.modeBtn} ${duration === d ? styles.modeBtnActive : ''}`}
+                    onClick={() => setDuration(d)}
+                    style={disabled ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
-                      <span
-                        style={{
-                          fontSize: 12,
-                          color: '#e0c488',
-                          letterSpacing: '0.08em',
-                          textTransform: 'uppercase',
-                          flex: 1,
-                        }}
-                      >
-                        Scene {idx + 1}
-                      </span>
-                      {scenes.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeScene(scene.id)}
-                          aria-label={`Remove scene ${idx + 1}`}
-                          style={{
-                            background: 'transparent',
-                            border: '1px solid rgba(255,255,255,0.15)',
-                            color: '#bbb',
-                            borderRadius: 6,
-                            padding: '4px 10px',
-                            fontSize: 11,
-                            cursor: 'pointer',
-                            fontFamily: 'inherit',
-                          }}
-                        >
-                          Remove
-                        </button>
-                      )}
-                    </div>
-                    <textarea
-                      value={scene.prompt}
-                      onChange={(e) => updateScene(scene.id, { prompt: e.target.value })}
-                      rows={3}
-                      placeholder={
-                        idx === 0
-                          ? 'e.g. Walks into a sunlit kitchen and says: "Today I\'m showing you my morning routine."'
-                          : 'What happens next? Describe the action and any dialogue in "quotes".'
-                      }
-                      style={{
-                        width: '100%',
-                        padding: 10,
-                        borderRadius: 8,
-                        background: '#0f0f11',
-                        color: '#eee',
-                        border: '1px solid rgba(255,255,255,0.12)',
-                        fontFamily: 'inherit',
-                        fontSize: 14,
-                        resize: 'vertical',
-                      }}
-                    />
-                    <DurationSlider
-                      value={scene.duration}
-                      onChange={(v) => updateScene(scene.id, { duration: v })}
-                      label={`Scene ${idx + 1} length`}
-                      ariaLabel={`Scene ${idx + 1} duration`}
-                    />
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={addScene}
-                  disabled={scenes.length >= MAX_SCENES}
-                  style={{
-                    width: '100%',
-                    padding: 10,
-                    background: 'transparent',
-                    border: '1px dashed rgba(224, 196, 136, 0.4)',
-                    color: '#e0c488',
-                    borderRadius: 8,
-                    cursor: scenes.length >= MAX_SCENES ? 'not-allowed' : 'pointer',
-                    opacity: scenes.length >= MAX_SCENES ? 0.4 : 1,
-                    fontFamily: 'inherit',
-                    fontSize: 13,
-                  }}
-                >
-                  + Add scene {scenes.length >= MAX_SCENES ? '(max 6)' : ''}
-                </button>
-                <div
-                  style={{
-                    marginTop: 12,
-                    padding: '10px 14px',
-                    background: 'rgba(224, 196, 136, 0.06)',
-                    border: '1px solid rgba(224, 196, 136, 0.25)',
-                    borderRadius: 8,
-                    fontSize: 12,
-                    color: '#e8d9af',
-                    textAlign: 'center',
-                  }}
-                >
-                  Total {totalSeconds}s · {cost} credit{cost === 1 ? '' : 's'}
-                </div>
+                    <span className={styles.modeName}>{d} seconds</span>
+                    <span className={styles.modeDetail}>
+                      {c} credit{c === 1 ? '' : 's'}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            {mode === 'pro' && (
+              <div style={{ fontSize: 11, color: '#888', marginTop: 6 }}>
+                Pro tier is 1080p &mdash; locked to 8 seconds.
               </div>
             )}
-
-            <div className={styles.swapModeLabel} style={{ marginTop: 16 }}>Audio</div>
-            <div className={styles.modeRow} role="radiogroup" aria-label="Audio">
-              <button
-                type="button"
-                role="radio"
-                aria-checked={audio === true}
-                className={`${styles.modeBtn} ${audio === true ? styles.modeBtnActive : ''}`}
-                onClick={() => setAudio(true)}
-              >
-                <span className={styles.modeName}>With audio</span>
-                <span className={styles.modeDetail}>Dialogue, lip-sync, ambient SFX</span>
-              </button>
-              <button
-                type="button"
-                role="radio"
-                aria-checked={audio === false}
-                className={`${styles.modeBtn} ${audio === false ? styles.modeBtnActive : ''}`}
-                onClick={() => setAudio(false)}
-              >
-                <span className={styles.modeName}>Silent</span>
-                <span className={styles.modeDetail}>Video only · no audio track</span>
-              </button>
-            </div>
 
             <div className={styles.swapModeLabel} style={{ marginTop: 16 }}>Quality</div>
             <div className={styles.modeRow} role="radiogroup" aria-label="Quality">
@@ -597,7 +415,7 @@ export default function UgcPage() {
                 role="radio"
                 aria-checked={mode === 'pro'}
                 className={`${styles.modeBtn} ${mode === 'pro' ? styles.modeBtnActive : ''}`}
-                onClick={() => setMode('pro')}
+                onClick={() => { setMode('pro'); setDuration(8); }}
               >
                 <span className={styles.modeName}>Pro</span>
                 <span className={styles.modeDetail}>1080p · sharper</span>
