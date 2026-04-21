@@ -7,6 +7,7 @@ import UploadZone from '../components/UploadZone';
 import Processing from '../components/Processing';
 import Result from '../components/Result';
 import Paywall from '../components/Paywall';
+import DurationSlider, { costForDuration } from '../components/DurationSlider';
 import { uploadTempFile } from '../lib/uploader';
 import { getBrowserSupabase } from '../lib/supabase';
 import { bumpEntitlement } from '../lib/entitlementBus';
@@ -25,6 +26,7 @@ export default function ImageToVideoPage() {
   const [prompt, setPrompt] = useState('');
   const [mode, setMode] = useState('std');
   const [duration, setDuration] = useState(5);
+  const [audio, setAudio] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [job, setJob] = useState(null);
@@ -94,7 +96,7 @@ export default function ImageToVideoPage() {
       const res = await fetch('/api/image-to-video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageUrl, prompt, mode, duration }),
+        body: JSON.stringify({ imageUrl, prompt, mode, duration, audio }),
       });
       const data = await res.json().catch(() => ({}));
       if (res.status === 402) {
@@ -237,8 +239,9 @@ export default function ImageToVideoPage() {
             textAlign: 'center',
           }}
         >
-          ◆ This uses our most expensive AI model. Each clip takes{' '}
-          <strong>2&ndash;4 minutes</strong> and auto-downloads when ready.
+          ◆ Powered by Kling v3 — <strong>3&ndash;15 seconds</strong>, with optional native
+          audio (dialogue, lip-sync, sound effects). 1 credit per 3s of video.
+          Each clip takes <strong>2&ndash;4 minutes</strong> and auto-downloads when ready.
         </div>
 
         <form className={styles.shell} onSubmit={handleSubmit}>
@@ -261,7 +264,7 @@ export default function ImageToVideoPage() {
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               rows={3}
-              placeholder="e.g. The woman smiles and slowly turns her head toward the camera."
+              placeholder='e.g. The woman smiles and turns to the camera. She says: "Hi, welcome back to my channel."'
               style={{
                 width: '100%',
                 padding: 12,
@@ -276,27 +279,29 @@ export default function ImageToVideoPage() {
             />
           </label>
 
-          <div className={styles.swapModeLabel} style={{ marginTop: 16 }}>Length</div>
-          <div className={styles.modeRow} role="radiogroup" aria-label="Duration">
+          <DurationSlider value={duration} onChange={setDuration} />
+
+          <div className={styles.swapModeLabel} style={{ marginTop: 16 }}>Audio</div>
+          <div className={styles.modeRow} role="radiogroup" aria-label="Audio">
             <button
               type="button"
               role="radio"
-              aria-checked={duration === 5}
-              className={`${styles.modeBtn} ${duration === 5 ? styles.modeBtnActive : ''}`}
-              onClick={() => setDuration(5)}
+              aria-checked={audio === true}
+              className={`${styles.modeBtn} ${audio === true ? styles.modeBtnActive : ''}`}
+              onClick={() => setAudio(true)}
             >
-              <span className={styles.modeName}>5 seconds</span>
-              <span className={styles.modeDetail}>1 credit</span>
+              <span className={styles.modeName}>With audio</span>
+              <span className={styles.modeDetail}>Dialogue, lip-sync, ambient SFX</span>
             </button>
             <button
               type="button"
               role="radio"
-              aria-checked={duration === 10}
-              className={`${styles.modeBtn} ${duration === 10 ? styles.modeBtnActive : ''}`}
-              onClick={() => setDuration(10)}
+              aria-checked={audio === false}
+              className={`${styles.modeBtn} ${audio === false ? styles.modeBtnActive : ''}`}
+              onClick={() => setAudio(false)}
             >
-              <span className={styles.modeName}>10 seconds</span>
-              <span className={styles.modeDetail}>1 credit</span>
+              <span className={styles.modeName}>Silent</span>
+              <span className={styles.modeDetail}>Video only · no audio track</span>
             </button>
           </div>
 
@@ -332,7 +337,9 @@ export default function ImageToVideoPage() {
             disabled={!canSubmit}
           >
             {submitting && <span className={styles.spinner} aria-hidden="true" />}
-            {submitting ? 'Starting…' : 'Generate (1 credit)'}
+            {submitting
+              ? 'Starting…'
+              : `Generate (${costForDuration(duration)} credit${costForDuration(duration) === 1 ? '' : 's'})`}
           </button>
 
           {entitlement && entitlement.canSwap && (

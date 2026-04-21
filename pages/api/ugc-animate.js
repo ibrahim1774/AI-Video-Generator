@@ -1,4 +1,7 @@
-import { createImageToVideoPrediction, ALLOWED_DURATIONS } from '../../lib/replicate';
+import {
+  createVideoV3Prediction,
+  createStoryboardPrediction,
+} from '../../lib/replicate';
 import { getUserFromRequest } from '../../lib/supabaseServer';
 import { getEntitlement, reserveCredits, refundCredits } from '../../lib/entitlement';
 
@@ -12,11 +15,15 @@ function isHttpUrl(value) {
   }
 }
 
-// Cost rule: 1 credit per 3 seconds, rounded up. The model outputs
-// only 5 or 10 second videos, so the practical mapping is
-// 5s = 2 credits and 10s = 4 credits.
-function costFor(duration) {
-  return Math.ceil(duration / 3);
+function clampDuration(d) {
+  const n = Math.round(Number(d));
+  if (!Number.isFinite(n)) return 5;
+  return Math.max(3, Math.min(15, n));
+}
+
+// 1 credit per 3 seconds of video, rounded up. Minimum 1.
+function costForSeconds(total) {
+  return Math.max(1, Math.ceil(total / 3));
 }
 
 export default async function handler(req, res) {
@@ -28,13 +35,32 @@ export default async function handler(req, res) {
   const session = await getUserFromRequest(req, res);
   if (!session) return res.status(401).json({ error: 'Authentication required.' });
 
-  const { imageUrl, script, mode, duration } = req.body || {};
+  const { imageUrl, script, mode, duration, audio, scenes } = req.body || {};
   if (!isHttpUrl(imageUrl)) {
     return res.status(400).json({ error: 'imageUrl is required (http/https URL).' });
   }
-  const dur = ALLOWED_DURATIONS.includes(Number(duration)) ? Number(duration) : 5;
+
+  const isStoryboard = Array.isArray(scenes) && scenes.length > 0;
   const q = mode === 'pro' ? 'pro' : 'std';
-  const cost = costFor(dur);
+  const wantAudio = audio !== false;
+
+  let totalSeconds;
+  let normalizedScenes = null;
+
+  if (isStoryboard) {
+    if (scenes.length > 6) {
+      return res.status(400).json({ error: 'Storyboard supports up to 6 scenes.' });
+    }
+    normalizedScenes = scenes.map((s) => ({
+      prompt: typeof s?.prompt === 'string' ? s.prompt : '',
+      duration: clampDuration(s?.duration),
+    }));
+    totalSeconds = normalizedScenes.reduce((a, s) => a + s.duration, 0);
+  } else {
+    totalSeconds = clampDuration(duration);
+  }
+
+  const cost = costForSeconds(totalSeconds);
 
   let entitlement;
   try {
@@ -58,12 +84,23 @@ export default async function handler(req, res) {
   }
 
   try {
-    const prediction = await createImageToVideoPrediction({
-      imageUrl,
-      prompt: script || '',
-      duration: dur,
-      mode: q,
-    });
+    let prediction;
+    if (isStoryboard) {
+      prediction = await createStoryboardPrediction({
+        imageUrl,
+        scenes: normalizedScenes,
+        mode: q,
+        audio: wantAudio,
+      });
+    } else {
+      prediction = await createVideoV3Prediction({
+        imageUrl,
+        prompt: script || '',
+        duration: totalSeconds,
+        mode: q,
+        audio: wantAudio,
+      });
+    }
     return res.status(200).json({
       predictionId: prediction.id,
       status: prediction.status,

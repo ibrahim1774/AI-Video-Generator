@@ -1,4 +1,4 @@
-import { createImageToVideoPrediction, ALLOWED_DURATIONS } from '../../lib/replicate';
+import { createVideoV3Prediction } from '../../lib/replicate';
 import { getUserFromRequest } from '../../lib/supabaseServer';
 import { getEntitlement, reserveCredits, refundCredits } from '../../lib/entitlement';
 
@@ -12,7 +12,17 @@ function isHttpUrl(value) {
   }
 }
 
-const COST = 1;
+function clampDuration(d) {
+  const n = Math.round(Number(d));
+  if (!Number.isFinite(n)) return 5;
+  return Math.max(3, Math.min(15, n));
+}
+
+// Same rule as UGC: 1 credit per 3 seconds, rounded up. Replaces the
+// old flat 1-credit pricing now that v3 supports 3–15s + audio.
+function costForSeconds(total) {
+  return Math.max(1, Math.ceil(total / 3));
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -30,41 +40,45 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: `Entitlement check failed: ${err.message}` });
   }
 
-  const { imageUrl, prompt, mode, duration } = req.body || {};
+  const { imageUrl, prompt, mode, duration, audio } = req.body || {};
   if (!isHttpUrl(imageUrl)) {
     return res.status(400).json({ error: 'imageUrl is required (http/https URL).' });
   }
-  const dur = ALLOWED_DURATIONS.includes(Number(duration)) ? Number(duration) : 5;
+  const dur = clampDuration(duration);
   const q = mode === 'pro' ? 'pro' : 'std';
+  const wantAudio = audio !== false;
+  const cost = costForSeconds(dur);
 
   try {
-    await reserveCredits(entitlement, COST);
+    await reserveCredits(entitlement, cost);
   } catch (err) {
     if (err.code === 'INSUFFICIENT' || err.code === 'NO_PLAN') {
       return res.status(402).json({
         error: 'paywall',
         tier: entitlement.tier,
         creditsRemaining: err.remaining ?? entitlement.creditsRemaining ?? 0,
-        cost: COST,
+        cost,
       });
     }
     return res.status(500).json({ error: err.message });
   }
 
   try {
-    const prediction = await createImageToVideoPrediction({
+    const prediction = await createVideoV3Prediction({
       imageUrl,
       prompt: prompt || '',
       duration: dur,
       mode: q,
+      audio: wantAudio,
     });
     return res.status(200).json({
       predictionId: prediction.id,
       status: prediction.status,
+      cost,
     });
   } catch (err) {
     console.error('[image-to-video] failed; refunding credit', err);
-    try { await refundCredits(entitlement, COST); } catch {}
+    try { await refundCredits(entitlement, cost); } catch {}
     return res.status(500).json({ error: err.message || 'Image-to-video failed.' });
   }
 }
