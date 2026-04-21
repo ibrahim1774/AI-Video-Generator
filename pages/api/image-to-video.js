@@ -1,4 +1,4 @@
-import { createVeoLitePrediction, VEO_ALLOWED_DURATIONS } from '../../lib/replicate';
+import { createKlingSinglePrediction } from '../../lib/kie';
 import { getUserFromRequest } from '../../lib/supabaseServer';
 import { getEntitlement, reserveCredits, refundCredits } from '../../lib/entitlement';
 
@@ -12,13 +12,10 @@ function isHttpUrl(value) {
   }
 }
 
-function snapDuration(d) {
+function clampDuration(d) {
   const n = Math.round(Number(d));
-  if (VEO_ALLOWED_DURATIONS.includes(n)) return n;
-  if (!Number.isFinite(n)) return 6;
-  if (n <= 4) return 4;
-  if (n <= 6) return 6;
-  return 8;
+  if (!Number.isFinite(n)) return 5;
+  return Math.max(3, Math.min(15, n));
 }
 
 // 1 credit per 3 seconds of video, rounded up. Min 1.
@@ -42,13 +39,13 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: `Entitlement check failed: ${err.message}` });
   }
 
-  const { imageUrl, prompt, mode, duration } = req.body || {};
+  const { imageUrl, prompt, mode, duration, audio } = req.body || {};
   if (!isHttpUrl(imageUrl)) {
     return res.status(400).json({ error: 'imageUrl is required (http/https URL).' });
   }
   const q = mode === 'pro' ? 'pro' : 'std';
-  // Pro tier (1080p) on Veo 3.1 Lite is locked to 8s output.
-  const dur = q === 'pro' ? 8 : snapDuration(duration);
+  const dur = clampDuration(duration);
+  const wantAudio = audio !== false;
   const cost = costForSeconds(dur);
 
   try {
@@ -66,15 +63,17 @@ export default async function handler(req, res) {
   }
 
   try {
-    const prediction = await createVeoLitePrediction({
+    const prediction = await createKlingSinglePrediction({
       imageUrl,
       prompt: prompt || '',
       duration: dur,
       mode: q,
+      audio: wantAudio,
     });
     return res.status(200).json({
       predictionId: prediction.id,
-      status: prediction.status,
+      vendor: 'kie',
+      status: 'queued',
       cost,
     });
   } catch (err) {

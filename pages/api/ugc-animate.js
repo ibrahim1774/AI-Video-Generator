@@ -1,4 +1,7 @@
-import { createVeoLitePrediction, VEO_ALLOWED_DURATIONS } from '../../lib/replicate';
+import {
+  createKlingSinglePrediction,
+  createKlingStoryboardPrediction,
+} from '../../lib/kie';
 import { getUserFromRequest } from '../../lib/supabaseServer';
 import { getEntitlement, reserveCredits, refundCredits } from '../../lib/entitlement';
 
@@ -12,13 +15,16 @@ function isHttpUrl(value) {
   }
 }
 
-function snapDuration(d) {
+function clampDuration(d) {
   const n = Math.round(Number(d));
-  if (VEO_ALLOWED_DURATIONS.includes(n)) return n;
-  if (!Number.isFinite(n)) return 6;
-  if (n <= 4) return 4;
-  if (n <= 6) return 6;
-  return 8;
+  if (!Number.isFinite(n)) return 5;
+  return Math.max(3, Math.min(15, n));
+}
+
+function clampSceneDuration(d) {
+  const n = Math.round(Number(d));
+  if (!Number.isFinite(n)) return 3;
+  return Math.max(1, Math.min(12, n));
 }
 
 // 1 credit per 3 seconds of video, rounded up. Min 1.
@@ -35,14 +41,31 @@ export default async function handler(req, res) {
   const session = await getUserFromRequest(req, res);
   if (!session) return res.status(401).json({ error: 'Authentication required.' });
 
-  const { imageUrl, script, mode, duration } = req.body || {};
+  const { imageUrl, script, mode, duration, audio, scenes } = req.body || {};
   if (!isHttpUrl(imageUrl)) {
     return res.status(400).json({ error: 'imageUrl is required (http/https URL).' });
   }
 
+  const isStoryboard = Array.isArray(scenes) && scenes.length > 0;
   const q = mode === 'pro' ? 'pro' : 'std';
-  const dur = q === 'pro' ? 8 : snapDuration(duration);
-  const cost = costForSeconds(dur);
+  const wantAudio = audio !== false;
+
+  let totalSeconds;
+  let normalizedScenes = null;
+  if (isStoryboard) {
+    if (scenes.length > 5) {
+      return res.status(400).json({ error: 'Storyboard supports up to 5 scenes.' });
+    }
+    normalizedScenes = scenes.map((s) => ({
+      prompt: typeof s?.prompt === 'string' ? s.prompt : '',
+      duration: clampSceneDuration(s?.duration),
+    }));
+    totalSeconds = normalizedScenes.reduce((a, s) => a + s.duration, 0);
+  } else {
+    totalSeconds = clampDuration(duration);
+  }
+
+  const cost = costForSeconds(totalSeconds);
 
   let entitlement;
   try {
@@ -66,15 +89,27 @@ export default async function handler(req, res) {
   }
 
   try {
-    const prediction = await createVeoLitePrediction({
-      imageUrl,
-      prompt: script || '',
-      duration: dur,
-      mode: q,
-    });
+    let prediction;
+    if (isStoryboard) {
+      prediction = await createKlingStoryboardPrediction({
+        imageUrl,
+        scenes: normalizedScenes,
+        mode: q,
+        audio: wantAudio,
+      });
+    } else {
+      prediction = await createKlingSinglePrediction({
+        imageUrl,
+        prompt: script || '',
+        duration: totalSeconds,
+        mode: q,
+        audio: wantAudio,
+      });
+    }
     return res.status(200).json({
       predictionId: prediction.id,
-      status: prediction.status,
+      vendor: 'kie',
+      status: 'queued',
       cost,
     });
   } catch (err) {
