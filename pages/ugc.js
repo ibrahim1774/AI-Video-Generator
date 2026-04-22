@@ -443,27 +443,9 @@ export default function UgcPage() {
             </p>
           </div>
 
-          <div
-            style={{
-              maxWidth: 920,
-              margin: '24px auto 16px',
-              padding: '0 16px',
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-              gap: 16,
-            }}
-          >
+          <div className="ugc-landing-grid">
             {LANDING_VIDEOS.map((v) => (
-              <div
-                key={v.id}
-                style={{
-                  borderRadius: 14,
-                  overflow: 'hidden',
-                  border: '1px solid rgba(224, 196, 136, 0.18)',
-                  background: '#0c0c0e',
-                  boxShadow: '0 8px 28px rgba(0,0,0,0.45)',
-                }}
-              >
+              <div key={v.id} className="ugc-landing-card">
                 <wistia-player
                   media-id={v.id}
                   aspect={String(v.aspect)}
@@ -475,6 +457,37 @@ export default function UgcPage() {
               </div>
             ))}
           </div>
+
+          <style jsx global>{`
+            .ugc-landing-grid {
+              max-width: 720px;
+              margin: 24px auto 16px;
+              padding: 0 16px;
+              display: grid;
+              grid-template-columns: 1fr;
+              gap: 16px;
+              box-sizing: border-box;
+            }
+            @media (min-width: 640px) {
+              .ugc-landing-grid {
+                grid-template-columns: 1fr 1fr;
+              }
+            }
+            .ugc-landing-card {
+              border-radius: 14px;
+              overflow: hidden;
+              border: 1px solid rgba(224, 196, 136, 0.18);
+              background: #0c0c0e;
+              box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+              width: 100%;
+              min-width: 0;
+            }
+            .ugc-landing-card wistia-player {
+              display: block;
+              width: 100%;
+              max-width: 100%;
+            }
+          `}</style>
 
           <div style={{ textAlign: 'center', marginTop: 28 }}>
             <button
