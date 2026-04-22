@@ -527,7 +527,7 @@ export default function Home() {
             className={`${styles.submit} ${styles.submitReady}`}
             style={{ maxWidth: 320, margin: '0 auto' }}
           >
-            Sign up to start →
+            Get Started for Free.
           </button>
           <p className={styles.subtitle} style={{ marginTop: 16, fontSize: 13 }}>
             Already have an account?{' '}
@@ -582,7 +582,7 @@ export default function Home() {
             className={`${styles.submit} ${styles.submitReady}`}
             style={{ maxWidth: 320, margin: '0 auto' }}
           >
-            Sign up to start →
+            Get Started for Free.
           </button>
         </div>
 
