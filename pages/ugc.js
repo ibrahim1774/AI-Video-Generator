@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import Head from 'next/head';
+import Script from 'next/script';
 import { useRouter } from 'next/router';
 
 import styles from '../styles/Home.module.css';
 import UploadZone from '../components/UploadZone';
 import Processing from '../components/Processing';
 import Paywall from '../components/Paywall';
+import AuthModal from '../components/AuthModal';
 import DurationSlider, { costForDuration } from '../components/DurationSlider';
 import { uploadTempFile } from '../lib/uploader';
 import { getBrowserSupabase } from '../lib/supabase';
@@ -23,6 +25,15 @@ import { maybeCompressImage } from '../lib/imageCompress';
 
 const FEATURE = 'ugc';
 const MAX_SCENES = 5;
+
+// Wistia media IDs and aspect ratios for the four marketing demos
+// shown to anonymous visitors on /ugc. All are vertical (9:16-ish).
+const LANDING_VIDEOS = [
+  { id: '85rijpwaq2', aspect: 0.5625 },
+  { id: 'lnndmek1c5', aspect: 0.5598755832037325 },
+  { id: 'lsno8w6lt4', aspect: 0.5598755832037325 },
+  { id: 'nx8bxwnoiw', aspect: 0.5581395348837209 },
+];
 
 function triggerDownload(url, filename) {
   try {
@@ -70,6 +81,9 @@ export default function UgcPage() {
   const [nextSceneType, setNextSceneType] = useState('initial');
   const [pendingStartImage, setPendingStartImage] = useState(null);
 
+  // Sign-up modal for the anonymous landing CTA.
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     const supabase = getBrowserSupabase();
@@ -87,9 +101,7 @@ export default function UgcPage() {
     return () => listener?.subscription?.unsubscribe?.();
   }, []);
 
-  useEffect(() => {
-    if (authLoaded && !authUser) router.replace('/sign-in');
-  }, [authLoaded, authUser, router]);
+  // /ugc is now a public landing for anon visitors. No redirect.
 
   // Resume in-flight jobs + rehydrate the story on mount.
   useEffect(() => {
@@ -386,10 +398,139 @@ export default function UgcPage() {
     setError('');
   };
 
-  if (!authLoaded || !authUser) {
+  if (!authLoaded) {
     return (
       <main className={styles.page}>
         <div className={styles.hero}><p className={styles.subtitle}>Loading…</p></div>
+      </main>
+    );
+  }
+
+  // Anonymous landing: 4 vertical Wistia demos in a 2x2 grid + signup CTA.
+  // After signup, auth state changes and this branch falls through to
+  // the paywall gate (or creator if the user already has a plan).
+  if (!authUser) {
+    return (
+      <>
+        <Head>
+          <title>UGC Creator — Haelabs</title>
+          <meta
+            name="description"
+            content="Generate cinematic UGC clips from a single character image. Powered by the latest video models — voiceover, lip-sync, and ambient sound included."
+          />
+        </Head>
+        <Script src="https://fast.wistia.com/player.js" strategy="afterInteractive" async />
+        {LANDING_VIDEOS.map((v) => (
+          <Script
+            key={v.id}
+            src={`https://fast.wistia.com/embed/${v.id}.js`}
+            strategy="afterInteractive"
+            type="module"
+            async
+          />
+        ))}
+
+        <main className={styles.page}>
+          <div className={styles.hero}>
+            <span className={styles.eyebrow}>◆ AI UGC Creator</span>
+            <h1 className={styles.headline}>
+              Make a <span className={styles.accent}>scroll-stopping UGC clip</span> from one photo
+            </h1>
+            <p className={styles.subtitle}>
+              Upload (or generate) a character, write your script, and Haelabs
+              produces a cinematic clip with native audio, lip-sync, and ambient
+              sound. Chain scenes together to build longer stories.
+            </p>
+          </div>
+
+          <div
+            style={{
+              maxWidth: 920,
+              margin: '24px auto 16px',
+              padding: '0 16px',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              gap: 16,
+            }}
+          >
+            {LANDING_VIDEOS.map((v) => (
+              <div
+                key={v.id}
+                style={{
+                  borderRadius: 14,
+                  overflow: 'hidden',
+                  border: '1px solid rgba(224, 196, 136, 0.18)',
+                  background: '#0c0c0e',
+                  boxShadow: '0 8px 28px rgba(0,0,0,0.45)',
+                }}
+              >
+                <wistia-player
+                  media-id={v.id}
+                  aspect={String(v.aspect)}
+                  autoplay="true"
+                  muted="true"
+                  silentautoplay="true"
+                  playsinline="true"
+                />
+              </div>
+            ))}
+          </div>
+
+          <div style={{ textAlign: 'center', marginTop: 28 }}>
+            <button
+              type="button"
+              onClick={() => setAuthModalOpen(true)}
+              className={`${styles.submit} ${styles.submitReady}`}
+              style={{ maxWidth: 320, margin: '0 auto' }}
+            >
+              Sign up to start →
+            </button>
+            <p className={styles.subtitle} style={{ marginTop: 16, fontSize: 13 }}>
+              Already have an account?{' '}
+              <a href="/sign-in?redirect=/ugc" style={{ color: '#e0c488' }}>
+                Sign in
+              </a>
+            </p>
+          </div>
+        </main>
+
+        <AuthModal
+          open={authModalOpen}
+          onClose={() => setAuthModalOpen(false)}
+          initialMode="signup"
+        />
+      </>
+    );
+  }
+
+  // Pre-creator paywall gate. Authed but no plan/credits — must pick a
+  // plan before they can enter the creator. In-flight or completed
+  // work passes through (processing/extending/combining/final/result)
+  // because credit was already reserved or spent.
+  const gateableSteps = new Set(['choose', 'animate', 'gen-image']);
+  if (
+    entitlement &&
+    !entitlement.canSwap &&
+    gateableSteps.has(step) &&
+    storyScenes.length === 0
+  ) {
+    return (
+      <main className={styles.page}>
+        <div className={styles.hero}>
+          <span className={styles.eyebrow}>◆ Pick a plan</span>
+          <h1 className={styles.headline}>
+            One step to <span className={styles.accent}>start creating</span>
+          </h1>
+          <p className={styles.subtitle}>
+            Pick a plan to unlock the UGC creator. Cancel anytime.
+          </p>
+        </div>
+        {error && <div className={styles.error}>{error}</div>}
+        <Paywall
+          entitlement={entitlement}
+          onError={(msg) => setError(msg)}
+          onTrialStarted={() => { fetchEntitlement(); }}
+        />
       </main>
     );
   }

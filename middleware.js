@@ -59,7 +59,10 @@ export async function middleware(req) {
   }
 
   // Protected pages \u2014 redirect anonymous users to sign-in.
-  const protectedPages = ['/dashboard', '/image-to-video', '/ugc'];
+  // /ugc is intentionally NOT here: it's a marketing landing for
+  // anonymous visitors and the creator for authed users, gated inline
+  // in pages/ugc.js (mirrors how / works for face-swap).
+  const protectedPages = ['/dashboard', '/image-to-video'];
   if (protectedPages.some((p) => pathname.startsWith(p)) && !user) {
     const redirect = req.nextUrl.clone();
     redirect.pathname = '/sign-in';
@@ -73,7 +76,6 @@ export const config = {
   matcher: [
     '/dashboard/:path*',
     '/image-to-video/:path*',
-    '/ugc/:path*',
     '/api/character-frame/:path*',
     '/api/swap/:path*',
     '/api/status/:path*',
