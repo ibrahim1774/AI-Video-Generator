@@ -33,6 +33,8 @@ const LANDING_VIDEOS = [
   { id: 'lnndmek1c5', aspect: 0.5598755832037325 },
   { id: 'lsno8w6lt4', aspect: 0.5598755832037325 },
   { id: 'nx8bxwnoiw', aspect: 0.5581395348837209 },
+  { id: 'clq4ug7ln2', aspect: 0.5642633228840125 },
+  { id: 'p68dfq0341', aspect: 0.5642633228840125 },
 ];
 
 function triggerDownload(url, filename) {
@@ -454,6 +456,13 @@ export default function UgcPage() {
                     muted="true"
                     silentautoplay="true"
                     playsinline="true"
+                    controls-visible-on-load="false"
+                    playbar="false"
+                    playbutton="false"
+                    volume-control="false"
+                    fullscreen-button="false"
+                    settings-control="false"
+                    endvideobehavior="loop"
                   />
                 </div>
               ))}

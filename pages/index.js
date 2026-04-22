@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Script from 'next/script';
 
 import styles from '../styles/Home.module.css';
 import UploadZone from '../components/UploadZone';
@@ -17,6 +18,17 @@ import { saveJob, loadJob, clearJob } from '../lib/jobPersist';
 import { maybeCompressImage } from '../lib/imageCompress';
 
 const FEATURE = 'face-swap';
+
+// Same demo videos shown on the /ugc anonymous landing. Duplicated
+// inline (not imported) so this file remains self-contained.
+const HOME_LANDING_VIDEOS = [
+  { id: '85rijpwaq2', aspect: 0.5625 },
+  { id: 'lnndmek1c5', aspect: 0.5598755832037325 },
+  { id: 'lsno8w6lt4', aspect: 0.5598755832037325 },
+  { id: 'nx8bxwnoiw', aspect: 0.5581395348837209 },
+  { id: 'clq4ug7ln2', aspect: 0.5642633228840125 },
+  { id: 'p68dfq0341', aspect: 0.5642633228840125 },
+];
 
 export default function Home() {
   const [step, setStep] = useState('upload');
@@ -524,6 +536,118 @@ export default function Home() {
             </a>
           </p>
         </div>
+
+        <Script src="https://fast.wistia.com/player.js" strategy="afterInteractive" async />
+        {HOME_LANDING_VIDEOS.map((v) => (
+          <Script
+            key={v.id}
+            src={`https://fast.wistia.com/embed/${v.id}.js`}
+            strategy="afterInteractive"
+            type="module"
+            async
+          />
+        ))}
+
+        <div className="home-carousel-wrap">
+          <div className="home-carousel" role="region" aria-label="UGC examples">
+            {HOME_LANDING_VIDEOS.map((v) => (
+              <div key={v.id} className="home-carousel-card">
+                <wistia-player
+                  media-id={v.id}
+                  aspect={String(v.aspect)}
+                  autoplay="true"
+                  muted="true"
+                  silentautoplay="true"
+                  playsinline="true"
+                  controls-visible-on-load="false"
+                  playbar="false"
+                  playbutton="false"
+                  volume-control="false"
+                  fullscreen-button="false"
+                  settings-control="false"
+                  endvideobehavior="loop"
+                />
+              </div>
+            ))}
+          </div>
+          <div className="home-carousel-hint" aria-hidden="true">
+            ← swipe to see more →
+          </div>
+        </div>
+
+        <div style={{ textAlign: 'center', marginTop: 12, marginBottom: 40 }}>
+          <button
+            type="button"
+            onClick={() => setAuthModalOpen(true)}
+            className={`${styles.submit} ${styles.submitReady}`}
+            style={{ maxWidth: 320, margin: '0 auto' }}
+          >
+            Sign up to start →
+          </button>
+        </div>
+
+        <style jsx global>{`
+          .home-carousel-wrap {
+            max-width: 100%;
+            margin: 28px auto 8px;
+            padding: 0;
+            position: relative;
+          }
+          .home-carousel {
+            display: flex;
+            gap: 14px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            scroll-padding: 0 16px;
+            padding: 4px 16px 18px;
+            scrollbar-width: none;
+          }
+          .home-carousel::-webkit-scrollbar {
+            display: none;
+          }
+          .home-carousel-card {
+            flex: 0 0 auto;
+            width: clamp(220px, 78vw, 320px);
+            border-radius: 14px;
+            overflow: hidden;
+            border: 1px solid rgba(224, 196, 136, 0.18);
+            background: #0c0c0e;
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+            scroll-snap-align: center;
+            min-width: 0;
+          }
+          .home-carousel-card wistia-player {
+            display: block;
+            width: 100%;
+            max-width: 100%;
+          }
+          .home-carousel-hint {
+            text-align: center;
+            font-family: var(--font-mono, ui-monospace, monospace);
+            font-size: 10px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.35);
+            margin-top: 4px;
+          }
+          @media (min-width: 720px) {
+            .home-carousel {
+              justify-content: center;
+              scroll-padding: 0;
+              padding: 4px 32px 18px;
+            }
+            .home-carousel-card {
+              width: 260px;
+              scroll-snap-align: center;
+            }
+            .home-carousel-hint {
+              display: none;
+            }
+          }
+        `}</style>
+
         <AuthModal
           open={authModalOpen}
           onClose={() => setAuthModalOpen(false)}
