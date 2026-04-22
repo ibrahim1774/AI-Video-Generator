@@ -443,49 +443,87 @@ export default function UgcPage() {
             </p>
           </div>
 
-          <div className="ugc-landing-grid">
-            {LANDING_VIDEOS.map((v) => (
-              <div key={v.id} className="ugc-landing-card">
-                <wistia-player
-                  media-id={v.id}
-                  aspect={String(v.aspect)}
-                  autoplay="true"
-                  muted="true"
-                  silentautoplay="true"
-                  playsinline="true"
-                />
-              </div>
-            ))}
+          <div className="ugc-carousel-wrap">
+            <div className="ugc-carousel" role="region" aria-label="UGC examples">
+              {LANDING_VIDEOS.map((v) => (
+                <div key={v.id} className="ugc-carousel-card">
+                  <wistia-player
+                    media-id={v.id}
+                    aspect={String(v.aspect)}
+                    autoplay="true"
+                    muted="true"
+                    silentautoplay="true"
+                    playsinline="true"
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="ugc-carousel-hint" aria-hidden="true">
+              ← swipe to see more →
+            </div>
           </div>
 
           <style jsx global>{`
-            .ugc-landing-grid {
-              max-width: 720px;
-              margin: 24px auto 16px;
-              padding: 0 16px;
-              display: grid;
-              grid-template-columns: 1fr;
-              gap: 16px;
-              box-sizing: border-box;
+            .ugc-carousel-wrap {
+              max-width: 100%;
+              margin: 24px auto 8px;
+              padding: 0;
+              position: relative;
             }
-            @media (min-width: 640px) {
-              .ugc-landing-grid {
-                grid-template-columns: 1fr 1fr;
-              }
+            .ugc-carousel {
+              display: flex;
+              gap: 14px;
+              overflow-x: auto;
+              overflow-y: hidden;
+              scroll-snap-type: x mandatory;
+              -webkit-overflow-scrolling: touch;
+              scroll-padding: 0 16px;
+              padding: 4px 16px 18px;
+              scrollbar-width: none;
             }
-            .ugc-landing-card {
+            .ugc-carousel::-webkit-scrollbar {
+              display: none;
+            }
+            .ugc-carousel-card {
+              flex: 0 0 auto;
+              /* Mobile: ~80% viewport so the next card peeks at the edge,
+                 hinting at swipeability. */
+              width: clamp(220px, 78vw, 320px);
               border-radius: 14px;
               overflow: hidden;
               border: 1px solid rgba(224, 196, 136, 0.18);
               background: #0c0c0e;
               box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
-              width: 100%;
+              scroll-snap-align: center;
               min-width: 0;
             }
-            .ugc-landing-card wistia-player {
+            .ugc-carousel-card wistia-player {
               display: block;
               width: 100%;
               max-width: 100%;
+            }
+            .ugc-carousel-hint {
+              text-align: center;
+              font-family: var(--font-mono, ui-monospace, monospace);
+              font-size: 10px;
+              letter-spacing: 0.18em;
+              text-transform: uppercase;
+              color: rgba(255, 255, 255, 0.35);
+              margin-top: 4px;
+            }
+            @media (min-width: 720px) {
+              .ugc-carousel {
+                justify-content: center;
+                scroll-padding: 0;
+                padding: 4px 32px 18px;
+              }
+              .ugc-carousel-card {
+                width: 260px;
+                scroll-snap-align: center;
+              }
+              .ugc-carousel-hint {
+                display: none;
+              }
             }
           `}</style>
 
@@ -496,7 +534,7 @@ export default function UgcPage() {
               className={`${styles.submit} ${styles.submitReady}`}
               style={{ maxWidth: 320, margin: '0 auto' }}
             >
-              Sign up to start →
+              Sign up &amp; get started →
             </button>
             <p className={styles.subtitle} style={{ marginTop: 16, fontSize: 13 }}>
               Already have an account?{' '}
