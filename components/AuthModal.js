@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import styles from './AuthModal.module.css';
 import { getBrowserSupabase } from '../lib/supabase';
 
-export default function AuthModal({ open, onClose, initialMode = 'signup' }) {
+export default function AuthModal({ open, onClose, initialMode = 'signup', redirectTo = '/' }) {
   const [mode, setMode] = useState(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -36,7 +36,7 @@ export default function AuthModal({ open, onClose, initialMode = 'signup' }) {
         // Fire-and-forget IP record so the trial gate has data on file.
         fetch('/api/signup-ip', { method: 'POST' }).catch(() => {});
         if (typeof onClose === 'function') onClose();
-        router.push('/');
+        router.push(redirectTo);
       } catch (err) {
         if (!cancelled) {
           setError(err.message || 'Google sign-in failed.');
@@ -76,12 +76,14 @@ export default function AuthModal({ open, onClose, initialMode = 'signup' }) {
       cancelled = true;
       if (pollId) clearInterval(pollId);
     };
-  }, [open, mode, googleClientId, router, onClose]);
+  }, [open, mode, googleClientId, router, onClose, redirectTo]);
 
   if (!open) return null;
 
-  const redirectTo =
-    typeof window !== 'undefined' ? `${window.location.origin}/api/auth/callback` : undefined;
+  const emailCallbackUrl =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(redirectTo)}`
+      : undefined;
 
   const handleEmail = async (e) => {
     e.preventDefault();
@@ -95,7 +97,7 @@ export default function AuthModal({ open, onClose, initialMode = 'signup' }) {
         const { error: err } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: redirectTo },
+          options: { emailRedirectTo: emailCallbackUrl },
         });
         if (err) throw err;
       } else {
@@ -104,7 +106,7 @@ export default function AuthModal({ open, onClose, initialMode = 'signup' }) {
       }
       fetch('/api/signup-ip', { method: 'POST' }).catch(() => {});
       if (typeof onClose === 'function') onClose();
-      router.push('/');
+      router.push(redirectTo);
     } catch (err) {
       setError(err.message || 'Authentication failed.');
     } finally {

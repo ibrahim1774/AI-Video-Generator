@@ -511,6 +511,7 @@ export default function UgcPage() {
           open={authModalOpen}
           onClose={() => setAuthModalOpen(false)}
           initialMode="signup"
+          redirectTo="/ugc"
         />
       </>
     );
