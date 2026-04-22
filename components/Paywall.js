@@ -66,7 +66,14 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
   const isSubscriber =
     entitlement && (entitlement.tier === 'monthly' || entitlement.tier === 'yearly');
   const isTrialing = entitlement && entitlement.status === 'trialing';
-  const showTopups = isSubscriber && !isTrialing;
+  // Top-ups available to anyone with a Stripe customer (subscriber or
+  // trialing). Trialing users who burn their 2 free credits can buy a
+  // pack to keep going without ending the trial.
+  const showTopups = isSubscriber;
+  // Plan cards: show for new visitors (no sub) AND for trialing users
+  // who may want to convert before their trial ends. Hidden for fully
+  // active paid subscribers.
+  const showPlans = !isSubscriber || isTrialing;
 
   return (
     <section className={styles.wrap}>
@@ -74,12 +81,18 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
         <header className={styles.header}>
           <span className={styles.kicker}>◆ Pricing</span>
           <h2 className={styles.title}>
-            {showTopups ? 'Need more credits?' : 'Start with a 1-day free trial'}
+            {isTrialing
+              ? 'Add more credits or upgrade'
+              : showTopups
+                ? 'Need more credits?'
+                : 'Start with a 1-day free trial'}
           </h2>
           <p className={styles.subtitle}>
-            {showTopups
-              ? 'Buy a top-up pack. Credits never expire and stack on your plan.'
-              : "Both plans start with 24 hours free. Cancel anytime during the trial and you won't be charged."}
+            {isTrialing
+              ? 'Buy a top-up pack to keep going during your trial, or convert to a monthly/yearly plan below.'
+              : showTopups
+                ? 'Buy a top-up pack. Credits never expire and stack on your plan.'
+                : 'Both plans start with 2 free credits — enough for one full UGC clip — for 24 hours. Cancel during the trial and you won\'t be charged.'}
           </p>
           <p className={styles.subtitle} style={{ marginTop: 8, fontSize: 13, opacity: 0.85 }}>
             Each generation uses our most powerful (and pricey) AI models &mdash;
@@ -107,10 +120,10 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
           </div>
         )}
 
-        {!showTopups && (
+        {showPlans && (
           <div className={styles.tiersTwo}>
             <article className={styles.tier}>
-              <div className={styles.tierBadge}>1-day free trial</div>
+              {!isTrialing && <div className={styles.tierBadge}>2 credits free for 24h</div>}
               <div className={styles.tierHead}>
                 <h3 className={styles.tierName}>Monthly</h3>
                 <div className={styles.price}>
@@ -120,7 +133,7 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
               </div>
               <ul className={styles.feats}>
                 <li>10 video generations / month</li>
-                <li>1 day free, then $9/month</li>
+                {isTrialing ? <li>Convert anytime to lock in $9/mo</li> : <li>2 free credits for 24h, then $9/month</li>}
                 <li>Cancel anytime</li>
                 <li>720p or 1080p, no watermark</li>
               </ul>
@@ -130,12 +143,18 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
                 onClick={() => startCheckout('monthly')}
                 disabled={busy !== null}
               >
-                {busy === 'monthly' ? 'Redirecting…' : 'Start free trial → $9/mo'}
+                {busy === 'monthly'
+                  ? 'Redirecting…'
+                  : isTrialing
+                    ? 'Convert to monthly → $9/mo'
+                    : 'Start free trial → $9/mo'}
               </button>
             </article>
 
             <article className={`${styles.tier} ${styles.tierFeatured}`}>
-              <div className={styles.tierBadge}>Best value · 1-day free trial</div>
+              <div className={styles.tierBadge}>
+                {isTrialing ? 'Best value' : 'Best value · 2 credits free for 24h'}
+              </div>
               <div className={styles.tierHead}>
                 <h3 className={styles.tierName}>Yearly</h3>
                 <div className={styles.price}>
@@ -145,7 +164,7 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
               </div>
               <ul className={styles.feats}>
                 <li>50 video generations / year</li>
-                <li>1 day free, then $89/year</li>
+                {isTrialing ? <li>Convert anytime to lock in $89/yr</li> : <li>2 free credits for 24h, then $89/year</li>}
                 <li>~18% cheaper than monthly</li>
                 <li>One charge, cancel anytime</li>
               </ul>
@@ -155,7 +174,11 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
                 onClick={() => startCheckout('yearly')}
                 disabled={busy !== null}
               >
-                {busy === 'yearly' ? 'Redirecting…' : 'Start free trial → $89/yr'}
+                {busy === 'yearly'
+                  ? 'Redirecting…'
+                  : isTrialing
+                    ? 'Convert to yearly → $89/yr'
+                    : 'Start free trial → $89/yr'}
               </button>
             </article>
           </div>
