@@ -1,4 +1,5 @@
 import { getUserFromRequest, getSupabaseAdmin } from '../../lib/supabaseServer';
+import { sendCapiEvent } from '../../lib/meta';
 
 function clientIp(req) {
   const xff = req.headers['x-forwarded-for'];
@@ -62,5 +63,27 @@ export default async function handler(req, res) {
     console.warn('[signup-ip] upsert failed', upErr.message);
   }
 
-  return res.status(200).json({ recorded: true, trialEligible: !sharedWithOther });
+  // Fire CompleteRegistration via CAPI on first record only (i.e. when
+  // this user_id wasn't already in the table). The client dedupes the
+  // matching browser-pixel event via the returned eventId.
+  let meta = null;
+  const isNewSignup =
+    !sharedWithOther
+      ? !(Array.isArray(existing) && existing.some((row) => row.user_id === session.user.id))
+      : false;
+  if (isNewSignup) {
+    const eventId = `reg-${session.user.id}`;
+    sendCapiEvent({
+      eventName: 'CompleteRegistration',
+      eventId,
+      email: session.user.email,
+      req,
+      customData: { supabase_user_id: session.user.id },
+    }).catch(() => {});
+    meta = { eventName: 'CompleteRegistration', eventId };
+  }
+
+  return res
+    .status(200)
+    .json({ recorded: true, trialEligible: !sharedWithOther, meta });
 }

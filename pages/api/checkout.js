@@ -1,5 +1,6 @@
-import { stripe, getOrCreatePrice, getOrCreateTopupPrice, TOPUPS } from '../../lib/stripe';
+import { stripe, getOrCreatePrice, getOrCreateTopupPrice, PLANS, TOPUPS } from '../../lib/stripe';
 import { getUserFromRequest, getSupabaseAdmin } from '../../lib/supabaseServer';
+import { sendCapiEvent } from '../../lib/meta';
 
 function clientIp(req) {
   const xff = req.headers['x-forwarded-for'];
@@ -61,7 +62,25 @@ export default async function handler(req, res) {
         billing_address_collection: 'auto',
         metadata: { supabase_user_id: session.user.id },
       });
-      return res.status(200).json({ url: checkout.url });
+      const value = TOPUPS[pack].amountCents / 100;
+      const eventId = `ic-${checkout.id}`;
+      sendCapiEvent({
+        eventName: 'InitiateCheckout',
+        eventId,
+        value,
+        currency: 'USD',
+        email,
+        req,
+        customData: {
+          kind: 'topup',
+          pack,
+          supabase_user_id: session.user.id,
+        },
+      }).catch(() => {});
+      return res.status(200).json({
+        url: checkout.url,
+        meta: { eventName: 'InitiateCheckout', eventId, value, currency: 'USD' },
+      });
     }
 
     if (plan !== 'monthly' && plan !== 'yearly') {
@@ -88,7 +107,27 @@ export default async function handler(req, res) {
       },
       metadata: { supabase_user_id: session.user.id },
     });
-    return res.status(200).json({ url: checkout.url, trialBlocked });
+    const value = PLANS[plan].amountCents / 100;
+    const eventId = `ic-${checkout.id}`;
+    sendCapiEvent({
+      eventName: 'InitiateCheckout',
+      eventId,
+      value,
+      currency: 'USD',
+      email,
+      req,
+      customData: {
+        kind: 'subscription',
+        plan,
+        trialBlocked: trialBlocked ? 1 : 0,
+        supabase_user_id: session.user.id,
+      },
+    }).catch(() => {});
+    return res.status(200).json({
+      url: checkout.url,
+      trialBlocked,
+      meta: { eventName: 'InitiateCheckout', eventId, value, currency: 'USD' },
+    });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }

@@ -13,6 +13,24 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
   const [localError, setLocalError] = useState('');
   const [trialBlocked, setTrialBlocked] = useState(false);
 
+  // Fire the browser pixel for InitiateCheckout if the API returned
+  // matching meta. Same eventID as the server CAPI call dedupes them.
+  const firePixel = (meta) => {
+    if (!meta?.eventId) return;
+    if (typeof window === 'undefined' || typeof window.fbq !== 'function') return;
+    try {
+      window.fbq(
+        'track',
+        meta.eventName || 'InitiateCheckout',
+        {
+          value: meta.value,
+          currency: meta.currency || 'USD',
+        },
+        { eventID: meta.eventId }
+      );
+    } catch {}
+  };
+
   const startCheckout = async (plan) => {
     if (busy) return;
     setBusy(plan);
@@ -27,6 +45,7 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
       if (!res.ok || !data.url) {
         throw new Error(data.error || 'Could not start checkout.');
       }
+      firePixel(data.meta);
       if (data.trialBlocked) {
         setTrialBlocked(true);
         // Delay the redirect so the user sees the note before Stripe loads.
@@ -55,6 +74,7 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
       if (!res.ok || !data.url) {
         throw new Error(data.error || 'Could not start checkout.');
       }
+      firePixel(data.meta);
       window.location.href = data.url;
     } catch (err) {
       setLocalError(err.message);

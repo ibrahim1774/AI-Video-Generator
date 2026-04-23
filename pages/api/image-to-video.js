@@ -1,6 +1,7 @@
 import { createKlingSinglePrediction } from '../../lib/kie';
 import { getUserFromRequest } from '../../lib/supabaseServer';
 import { getEntitlement, reserveCredits, refundCredits } from '../../lib/entitlement';
+import { sendCapiEvent } from '../../lib/meta';
 
 function isHttpUrl(value) {
   if (typeof value !== 'string') return false;
@@ -70,6 +71,22 @@ export default async function handler(req, res) {
       mode: q,
       audio: wantAudio,
     });
+    sendCapiEvent({
+      eventName: 'Generate',
+      eventId: `gen-${prediction.id}`,
+      value: cost,
+      currency: 'USD',
+      email: session.user.email,
+      req,
+      customData: {
+        feature: 'image-to-video',
+        credits: cost,
+        duration: dur,
+        quality: q,
+        audio: wantAudio,
+        supabase_user_id: session.user.id,
+      },
+    }).catch(() => {});
     return res.status(200).json({
       predictionId: prediction.id,
       vendor: 'kie',

@@ -1,6 +1,7 @@
 import { createCharacterFramePrediction } from '../../lib/replicate';
 import { getUserFromRequest } from '../../lib/supabaseServer';
 import { getEntitlement, reserveCredits, refundCredits } from '../../lib/entitlement';
+import { sendCapiEvent } from '../../lib/meta';
 
 function isHttpUrl(value) {
   if (typeof value !== 'string') return false;
@@ -72,6 +73,20 @@ export default async function handler(req, res) {
       swapMode: mode,
     });
     console.log('[character-frame] prediction created', { id: prediction.id });
+    sendCapiEvent({
+      eventName: 'Generate',
+      eventId: `gen-${prediction.id}`,
+      value: COST,
+      currency: 'USD',
+      email: session.user.email,
+      req,
+      customData: {
+        feature: 'face-swap-stage-1',
+        credits: COST,
+        swap_mode: mode,
+        supabase_user_id: session.user.id,
+      },
+    }).catch(() => {});
     return res.status(200).json({
       predictionId: prediction.id,
       status: prediction.status,

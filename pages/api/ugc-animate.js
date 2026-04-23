@@ -4,6 +4,7 @@ import {
 } from '../../lib/kie';
 import { getUserFromRequest } from '../../lib/supabaseServer';
 import { getEntitlement, reserveCredits, refundCredits } from '../../lib/entitlement';
+import { sendCapiEvent } from '../../lib/meta';
 
 function isHttpUrl(value) {
   if (typeof value !== 'string') return false;
@@ -106,6 +107,23 @@ export default async function handler(req, res) {
         audio: wantAudio,
       });
     }
+    sendCapiEvent({
+      eventName: 'Generate',
+      eventId: `gen-${prediction.id}`,
+      value: cost,
+      currency: 'USD',
+      email: session.user.email,
+      req,
+      customData: {
+        feature: isStoryboard ? 'ugc-storyboard' : 'ugc-animate',
+        credits: cost,
+        duration: totalSeconds,
+        scenes: isStoryboard ? normalizedScenes.length : 1,
+        quality: q,
+        audio: wantAudio,
+        supabase_user_id: session.user.id,
+      },
+    }).catch(() => {});
     return res.status(200).json({
       predictionId: prediction.id,
       vendor: 'kie',

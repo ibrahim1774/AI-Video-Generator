@@ -33,8 +33,29 @@ export default function AuthModal({ open, onClose, initialMode = 'signup', redir
           token: response.credential,
         });
         if (err) throw err;
-        // Fire-and-forget IP record so the trial gate has data on file.
-        fetch('/api/signup-ip', { method: 'POST' }).catch(() => {});
+        // Record signup IP and fire CompleteRegistration via the
+        // matching browser pixel (the API returns a meta payload with
+        // the event id for dedup).
+        fetch('/api/signup-ip', { method: 'POST' })
+          .then((r) => r.json().catch(() => ({})))
+          .then((data) => {
+            const m = data?.meta;
+            if (
+              m?.eventId &&
+              typeof window !== 'undefined' &&
+              typeof window.fbq === 'function'
+            ) {
+              try {
+                window.fbq(
+                  'track',
+                  m.eventName || 'CompleteRegistration',
+                  { method: 'google' },
+                  { eventID: m.eventId }
+                );
+              } catch {}
+            }
+          })
+          .catch(() => {});
         if (typeof onClose === 'function') onClose();
         router.push(redirectTo);
       } catch (err) {
@@ -104,7 +125,26 @@ export default function AuthModal({ open, onClose, initialMode = 'signup', redir
         const { error: err } = await supabase.auth.signInWithPassword({ email, password });
         if (err) throw err;
       }
-      fetch('/api/signup-ip', { method: 'POST' }).catch(() => {});
+      fetch('/api/signup-ip', { method: 'POST' })
+        .then((r) => r.json().catch(() => ({})))
+        .then((data) => {
+          const m = data?.meta;
+          if (
+            m?.eventId &&
+            typeof window !== 'undefined' &&
+            typeof window.fbq === 'function'
+          ) {
+            try {
+              window.fbq(
+                'track',
+                m.eventName || 'CompleteRegistration',
+                { method: mode === 'signup' ? 'email' : 'email-signin' },
+                { eventID: m.eventId }
+              );
+            } catch {}
+          }
+        })
+        .catch(() => {});
       if (typeof onClose === 'function') onClose();
       router.push(redirectTo);
     } catch (err) {

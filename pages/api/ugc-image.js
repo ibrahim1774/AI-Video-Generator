@@ -1,6 +1,7 @@
 import { createImagePrediction } from '../../lib/replicate';
 import { getUserFromRequest } from '../../lib/supabaseServer';
 import { getEntitlement, reserveCredits, refundCredits } from '../../lib/entitlement';
+import { sendCapiEvent } from '../../lib/meta';
 
 const COST = 1;
 
@@ -41,6 +42,19 @@ export default async function handler(req, res) {
 
   try {
     const prediction = await createImagePrediction({ prompt });
+    sendCapiEvent({
+      eventName: 'Generate',
+      eventId: `gen-${prediction.id}`,
+      value: COST,
+      currency: 'USD',
+      email: session.user.email,
+      req,
+      customData: {
+        feature: 'ugc-image',
+        credits: COST,
+        supabase_user_id: session.user.id,
+      },
+    }).catch(() => {});
     return res.status(200).json({
       predictionId: prediction.id,
       status: prediction.status,
