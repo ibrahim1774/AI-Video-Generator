@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Script from 'next/script';
 
 import styles from '../styles/Home.module.css';
 import UploadZone from '../components/UploadZone';
@@ -16,6 +17,15 @@ import { saveJob, loadJob, clearJob } from '../lib/jobPersist';
 import { maybeCompressImage } from '../lib/imageCompress';
 
 const FEATURE = 'face-swap';
+
+// Demo clips shown below the Create face swap button. Same set as
+// the previous home anonymous landing.
+const HOME_CAROUSEL_VIDEOS = [
+  { id: 'vh0vtubvpo', aspect: 0.5625 },
+  { id: 'jn4yy7w312', aspect: 0.5625 },
+  { id: 'uvc4cuqtjk', aspect: 0.5625 },
+  { id: '9n1azg2tfa', aspect: 0.5625 },
+];
 
 export default function Home() {
   const [step, setStep] = useState('upload');
@@ -331,6 +341,15 @@ export default function Home() {
       authed: Boolean(authUser),
     });
 
+    // Anonymous: open the signup modal first. After they create an
+    // account they'll be redirected to /dashboard which renders the
+    // paywall for users without credits.
+    if (!authUser) {
+      pendingSwapRef.current = true;
+      setAuthModalOpen(true);
+      return;
+    }
+
     const ent = entitlement || (await fetchEntitlement());
     if (!ent || !ent.canSwap) {
       // Signed-in but no credits — show inline paywall; files stay in state.
@@ -643,10 +662,109 @@ export default function Home() {
             page. */}
       </form>
 
+      <Script src="https://fast.wistia.com/player.js" strategy="afterInteractive" async />
+      {HOME_CAROUSEL_VIDEOS.map((v) => (
+        <Script
+          key={v.id}
+          src={`https://fast.wistia.com/embed/${v.id}.js`}
+          strategy="afterInteractive"
+          type="module"
+          async
+        />
+      ))}
+
+      <div className="home-creator-carousel-wrap">
+        <div
+          className="home-creator-carousel-eyebrow"
+          aria-hidden="true"
+        >
+          ◆ Recent swaps
+        </div>
+        <div className="home-creator-carousel" role="region" aria-label="Demo swaps">
+          {HOME_CAROUSEL_VIDEOS.map((v) => (
+            <div key={v.id} className="home-creator-carousel-card">
+              <wistia-player
+                media-id={v.id}
+                aspect={String(v.aspect)}
+                autoplay="true"
+                muted="true"
+                silentautoplay="true"
+                playsinline="true"
+                controls-visible-on-load="false"
+                playbar="false"
+                playbutton="false"
+                volume-control="false"
+                fullscreen-button="false"
+                settings-control="false"
+                endvideobehavior="loop"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <style jsx global>{`
+        .home-creator-carousel-wrap {
+          max-width: 100%;
+          margin: 28px auto 8px;
+          padding: 0;
+        }
+        .home-creator-carousel-eyebrow {
+          text-align: center;
+          font-family: var(--font-mono, ui-monospace, monospace);
+          font-size: 10px;
+          letter-spacing: 0.2em;
+          text-transform: uppercase;
+          color: rgba(224, 196, 136, 0.7);
+          margin-bottom: 8px;
+        }
+        .home-creator-carousel {
+          display: flex;
+          gap: 10px;
+          overflow-x: auto;
+          overflow-y: hidden;
+          scroll-snap-type: x mandatory;
+          -webkit-overflow-scrolling: touch;
+          scroll-padding: 0 16px;
+          padding: 4px 16px 10px;
+          scrollbar-width: none;
+        }
+        .home-creator-carousel::-webkit-scrollbar {
+          display: none;
+        }
+        .home-creator-carousel-card {
+          flex: 0 0 auto;
+          width: clamp(160px, 60vw, 200px);
+          border-radius: 12px;
+          overflow: hidden;
+          border: 1px solid rgba(224, 196, 136, 0.18);
+          background: #0c0c0e;
+          box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+          scroll-snap-align: center;
+          min-width: 0;
+        }
+        .home-creator-carousel-card wistia-player {
+          display: block;
+          width: 100%;
+          max-width: 100%;
+        }
+        @media (min-width: 720px) {
+          .home-creator-carousel {
+            justify-content: center;
+            scroll-padding: 0;
+            padding: 4px 24px 10px;
+          }
+          .home-creator-carousel-card {
+            width: 180px;
+          }
+        }
+      `}</style>
+
       <AuthModal
         open={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
         initialMode="signup"
+        redirectTo="/dashboard"
       />
     </main>
   );
