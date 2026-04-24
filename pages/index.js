@@ -674,12 +674,6 @@ export default function Home() {
       ))}
 
       <div className="home-creator-carousel-wrap">
-        <div
-          className="home-creator-carousel-eyebrow"
-          aria-hidden="true"
-        >
-          ◆ Recent swaps
-        </div>
         <div className="home-creator-carousel" role="region" aria-label="Demo swaps">
           {HOME_CAROUSEL_VIDEOS.map((v) => (
             <div key={v.id} className="home-creator-carousel-card">
@@ -708,15 +702,6 @@ export default function Home() {
           max-width: 100%;
           margin: 28px auto 8px;
           padding: 0;
-        }
-        .home-creator-carousel-eyebrow {
-          text-align: center;
-          font-family: var(--font-mono, ui-monospace, monospace);
-          font-size: 10px;
-          letter-spacing: 0.2em;
-          text-transform: uppercase;
-          color: rgba(224, 196, 136, 0.7);
-          margin-bottom: 8px;
         }
         .home-creator-carousel {
           display: flex;
