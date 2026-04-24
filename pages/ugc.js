@@ -182,6 +182,10 @@ export default function UgcPage() {
 
   const handleGenerateImage = async () => {
     if (!imagePrompt.trim()) return;
+    if (!authUser) {
+      setAuthModalOpen(true);
+      return;
+    }
     setError('');
     setImageBusy('generate');
     try {
@@ -220,6 +224,10 @@ export default function UgcPage() {
   const handleAnimate = async (e) => {
     e.preventDefault();
     if (!effectiveStartImage || submitting) return;
+    if (!authUser) {
+      setAuthModalOpen(true);
+      return;
+    }
     setSubmitting(true);
     setError('');
     try {
@@ -411,168 +419,6 @@ export default function UgcPage() {
   // Anonymous landing: 4 vertical Wistia demos in a 2x2 grid + signup CTA.
   // After signup, auth state changes and this branch falls through to
   // the paywall gate (or creator if the user already has a plan).
-  if (!authUser) {
-    return (
-      <>
-        <Head>
-          <title>UGC Creator — Haelabs</title>
-          <meta
-            name="description"
-            content="Generate cinematic UGC clips from a single character image. Powered by the latest video models — voiceover, lip-sync, and ambient sound included."
-          />
-        </Head>
-        <Script src="https://fast.wistia.com/player.js" strategy="afterInteractive" async />
-        {LANDING_VIDEOS.map((v) => (
-          <Script
-            key={v.id}
-            src={`https://fast.wistia.com/embed/${v.id}.js`}
-            strategy="afterInteractive"
-            type="module"
-            async
-          />
-        ))}
-
-        <main className={styles.page} style={{ paddingTop: 28 }}>
-          <div className={styles.hero} style={{ marginBottom: 20 }}>
-            <span className={styles.eyebrow}>◆ AI UGC Creator</span>
-            <h1 className={styles.headline}>
-              Make a <span className={styles.accent}>scroll-stopping UGC clip</span> from one photo
-            </h1>
-            <p className={styles.subtitle}>
-              Upload a character and write your script &mdash; Haelabs produces a
-              cinematic clip with native audio and lip-sync. Chain scenes for longer stories.
-            </p>
-          </div>
-
-          <div style={{ textAlign: 'center', marginTop: 4, marginBottom: 4 }}>
-            <button
-              type="button"
-              onClick={() => setAuthModalOpen(true)}
-              className={`${styles.submit} ${styles.submitReady}`}
-              style={{ maxWidth: 320, margin: '0 auto' }}
-            >
-              Get started for free.
-            </button>
-          </div>
-
-          <div className="ugc-carousel-wrap">
-            <div className="ugc-carousel" role="region" aria-label="UGC examples">
-              {LANDING_VIDEOS.map((v) => (
-                <div key={v.id} className="ugc-carousel-card">
-                  <wistia-player
-                    media-id={v.id}
-                    aspect={String(v.aspect)}
-                    autoplay="true"
-                    muted="true"
-                    silentautoplay="true"
-                    playsinline="true"
-                    controls-visible-on-load="false"
-                    playbar="false"
-                    playbutton="false"
-                    volume-control="false"
-                    fullscreen-button="false"
-                    settings-control="false"
-                    endvideobehavior="loop"
-                  />
-                </div>
-              ))}
-            </div>
-            <div className="ugc-carousel-hint" aria-hidden="true">
-              ← swipe to see more →
-            </div>
-          </div>
-
-          <style jsx global>{`
-            .ugc-carousel-wrap {
-              max-width: 100%;
-              margin: 12px auto 4px;
-              padding: 0;
-              position: relative;
-            }
-            .ugc-carousel {
-              display: flex;
-              gap: 10px;
-              overflow-x: auto;
-              overflow-y: hidden;
-              scroll-snap-type: x mandatory;
-              -webkit-overflow-scrolling: touch;
-              scroll-padding: 0 16px;
-              padding: 4px 16px 10px;
-              scrollbar-width: none;
-            }
-            .ugc-carousel::-webkit-scrollbar {
-              display: none;
-            }
-            .ugc-carousel-card {
-              flex: 0 0 auto;
-              /* Mobile: ~70% viewport so the next card peeks at the edge,
-                 hinting at swipeability. */
-              width: clamp(180px, 70vw, 240px);
-              border-radius: 12px;
-              overflow: hidden;
-              border: 1px solid rgba(224, 196, 136, 0.18);
-              background: #0c0c0e;
-              box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
-              scroll-snap-align: center;
-              min-width: 0;
-            }
-            .ugc-carousel-card wistia-player {
-              display: block;
-              width: 100%;
-              max-width: 100%;
-            }
-            .ugc-carousel-hint {
-              text-align: center;
-              font-family: var(--font-mono, ui-monospace, monospace);
-              font-size: 9px;
-              letter-spacing: 0.18em;
-              text-transform: uppercase;
-              color: rgba(255, 255, 255, 0.35);
-              margin-top: 2px;
-            }
-            @media (min-width: 720px) {
-              .ugc-carousel {
-                justify-content: center;
-                scroll-padding: 0;
-                padding: 4px 24px 10px;
-              }
-              .ugc-carousel-card {
-                width: 200px;
-                scroll-snap-align: center;
-              }
-              .ugc-carousel-hint {
-                display: none;
-              }
-            }
-          `}</style>
-
-          <div style={{ textAlign: 'center', marginTop: 28 }}>
-            <button
-              type="button"
-              onClick={() => setAuthModalOpen(true)}
-              className={`${styles.submit} ${styles.submitReady}`}
-              style={{ maxWidth: 320, margin: '0 auto' }}
-            >
-              Get started for free.
-            </button>
-            <p className={styles.subtitle} style={{ marginTop: 16, fontSize: 13 }}>
-              Already have an account?{' '}
-              <a href="/sign-in?redirect=/ugc" style={{ color: '#e0c488' }}>
-                Sign in
-              </a>
-            </p>
-          </div>
-        </main>
-
-        <AuthModal
-          open={authModalOpen}
-          onClose={() => setAuthModalOpen(false)}
-          initialMode="signup"
-          redirectTo="/ugc"
-        />
-      </>
-    );
-  }
 
   // No pre-creator paywall gate. Authed users without credits can
   // still enter the creator, pick an image, write a script, and click
@@ -1132,6 +978,13 @@ export default function UgcPage() {
             )}
           </form>
         </main>
+
+        <AuthModal
+          open={authModalOpen}
+          onClose={() => setAuthModalOpen(false)}
+          initialMode="signup"
+          redirectTo="/dashboard"
+        />
       </>
     );
   }
@@ -1143,22 +996,21 @@ export default function UgcPage() {
       : '◆ Step 1 of 2 — Pick your character';
   return (
     <>
-      <Head><title>UGC Creator — Haelabs</title></Head>
-      <main className={styles.page}>
-        <div className={styles.hero}>
+      <Head><title>From a Single Image to a Full Video — Haelabs</title></Head>
+      <main className={styles.page} style={{ paddingTop: 24 }}>
+        <div className={styles.hero} style={{ marginBottom: 12 }}>
           <span className={styles.eyebrow}>{chooseEyebrow}</span>
-          <h1 className={styles.headline}>
-            Make a <span className={styles.accent}>UGC clip</span> in two steps
+          <h1
+            className={styles.headline}
+            style={{ fontSize: 'clamp(28px, 4.4vw, 46px)', margin: '12px 0 8px' }}
+          >
+            From a Single Image to a Full Video &mdash;{' '}
+            <span className={styles.accent}>In Your Words.</span>
           </h1>
-          <p className={styles.subtitle}>
-            Bring your own character image, or generate one from a prompt with our
-            top-rated image model.
+          <p className={styles.subtitle} style={{ fontSize: 14 }}>
+            Upload a character or generate one from a prompt. Each video takes
+            2&ndash;4 minutes and includes native audio + lip-sync.
           </p>
-        </div>
-
-        <div style={calloutStyle}>
-          ◆ Generating an image costs <strong>1 credit</strong>. The animation in
-          step 2 costs <strong>1 credit per 3 seconds</strong> of video.
         </div>
 
         <div className={styles.shell}>
@@ -1251,7 +1103,93 @@ export default function UgcPage() {
             </div>
           )}
         </div>
+
+        <Script src="https://fast.wistia.com/player.js" strategy="afterInteractive" async />
+        {LANDING_VIDEOS.slice(0, 4).map((v) => (
+          <Script
+            key={v.id}
+            src={`https://fast.wistia.com/embed/${v.id}.js`}
+            strategy="afterInteractive"
+            type="module"
+            async
+          />
+        ))}
+
+        <div className="ugc-creator-carousel-wrap">
+          <div className="ugc-creator-carousel" role="region" aria-label="UGC examples">
+            {LANDING_VIDEOS.slice(0, 4).map((v) => (
+              <div key={v.id} className="ugc-creator-carousel-card">
+                <wistia-player
+                  media-id={v.id}
+                  aspect={String(v.aspect)}
+                  autoplay="true"
+                  muted="true"
+                  silentautoplay="true"
+                  playsinline="true"
+                  controls-visible-on-load="false"
+                  playbar="false"
+                  playbutton="false"
+                  volume-control="false"
+                  fullscreen-button="false"
+                  settings-control="false"
+                  endvideobehavior="loop"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <style jsx global>{`
+          .ugc-creator-carousel-wrap {
+            max-width: 100%;
+            margin: 28px auto 8px;
+            padding: 0;
+          }
+          .ugc-creator-carousel {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            scroll-padding: 0 16px;
+            padding: 4px 16px 10px;
+            scrollbar-width: none;
+          }
+          .ugc-creator-carousel::-webkit-scrollbar { display: none; }
+          .ugc-creator-carousel-card {
+            flex: 0 0 auto;
+            width: clamp(160px, 60vw, 200px);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(224, 196, 136, 0.18);
+            background: #0c0c0e;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+            scroll-snap-align: center;
+            min-width: 0;
+          }
+          .ugc-creator-carousel-card wistia-player {
+            display: block;
+            width: 100%;
+            max-width: 100%;
+          }
+          @media (min-width: 720px) {
+            .ugc-creator-carousel {
+              justify-content: center;
+              scroll-padding: 0;
+              padding: 4px 24px 10px;
+            }
+            .ugc-creator-carousel-card { width: 180px; }
+          }
+        `}</style>
       </main>
+
+      <AuthModal
+        open={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        initialMode="signup"
+        redirectTo="/dashboard"
+      />
     </>
   );
 }
