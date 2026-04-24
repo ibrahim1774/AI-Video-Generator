@@ -42,11 +42,58 @@ export default function AuthModal({
       try {
         const supabase = getBrowserSupabase();
         if (!supabase) throw new Error('Auth not configured. Contact support.');
-        const { error: err } = await supabase.auth.signInWithIdToken({
+        const { data: signInData, error: err } = await supabase.auth.signInWithIdToken({
           provider: 'google',
           token: response.credential,
         });
         if (err) throw err;
+
+        // Claim-after-pay: Google returned an email — it MUST match
+        // the email on the Stripe session. Check before calling the
+        // server, so we can sign the user back out cleanly with a
+        // helpful message if they used the wrong Google account.
+        if (isClaimFlow) {
+          const googleEmail = (signInData?.user?.email || '').toLowerCase();
+          const expected = (lockedEmail || '').toLowerCase();
+          if (googleEmail && expected && googleEmail !== expected) {
+            await supabase.auth.signOut().catch(() => {});
+            setError(
+              `That Google account uses ${signInData.user.email}, but you paid with ${lockedEmail}. Sign in with the matching Google account, or use email + password below.`
+            );
+            setBusy(null);
+            return;
+          }
+          try {
+            const r = await fetch(
+              `/api/checkout/claim?session_id=${encodeURIComponent(claimSessionId)}`,
+              { method: 'POST' }
+            );
+            const claimData = await r.json().catch(() => ({}));
+            if (!r.ok) throw new Error(claimData.error || 'Could not link your subscription.');
+            const m = claimData.meta;
+            if (
+              m?.eventId &&
+              typeof window !== 'undefined' &&
+              typeof window.fbq === 'function'
+            ) {
+              try {
+                window.fbq(
+                  'track',
+                  m.eventName || 'Purchase',
+                  { value: m.value, currency: m.currency || 'USD' },
+                  { eventID: m.eventId }
+                );
+              } catch {}
+            }
+          } catch (claimErr) {
+            setError(
+              `Signed in, but linking subscription failed: ${claimErr.message}. Email support@davoxa.com if this persists.`
+            );
+            setBusy(null);
+            return;
+          }
+        }
+
         // Record signup IP and fire CompleteRegistration via the
         // matching browser pixel (the API returns a meta payload with
         // the event id for dedup).
@@ -111,7 +158,7 @@ export default function AuthModal({
       cancelled = true;
       if (pollId) clearInterval(pollId);
     };
-  }, [open, mode, googleClientId, router, onClose, redirectTo]);
+  }, [open, mode, googleClientId, router, onClose, redirectTo, isClaimFlow, lockedEmail, claimSessionId]);
 
   if (!open) return null;
 
@@ -252,24 +299,39 @@ export default function AuthModal({
           </p>
         </header>
 
-        {!isClaimFlow && (
-          <>
-            {googleClientId ? (
-              <div
-                ref={googleBtnRef}
-                style={{ display: 'flex', justifyContent: 'center', minHeight: 44 }}
-              />
-            ) : (
-              <div className={styles.error}>
-                Google sign-in unavailable — NEXT_PUBLIC_GOOGLE_CLIENT_ID not set.
-              </div>
-            )}
-
-            <div className={styles.divider}>
-              <span>or</span>
-            </div>
-          </>
+        {isClaimFlow && lockedEmail && (
+          <div
+            style={{
+              padding: '10px 14px',
+              borderRadius: 8,
+              border: '1px solid rgba(224, 196, 136, 0.25)',
+              background: 'rgba(224, 196, 136, 0.06)',
+              color: '#e8d9af',
+              fontSize: 12,
+              lineHeight: 1.5,
+              textAlign: 'center',
+              marginBottom: 12,
+            }}
+          >
+            Sign in with the Google account for <strong>{lockedEmail}</strong>, or
+            set a password below for the same email.
+          </div>
         )}
+
+        {googleClientId ? (
+          <div
+            ref={googleBtnRef}
+            style={{ display: 'flex', justifyContent: 'center', minHeight: 44 }}
+          />
+        ) : (
+          <div className={styles.error}>
+            Google sign-in unavailable — NEXT_PUBLIC_GOOGLE_CLIENT_ID not set.
+          </div>
+        )}
+
+        <div className={styles.divider}>
+          <span>or</span>
+        </div>
 
         <form className={styles.form} onSubmit={handleEmail}>
           <label className={styles.field}>
