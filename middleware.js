@@ -35,17 +35,19 @@ export async function middleware(req) {
 
   const { pathname } = req.nextUrl;
 
-  // Gate the private API routes. Note: /api/checkout is intentionally
-  // NOT here — the subscription path supports anonymous users (pay
-  // first, sign up after). The endpoint enforces auth itself for the
-  // top-up path which still requires an existing account.
+  // Gate the private API routes. Note:
+  //   - /api/checkout is not here — subscription path supports
+  //     anonymous users (pay first, sign up after).
+  //   - /api/upload-token is not here — anonymous visitors on the
+  //     face-swap page need to upload before hitting the paywall.
+  //     The route returns short-lived Blob tokens with size caps
+  //     enforced upstream.
   const privateApiPrefixes = [
     '/api/character-frame',
     '/api/swap',
     '/api/status',
     '/api/entitlement',
     '/api/extract-frame',
-    '/api/upload-token',
     '/api/image-to-video',
     '/api/ugc-image',
     '/api/ugc-animate',
@@ -83,7 +85,6 @@ export const config = {
     '/api/status/:path*',
     '/api/entitlement/:path*',
     '/api/extract-frame/:path*',
-    '/api/upload-token/:path*',
     '/api/image-to-video/:path*',
     '/api/ugc-image/:path*',
     '/api/ugc-animate/:path*',

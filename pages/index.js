@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import Script from 'next/script';
 
 import styles from '../styles/Home.module.css';
 import UploadZone from '../components/UploadZone';
@@ -18,15 +17,6 @@ import { saveJob, loadJob, clearJob } from '../lib/jobPersist';
 import { maybeCompressImage } from '../lib/imageCompress';
 
 const FEATURE = 'face-swap';
-
-// Demo videos shown on the home anonymous landing. Independent of the
-// /ugc landing's set so each page can curate for its own audience.
-const HOME_LANDING_VIDEOS = [
-  { id: 'vh0vtubvpo', aspect: 0.5625 },
-  { id: 'jn4yy7w312', aspect: 0.5625 },
-  { id: 'uvc4cuqtjk', aspect: 0.5625 },
-  { id: '9n1azg2tfa', aspect: 0.5625 },
-];
 
 export default function Home() {
   const [step, setStep] = useState('upload');
@@ -507,202 +497,11 @@ export default function Home() {
     );
   }
 
-  if (authLoaded && !authUser && step === 'paywall') {
-    return (
-      <main className={styles.page} style={{ paddingTop: 28 }}>
-        <div className={styles.hero} style={{ marginBottom: 16 }}>
-          <span className={styles.eyebrow}>◆ Pick a plan</span>
-          <h1 className={styles.headline}>
-            Pay first, <span className={styles.accent}>create your account next</span>
-          </h1>
-          <p className={styles.subtitle}>
-            Pick a plan below. After Stripe confirms, you&apos;ll set a password
-            for the email you paid with — your subscription links automatically.
-          </p>
-        </div>
-        {error && <div className={styles.error}>{error}</div>}
-        <Paywall
-          entitlement={null}
-          onError={(msg) => setError(msg)}
-          onTrialStarted={() => {}}
-        />
-        <div style={{ textAlign: 'center', marginTop: 16 }}>
-          <button
-            type="button"
-            onClick={() => setStep('upload')}
-            style={{
-              background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.15)',
-              color: '#ddd',
-              padding: '8px 16px',
-              borderRadius: 6,
-              cursor: 'pointer',
-              fontSize: 13,
-              fontFamily: 'inherit',
-            }}
-          >
-            ← Back
-          </button>
-          <p className={styles.subtitle} style={{ marginTop: 16, fontSize: 13 }}>
-            Already have an account?{' '}
-            <a href="/sign-in" style={{ color: '#e0c488' }}>
-              Sign in
-            </a>
-          </p>
-        </div>
-      </main>
-    );
-  }
-
-  if (authLoaded && !authUser) {
-    return (
-      <main className={styles.page} style={{ paddingTop: 28 }}>
-        <div className={styles.hero} style={{ marginBottom: 20 }}>
-          <span className={styles.eyebrow}>◆ AI Face Swap</span>
-          <h1 className={styles.headline}>
-            Swap any face into <span className={styles.accent}>any video</span>
-          </h1>
-          <p className={styles.subtitle}>
-            Upload a face and any video &mdash; Haelabs swaps it in with cinematic
-            quality. Every blink, head turn, and expression flows onto the new face.
-          </p>
-        </div>
-        <div style={{ textAlign: 'center', marginTop: 12 }}>
-          <button
-            type="button"
-            onClick={() => setStep('paywall')}
-            className={`${styles.submit} ${styles.submitReady}`}
-            style={{ maxWidth: 320, margin: '0 auto' }}
-          >
-            Get Started for Free.
-          </button>
-          <p className={styles.subtitle} style={{ marginTop: 16, fontSize: 13 }}>
-            Already have an account?{' '}
-            <a href="/sign-in" style={{ color: '#e0c488' }}>
-              Sign in
-            </a>
-          </p>
-        </div>
-
-        <Script src="https://fast.wistia.com/player.js" strategy="afterInteractive" async />
-        {HOME_LANDING_VIDEOS.map((v) => (
-          <Script
-            key={v.id}
-            src={`https://fast.wistia.com/embed/${v.id}.js`}
-            strategy="afterInteractive"
-            type="module"
-            async
-          />
-        ))}
-
-        <div className="home-carousel-wrap">
-          <div className="home-carousel" role="region" aria-label="UGC examples">
-            {HOME_LANDING_VIDEOS.map((v) => (
-              <div key={v.id} className="home-carousel-card">
-                <wistia-player
-                  media-id={v.id}
-                  aspect={String(v.aspect)}
-                  autoplay="true"
-                  muted="true"
-                  silentautoplay="true"
-                  playsinline="true"
-                  controls-visible-on-load="false"
-                  playbar="false"
-                  playbutton="false"
-                  volume-control="false"
-                  fullscreen-button="false"
-                  settings-control="false"
-                  endvideobehavior="loop"
-                />
-              </div>
-            ))}
-          </div>
-          <div className="home-carousel-hint" aria-hidden="true">
-            ← swipe to see more →
-          </div>
-        </div>
-
-        <div style={{ textAlign: 'center', marginTop: 4, marginBottom: 28 }}>
-          <button
-            type="button"
-            onClick={() => setStep('paywall')}
-            className={`${styles.submit} ${styles.submitReady}`}
-            style={{ maxWidth: 320, margin: '0 auto' }}
-          >
-            Get Started for Free.
-          </button>
-        </div>
-
-        <style jsx global>{`
-          .home-carousel-wrap {
-            max-width: 100%;
-            margin: 12px auto 4px;
-            padding: 0;
-            position: relative;
-          }
-          .home-carousel {
-            display: flex;
-            gap: 10px;
-            overflow-x: auto;
-            overflow-y: hidden;
-            scroll-snap-type: x mandatory;
-            -webkit-overflow-scrolling: touch;
-            scroll-padding: 0 16px;
-            padding: 4px 16px 10px;
-            scrollbar-width: none;
-          }
-          .home-carousel::-webkit-scrollbar {
-            display: none;
-          }
-          .home-carousel-card {
-            flex: 0 0 auto;
-            width: clamp(180px, 70vw, 240px);
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid rgba(224, 196, 136, 0.18);
-            background: #0c0c0e;
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
-            scroll-snap-align: center;
-            min-width: 0;
-          }
-          .home-carousel-card wistia-player {
-            display: block;
-            width: 100%;
-            max-width: 100%;
-          }
-          .home-carousel-hint {
-            text-align: center;
-            font-family: var(--font-mono, ui-monospace, monospace);
-            font-size: 9px;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-            color: rgba(255, 255, 255, 0.35);
-            margin-top: 2px;
-          }
-          @media (min-width: 720px) {
-            .home-carousel {
-              justify-content: center;
-              scroll-padding: 0;
-              padding: 4px 24px 10px;
-            }
-            .home-carousel-card {
-              width: 200px;
-              scroll-snap-align: center;
-            }
-            .home-carousel-hint {
-              display: none;
-            }
-          }
-        `}</style>
-
-        <AuthModal
-          open={authModalOpen}
-          onClose={() => setAuthModalOpen(false)}
-          initialMode="signup"
-        />
-      </main>
-    );
-  }
+  // Anonymous visitors fall through to the creator UI below —
+  // they land directly on the face-swap form, upload files, and
+  // clicking "Create face swap" routes through handleSubmit which
+  // sets step='paywall' (hits the branch above) for any user
+  // without credits.
 
   return (
     <main className={styles.page}>
