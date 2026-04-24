@@ -507,6 +507,53 @@ export default function Home() {
     );
   }
 
+  if (authLoaded && !authUser && step === 'paywall') {
+    return (
+      <main className={styles.page} style={{ paddingTop: 28 }}>
+        <div className={styles.hero} style={{ marginBottom: 16 }}>
+          <span className={styles.eyebrow}>◆ Pick a plan</span>
+          <h1 className={styles.headline}>
+            Pay first, <span className={styles.accent}>create your account next</span>
+          </h1>
+          <p className={styles.subtitle}>
+            Pick a plan below. After Stripe confirms, you&apos;ll set a password
+            for the email you paid with — your subscription links automatically.
+          </p>
+        </div>
+        {error && <div className={styles.error}>{error}</div>}
+        <Paywall
+          entitlement={null}
+          onError={(msg) => setError(msg)}
+          onTrialStarted={() => {}}
+        />
+        <div style={{ textAlign: 'center', marginTop: 16 }}>
+          <button
+            type="button"
+            onClick={() => setStep('upload')}
+            style={{
+              background: 'transparent',
+              border: '1px solid rgba(255,255,255,0.15)',
+              color: '#ddd',
+              padding: '8px 16px',
+              borderRadius: 6,
+              cursor: 'pointer',
+              fontSize: 13,
+              fontFamily: 'inherit',
+            }}
+          >
+            ← Back
+          </button>
+          <p className={styles.subtitle} style={{ marginTop: 16, fontSize: 13 }}>
+            Already have an account?{' '}
+            <a href="/sign-in" style={{ color: '#e0c488' }}>
+              Sign in
+            </a>
+          </p>
+        </div>
+      </main>
+    );
+  }
+
   if (authLoaded && !authUser) {
     return (
       <main className={styles.page} style={{ paddingTop: 28 }}>
@@ -523,7 +570,7 @@ export default function Home() {
         <div style={{ textAlign: 'center', marginTop: 12 }}>
           <button
             type="button"
-            onClick={() => setAuthModalOpen(true)}
+            onClick={() => setStep('paywall')}
             className={`${styles.submit} ${styles.submitReady}`}
             style={{ maxWidth: 320, margin: '0 auto' }}
           >
@@ -578,7 +625,7 @@ export default function Home() {
         <div style={{ textAlign: 'center', marginTop: 4, marginBottom: 28 }}>
           <button
             type="button"
-            onClick={() => setAuthModalOpen(true)}
+            onClick={() => setStep('paywall')}
             className={`${styles.submit} ${styles.submitReady}`}
             style={{ maxWidth: 320, margin: '0 auto' }}
           >

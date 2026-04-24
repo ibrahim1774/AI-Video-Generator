@@ -35,13 +35,15 @@ export async function middleware(req) {
 
   const { pathname } = req.nextUrl;
 
-  // Gate the private API routes.
+  // Gate the private API routes. Note: /api/checkout is intentionally
+  // NOT here — the subscription path supports anonymous users (pay
+  // first, sign up after). The endpoint enforces auth itself for the
+  // top-up path which still requires an existing account.
   const privateApiPrefixes = [
     '/api/character-frame',
     '/api/swap',
     '/api/status',
     '/api/entitlement',
-    '/api/checkout',
     '/api/extract-frame',
     '/api/upload-token',
     '/api/image-to-video',
@@ -80,7 +82,6 @@ export const config = {
     '/api/swap/:path*',
     '/api/status/:path*',
     '/api/entitlement/:path*',
-    '/api/checkout/:path*',
     '/api/extract-frame/:path*',
     '/api/upload-token/:path*',
     '/api/image-to-video/:path*',

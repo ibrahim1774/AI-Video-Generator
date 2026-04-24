@@ -34,11 +34,18 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // Subscription path supports anonymous users (pay first, sign up
+  // after). Top-up requires auth because credits attach to an
+  // existing account.
   const session = await getUserFromRequest(req, res);
-  if (!session) return res.status(401).json({ error: 'Authentication required.' });
-  const email = session.user.email;
+  const isAnon = !session;
+  const email = session?.user?.email;
 
   const { plan, mode, pack, returnTo } = req.body || {};
+
+  if (mode === 'topup' && isAnon) {
+    return res.status(401).json({ error: 'Sign in required to buy a top-up.' });
+  }
 
   const origin =
     process.env.APP_URL ||
@@ -98,23 +105,38 @@ export default async function handler(req, res) {
       });
     }
 
-    const trialBlocked = await isTrialBlockedForIp(session.user.id, req);
+    // Anonymous subscription: skip the IP-based trial block (we have
+    // no user_id to scope by) and route success_url through the
+    // claim-and-create-account flow on /sign-up. The user signs up
+    // with the same email Stripe collected; backend then links the
+    // Stripe customer to the new Supabase user.
+    const trialBlocked = isAnon
+      ? false
+      : await isTrialBlockedForIp(session.user.id, req);
+
+    const successPath = isAnon
+      ? `/sign-up?session_id={CHECKOUT_SESSION_ID}${returnQuery}`
+      : `/dashboard?paid=1&session_id={CHECKOUT_SESSION_ID}${returnQuery}`;
+
+    const subMetadata = isAnon
+      ? { pending_supabase_link: 'true' }
+      : { supabase_user_id: session.user.id };
 
     const price = await getOrCreatePrice(plan);
     const checkout = await stripe().checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
       line_items: [{ price: price.id, quantity: 1 }],
-      customer_email: email,
-      success_url: `${origin}/dashboard?paid=1&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/dashboard?paid=0`,
+      ...(email ? { customer_email: email } : {}),
+      success_url: `${origin}${successPath}`,
+      cancel_url: `${origin}${isAnon ? '/' : '/dashboard?paid=0'}`,
       allow_promotion_codes: true,
       billing_address_collection: 'auto',
       subscription_data: {
         ...(trialBlocked ? {} : { trial_period_days: 1 }),
-        metadata: { supabase_user_id: session.user.id },
+        metadata: subMetadata,
       },
-      metadata: { supabase_user_id: session.user.id },
+      metadata: subMetadata,
     });
     const value = PLANS[plan].amountCents / 100;
     const eventId = `ic-${checkout.id}`;
@@ -129,7 +151,7 @@ export default async function handler(req, res) {
         kind: 'subscription',
         plan,
         trialBlocked: trialBlocked ? 1 : 0,
-        supabase_user_id: session.user.id,
+        ...(session?.user?.id ? { supabase_user_id: session.user.id } : { anonymous: 1 }),
       },
     }).catch(() => {});
     return res.status(200).json({

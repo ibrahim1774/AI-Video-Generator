@@ -4,9 +4,16 @@ import { useRouter } from 'next/router';
 import styles from './AuthModal.module.css';
 import { getBrowserSupabase } from '../lib/supabase';
 
-export default function AuthModal({ open, onClose, initialMode = 'signup', redirectTo = '/' }) {
+export default function AuthModal({
+  open,
+  onClose,
+  initialMode = 'signup',
+  redirectTo = '/',
+  lockedEmail = null,
+  claimSessionId = null,
+}) {
   const [mode, setMode] = useState(initialMode);
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(lockedEmail || '');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(null); // 'google' | 'email' | null
   const [error, setError] = useState('');
@@ -14,6 +21,13 @@ export default function AuthModal({ open, onClose, initialMode = 'signup', redir
   const googleBtnRef = useRef(null);
 
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  const isClaimFlow = Boolean(claimSessionId && lockedEmail);
+
+  // If the locked email arrives after first render (async fetch on
+  // /sign-up), keep the email field in sync with it.
+  useEffect(() => {
+    if (lockedEmail) setEmail(lockedEmail);
+  }, [lockedEmail]);
 
   useEffect(() => {
     if (!open || !googleClientId) return undefined;
@@ -115,15 +129,62 @@ export default function AuthModal({ open, onClose, initialMode = 'signup', redir
       const supabase = getBrowserSupabase();
       if (!supabase) throw new Error('Auth not configured. Contact support.');
       if (mode === 'signup') {
+        // For claim-after-pay we'd rather have the user signed in
+        // immediately so the claim API call below has a session. Skip
+        // the email-confirmation deep link in that case — the email
+        // is already verified by Stripe (it's the address they
+        // received their receipt at).
+        const signupOpts = isClaimFlow ? {} : { emailRedirectTo: emailCallbackUrl };
         const { error: err } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: emailCallbackUrl },
+          options: signupOpts,
         });
         if (err) throw err;
+        // Make sure we have an active session before calling the
+        // claim endpoint — Supabase signUp returns a session unless
+        // email confirmation is required.
+        if (isClaimFlow) {
+          await supabase.auth.signInWithPassword({ email, password }).catch(() => {});
+        }
       } else {
         const { error: err } = await supabase.auth.signInWithPassword({ email, password });
         if (err) throw err;
+      }
+
+      // Claim the Stripe session: links the customer to this new
+      // Supabase user and grants credits.
+      if (isClaimFlow) {
+        try {
+          const r = await fetch(
+            `/api/checkout/claim?session_id=${encodeURIComponent(claimSessionId)}`,
+            { method: 'POST' }
+          );
+          const claimData = await r.json().catch(() => ({}));
+          if (!r.ok) throw new Error(claimData.error || 'Could not link your subscription.');
+          // Fire Purchase pixel with the same eventId as CAPI for dedup.
+          const m = claimData.meta;
+          if (
+            m?.eventId &&
+            typeof window !== 'undefined' &&
+            typeof window.fbq === 'function'
+          ) {
+            try {
+              window.fbq(
+                'track',
+                m.eventName || 'Purchase',
+                { value: m.value, currency: m.currency || 'USD' },
+                { eventID: m.eventId }
+              );
+            } catch {}
+          }
+        } catch (claimErr) {
+          // Account was created; surface the link error so the user
+          // can retry or contact support without losing their account.
+          setError(`Account created, but linking subscription failed: ${claimErr.message}`);
+          setBusy(null);
+          return;
+        }
       }
       fetch('/api/signup-ip', { method: 'POST' })
         .then((r) => r.json().catch(() => ({})))
@@ -172,31 +233,43 @@ export default function AuthModal({ open, onClose, initialMode = 'signup', redir
           ×
         </button>
         <header className={styles.header}>
-          <span className={styles.kicker}>◆ {mode === 'signup' ? 'Create account' : 'Welcome back'}</span>
+          <span className={styles.kicker}>
+            ◆ {isClaimFlow ? 'Finish setup' : mode === 'signup' ? 'Create account' : 'Welcome back'}
+          </span>
           <h2 id="auth-modal-title" className={styles.title}>
-            {mode === 'signup' ? 'Sign up to continue' : 'Sign in to continue'}
+            {isClaimFlow
+              ? 'Set a password to finish'
+              : mode === 'signup'
+                ? 'Sign up to continue'
+                : 'Sign in to continue'}
           </h2>
           <p className={styles.subtitle}>
-            {mode === 'signup'
-              ? 'Takes 15 seconds. Your uploaded files stay loaded on this page.'
-              : 'Welcome back. Sign in and pick up where you left off.'}
+            {isClaimFlow
+              ? 'Payment confirmed. Pick a password and your subscription will be linked to your account.'
+              : mode === 'signup'
+                ? 'Takes 15 seconds. Your uploaded files stay loaded on this page.'
+                : 'Welcome back. Sign in and pick up where you left off.'}
           </p>
         </header>
 
-        {googleClientId ? (
-          <div
-            ref={googleBtnRef}
-            style={{ display: 'flex', justifyContent: 'center', minHeight: 44 }}
-          />
-        ) : (
-          <div className={styles.error}>
-            Google sign-in unavailable — NEXT_PUBLIC_GOOGLE_CLIENT_ID not set.
-          </div>
-        )}
+        {!isClaimFlow && (
+          <>
+            {googleClientId ? (
+              <div
+                ref={googleBtnRef}
+                style={{ display: 'flex', justifyContent: 'center', minHeight: 44 }}
+              />
+            ) : (
+              <div className={styles.error}>
+                Google sign-in unavailable — NEXT_PUBLIC_GOOGLE_CLIENT_ID not set.
+              </div>
+            )}
 
-        <div className={styles.divider}>
-          <span>or</span>
-        </div>
+            <div className={styles.divider}>
+              <span>or</span>
+            </div>
+          </>
+        )}
 
         <form className={styles.form} onSubmit={handleEmail}>
           <label className={styles.field}>
@@ -207,7 +280,9 @@ export default function AuthModal({ open, onClose, initialMode = 'signup', redir
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              readOnly={isClaimFlow}
               className={styles.input}
+              style={isClaimFlow ? { opacity: 0.7, cursor: 'not-allowed' } : undefined}
             />
           </label>
           <label className={styles.field}>
@@ -232,23 +307,25 @@ export default function AuthModal({ open, onClose, initialMode = 'signup', redir
           </button>
         </form>
 
-        <footer className={styles.footer}>
-          {mode === 'signup' ? (
-            <>
-              Already have an account?{' '}
-              <button type="button" className={styles.link} onClick={() => setMode('signin')}>
-                Sign in
-              </button>
-            </>
-          ) : (
-            <>
-              New here?{' '}
-              <button type="button" className={styles.link} onClick={() => setMode('signup')}>
-                Create an account
-              </button>
-            </>
-          )}
-        </footer>
+        {!isClaimFlow && (
+          <footer className={styles.footer}>
+            {mode === 'signup' ? (
+              <>
+                Already have an account?{' '}
+                <button type="button" className={styles.link} onClick={() => setMode('signin')}>
+                  Sign in
+                </button>
+              </>
+            ) : (
+              <>
+                New here?{' '}
+                <button type="button" className={styles.link} onClick={() => setMode('signup')}>
+                  Create an account
+                </button>
+              </>
+            )}
+          </footer>
+        )}
       </div>
     </div>
   );
