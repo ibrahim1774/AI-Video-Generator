@@ -19,6 +19,7 @@ export default function UploadZone({
   onFileSelected,
   onRemove,
   maxSizeMB,
+  compact = false,
 }) {
   const inputRef = useRef(null);
   const [dragOver, setDragOver] = useState(false);
@@ -71,9 +72,20 @@ export default function UploadZone({
     .filter(Boolean)
     .join(' ');
 
+  // Compact mode: roughly half the height, smaller icon/label, less
+  // padding. Used on the face-swap creator so the whole form fits
+  // above the fold.
+  const compactZoneStyle = compact
+    ? { minHeight: 96, padding: '12px 14px', gap: 4 }
+    : undefined;
+  const compactIconStyle = compact ? { fontSize: 20 } : undefined;
+  const compactLabelStyle = compact ? { fontSize: 14 } : undefined;
+  const compactSubStyle = compact ? { fontSize: 9, letterSpacing: '0.08em' } : undefined;
+
   return (
     <div
       className={zoneClass}
+      style={compactZoneStyle}
       onClick={hasFile ? undefined : openPicker}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -110,17 +122,17 @@ export default function UploadZone({
         </button>
       )}
 
-      <div className={styles.icon} aria-hidden="true">
+      <div className={styles.icon} style={compactIconStyle} aria-hidden="true">
         {hasFile ? '✓' : icon}
       </div>
-      <div className={styles.label}>{label}</div>
+      <div className={styles.label} style={compactLabelStyle}>{label}</div>
       {hasFile ? (
         <div className={styles.fileMeta}>
           <span className={styles.fileName}>{file.name}</span>
           <span className={styles.fileSize}>{formatSize(file.size)}</span>
         </div>
       ) : (
-        <div className={styles.sublabel}>{sublabel}</div>
+        <div className={styles.sublabel} style={compactSubStyle}>{sublabel}</div>
       )}
       {sizeError && (
         <div

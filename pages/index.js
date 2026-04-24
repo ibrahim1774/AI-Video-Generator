@@ -4,7 +4,6 @@ import styles from '../styles/Home.module.css';
 import UploadZone from '../components/UploadZone';
 import Processing from '../components/Processing';
 import Result from '../components/Result';
-import UploadGuide from '../components/UploadGuide';
 import Paywall from '../components/Paywall';
 import HybridPreview from '../components/HybridPreview';
 import AuthModal from '../components/AuthModal';
@@ -504,14 +503,15 @@ export default function Home() {
   // without credits.
 
   return (
-    <main className={styles.page}>
-      <div className={styles.hero}>
+    <main className={styles.page} style={{ paddingTop: 24 }}>
+      <div className={styles.hero} style={{ marginBottom: 12 }}>
         <span className={styles.eyebrow}>◆ AI Face Swap</span>
-        <h1 className={styles.headline}>
+        <h1 className={styles.headline} style={{ fontSize: 'clamp(32px, 5vw, 52px)', margin: '12px 0 8px' }}>
           Swap any face into <span className={styles.accent}>any video</span>
         </h1>
-        <p className={styles.subtitle}>
-          We use our top-rated models to turn your photo and video into one new clip. First we paint your face into the very first frame of your source video. Then we teach that frame how to move &mdash; every blink, head turn, and expression flows onto your new face.
+        <p className={styles.subtitle} style={{ fontSize: 14 }}>
+          Upload a 3&ndash;10 second video and a clear front-facing photo. Each swap takes
+          2&ndash;4 minutes and downloads automatically.
         </p>
       </div>
 
@@ -521,49 +521,29 @@ export default function Home() {
         </div>
       )}
 
-      <UploadGuide />
-
-      <div
-        style={{
-          maxWidth: 720,
-          margin: '12px auto 20px',
-          padding: '12px 16px',
-          border: '1px solid rgba(224, 196, 136, 0.35)',
-          borderRadius: 10,
-          background: 'rgba(224, 196, 136, 0.06)',
-          color: '#e8d9af',
-          fontSize: 13,
-          lineHeight: 1.5,
-          textAlign: 'center',
-        }}
-      >
-        ◆ Heads-up: every swap runs on our most powerful (and most expensive)
-        AI models. That's why the result looks studio-clean &mdash; and why
-        each generation takes <strong>2&ndash;4 minutes</strong> after you
-        click below.
-      </div>
-
       <form className={styles.shell} onSubmit={handleSubmit}>
-        <div className={styles.uploads}>
+        <div className={styles.uploads} style={{ gap: 10, marginBottom: 12 }}>
           <UploadZone
             label="Source video"
-            sublabel="MP4 or MOV · 3–30s · Max 100MB"
+            sublabel="MP4 / MOV · 3–10s"
             icon="🎬"
             accept="video/mp4,video/quicktime"
             file={videoFile}
             onFileSelected={setVideoFile}
             onRemove={() => setVideoFile(null)}
             maxSizeMB={100}
+            compact
           />
           <UploadZone
             label="Reference face"
-            sublabel="JPG or PNG · Clear, front-facing"
+            sublabel="JPG / PNG · Front-facing"
             icon="👤"
             accept="image/jpeg,image/png"
             file={faceFile}
             onFileSelected={setFaceFile}
             onRemove={() => setFaceFile(null)}
             maxSizeMB={50}
+            compact
           />
         </div>
 
@@ -618,6 +598,7 @@ export default function Home() {
 
         <label
           className={`${styles.consent} ${consent ? styles.consentActive : ''}`}
+          style={{ padding: '8px 12px', marginTop: 8 }}
         >
           <input
             type="checkbox"
@@ -631,12 +612,8 @@ export default function Home() {
           >
             ✓
           </span>
-          <span className={styles.consentText}>
+          <span className={styles.consentText} style={{ fontSize: 12 }}>
             I have consent to use this likeness.
-            <span className={styles.consentDetail}>
-              Misuse — including impersonation, harassment, or non-consensual content — results in
-              immediate termination.
-            </span>
           </span>
         </label>
 
@@ -661,17 +638,9 @@ export default function Home() {
           </div>
         )}
 
-        <div className={styles.footerRow}>
-          <span className={styles.footerItem}>
-            <span className={styles.diamond}>◆</span> Encrypted upload
-          </span>
-          <span className={styles.footerItem}>
-            <span className={styles.diamond}>◆</span> Two-stage pipeline
-          </span>
-          <span className={styles.footerItem}>
-            <span className={styles.diamond}>◆</span> Auto-deleted in 7 days
-          </span>
-        </div>
+        {/* Footer trust pills removed for compaction. Legal/security
+            info now lives in the dashboard support section + privacy
+            page. */}
       </form>
 
       <AuthModal
