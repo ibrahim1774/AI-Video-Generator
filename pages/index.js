@@ -19,15 +19,13 @@ import { maybeCompressImage } from '../lib/imageCompress';
 
 const FEATURE = 'face-swap';
 
-// Same demo videos shown on the /ugc anonymous landing. Duplicated
-// inline (not imported) so this file remains self-contained.
+// Demo videos shown on the home anonymous landing. Independent of the
+// /ugc landing's set so each page can curate for its own audience.
 const HOME_LANDING_VIDEOS = [
-  { id: '85rijpwaq2', aspect: 0.5625 },
-  { id: 'lnndmek1c5', aspect: 0.5598755832037325 },
-  { id: 'lsno8w6lt4', aspect: 0.5598755832037325 },
-  { id: 'nx8bxwnoiw', aspect: 0.5581395348837209 },
-  { id: 'clq4ug7ln2', aspect: 0.5642633228840125 },
-  { id: 'p68dfq0341', aspect: 0.5642633228840125 },
+  { id: 'vh0vtubvpo', aspect: 0.5625 },
+  { id: 'jn4yy7w312', aspect: 0.5625 },
+  { id: 'uvc4cuqtjk', aspect: 0.5625 },
+  { id: '9n1azg2tfa', aspect: 0.5625 },
 ];
 
 export default function Home() {
