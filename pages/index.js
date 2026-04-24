@@ -509,17 +509,18 @@ export default function Home() {
 
   if (authLoaded && !authUser) {
     return (
-      <main className={styles.page}>
-        <div className={styles.hero}>
+      <main className={styles.page} style={{ paddingTop: 28 }}>
+        <div className={styles.hero} style={{ marginBottom: 20 }}>
           <span className={styles.eyebrow}>◆ AI Face Swap</span>
           <h1 className={styles.headline}>
             Swap any face into <span className={styles.accent}>any video</span>
           </h1>
           <p className={styles.subtitle}>
-            We use our top-rated models to turn your photo and video into one new clip. First we paint your face into the very first frame of your source video. Then we teach that frame how to move &mdash; every blink, head turn, and expression flows onto your new face.
+            Upload a face and any video &mdash; Haelabs swaps it in with cinematic
+            quality. Every blink, head turn, and expression flows onto the new face.
           </p>
         </div>
-        <div style={{ textAlign: 'center', marginTop: 32 }}>
+        <div style={{ textAlign: 'center', marginTop: 12 }}>
           <button
             type="button"
             onClick={() => setAuthModalOpen(true)}
@@ -574,7 +575,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div style={{ textAlign: 'center', marginTop: 12, marginBottom: 40 }}>
+        <div style={{ textAlign: 'center', marginTop: 4, marginBottom: 28 }}>
           <button
             type="button"
             onClick={() => setAuthModalOpen(true)}
@@ -588,19 +589,19 @@ export default function Home() {
         <style jsx global>{`
           .home-carousel-wrap {
             max-width: 100%;
-            margin: 28px auto 8px;
+            margin: 12px auto 4px;
             padding: 0;
             position: relative;
           }
           .home-carousel {
             display: flex;
-            gap: 14px;
+            gap: 10px;
             overflow-x: auto;
             overflow-y: hidden;
             scroll-snap-type: x mandatory;
             -webkit-overflow-scrolling: touch;
             scroll-padding: 0 16px;
-            padding: 4px 16px 18px;
+            padding: 4px 16px 10px;
             scrollbar-width: none;
           }
           .home-carousel::-webkit-scrollbar {
@@ -608,12 +609,12 @@ export default function Home() {
           }
           .home-carousel-card {
             flex: 0 0 auto;
-            width: clamp(220px, 78vw, 320px);
-            border-radius: 14px;
+            width: clamp(180px, 70vw, 240px);
+            border-radius: 12px;
             overflow: hidden;
             border: 1px solid rgba(224, 196, 136, 0.18);
             background: #0c0c0e;
-            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
             scroll-snap-align: center;
             min-width: 0;
           }
@@ -625,20 +626,20 @@ export default function Home() {
           .home-carousel-hint {
             text-align: center;
             font-family: var(--font-mono, ui-monospace, monospace);
-            font-size: 10px;
+            font-size: 9px;
             letter-spacing: 0.18em;
             text-transform: uppercase;
             color: rgba(255, 255, 255, 0.35);
-            margin-top: 4px;
+            margin-top: 2px;
           }
           @media (min-width: 720px) {
             .home-carousel {
               justify-content: center;
               scroll-padding: 0;
-              padding: 4px 32px 18px;
+              padding: 4px 24px 10px;
             }
             .home-carousel-card {
-              width: 260px;
+              width: 200px;
               scroll-snap-align: center;
             }
             .home-carousel-hint {
