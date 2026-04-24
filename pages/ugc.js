@@ -937,6 +937,7 @@ export default function UgcPage() {
         </div>
         <Paywall
           entitlement={entitlement}
+          returnTo="/ugc"
           onError={(msg) => setError(msg)}
           onTrialStarted={() => { fetchEntitlement(); setStep(storyScenes.length > 0 ? 'result' : 'choose'); }}
         />

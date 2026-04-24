@@ -470,6 +470,7 @@ export default function Home() {
         {error && <div className={styles.error}>{error}</div>}
         <Paywall
           entitlement={entitlement}
+          returnTo="/"
           onError={(msg) => setError(msg)}
           onTrialStarted={handleTrialStarted}
         />

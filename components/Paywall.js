@@ -8,7 +8,7 @@ const TOPUPS = [
   { pack: 'l', label: '$100', credits: 60 },
 ];
 
-export default function Paywall({ entitlement, onTrialStarted, onError }) {
+export default function Paywall({ entitlement, onTrialStarted, onError, returnTo }) {
   const [busy, setBusy] = useState(null); // 'monthly' | 'yearly' | 's' | 'm' | 'l'
   const [localError, setLocalError] = useState('');
   const [trialBlocked, setTrialBlocked] = useState(false);
@@ -58,7 +58,7 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan }),
+        body: JSON.stringify({ plan, returnTo }),
       });
       const data = await res.json();
       if (!res.ok || !data.url) {
@@ -87,7 +87,7 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode: 'topup', pack }),
+        body: JSON.stringify({ mode: 'topup', pack, returnTo }),
       });
       const data = await res.json();
       if (!res.ok || !data.url) {

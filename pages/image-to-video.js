@@ -183,6 +183,7 @@ export default function ImageToVideoPage() {
         </div>
         <Paywall
           entitlement={entitlement}
+          returnTo="/image-to-video"
           onError={(msg) => setError(msg)}
           onTrialStarted={() => {
             fetchEntitlement();

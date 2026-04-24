@@ -38,12 +38,21 @@ export default async function handler(req, res) {
   if (!session) return res.status(401).json({ error: 'Authentication required.' });
   const email = session.user.email;
 
-  const { plan, mode, pack } = req.body || {};
+  const { plan, mode, pack, returnTo } = req.body || {};
 
   const origin =
     process.env.APP_URL ||
     (req.headers.origin && req.headers.origin.replace(/\/$/, '')) ||
     `https://${req.headers.host}`;
+
+  // Optional: where to send the user after dashboard finishes
+  // confirming the Stripe session. Validated to be a same-origin
+  // path so the redirect can never escape to an external URL.
+  const safeReturnTo =
+    typeof returnTo === 'string' && returnTo.startsWith('/') && !returnTo.startsWith('//')
+      ? returnTo
+      : '';
+  const returnQuery = safeReturnTo ? `&returnTo=${encodeURIComponent(safeReturnTo)}` : '';
 
   try {
     if (mode === 'topup') {
@@ -56,7 +65,7 @@ export default async function handler(req, res) {
         payment_method_types: ['card'],
         line_items: [{ price: price.id, quantity: 1 }],
         customer_email: email,
-        success_url: `${origin}/dashboard?paid=1&session_id={CHECKOUT_SESSION_ID}`,
+        success_url: `${origin}/dashboard?paid=1&session_id={CHECKOUT_SESSION_ID}${returnQuery}`,
         cancel_url: `${origin}/dashboard?paid=0`,
         allow_promotion_codes: true,
         billing_address_collection: 'auto',

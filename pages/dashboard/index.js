@@ -51,6 +51,13 @@ export default function DashboardPage() {
       const params = new URLSearchParams(window.location.search);
       const paid = params.get('paid');
       const sessionId = params.get('session_id');
+      const returnToRaw = params.get('returnTo');
+      // Same-origin guard: only honor returnTo values that look like
+      // relative paths starting with a single /.
+      const returnTo =
+        returnToRaw && returnToRaw.startsWith('/') && !returnToRaw.startsWith('//')
+          ? returnToRaw
+          : null;
 
       if (paid === '1' && sessionId) {
         setConfirming(true);
@@ -81,6 +88,12 @@ export default function DashboardPage() {
                 log('warn', 'pixel threw', { message: e.message });
               }
             }
+            // If the checkout was initiated from another page (e.g.
+            // /ugc), bounce the user back there now that credits are
+            // granted. Brief delay so the Pixel has time to flush.
+            if (returnTo) {
+              setTimeout(() => router.replace(returnTo), 600);
+            }
           } else {
             setError(data.error || 'Could not finalize your subscription.');
           }
@@ -91,6 +104,7 @@ export default function DashboardPage() {
           const url = new URL(window.location.href);
           url.searchParams.delete('paid');
           url.searchParams.delete('session_id');
+          url.searchParams.delete('returnTo');
           window.history.replaceState({}, '', url.toString());
         }
       }
