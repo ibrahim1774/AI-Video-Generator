@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import styles from './Paywall.module.css';
 
@@ -12,6 +12,25 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
   const [busy, setBusy] = useState(null); // 'monthly' | 'yearly' | 's' | 'm' | 'l'
   const [localError, setLocalError] = useState('');
   const [trialBlocked, setTrialBlocked] = useState(false);
+
+  // After redirecting to Stripe, the user may hit Back to return here.
+  // Modern browsers restore the page from BFCache without re-running
+  // useEffect or remounting, so the `busy` state stays set and the
+  // button keeps saying "Redirecting…". The pageshow event fires on
+  // BFCache restore (event.persisted === true) — we use it to reset
+  // the transient state to its initial values.
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const onPageShow = (e) => {
+      if (e.persisted) {
+        setBusy(null);
+        setTrialBlocked(false);
+        setLocalError('');
+      }
+    };
+    window.addEventListener('pageshow', onPageShow);
+    return () => window.removeEventListener('pageshow', onPageShow);
+  }, []);
 
   // Fire the browser pixel for InitiateCheckout if the API returned
   // matching meta. Same eventID as the server CAPI call dedupes them.
@@ -112,7 +131,7 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
               ? 'Buy a top-up pack to keep going during your trial, or convert to a monthly/yearly plan below.'
               : showTopups
                 ? 'Buy a top-up pack. Credits never expire and stack on your plan.'
-                : 'Both plans start with 2 free credits — enough for one full UGC clip — for 24 hours. Cancel during the trial and you won\'t be charged.'}
+                : 'Both plans start with 2 free credits — enough for one full UGC clip — for 24 hours.'}
           </p>
           <p className={styles.subtitle} style={{ marginTop: 8, fontSize: 13, opacity: 0.85 }}>
             Each generation uses our most powerful (and pricey) AI models &mdash;
@@ -229,7 +248,7 @@ export default function Paywall({ entitlement, onTrialStarted, onError }) {
           <span>◆ Card required</span>
           <span>◆ Powered by Stripe</span>
           <span>
-            ◆ {showTopups ? 'Top-up credits never expire' : 'Cancel during trial = no charge'}
+            ◆ {showTopups ? 'Top-up credits never expire' : 'Cancel anytime'}
           </span>
         </footer>
       </div>

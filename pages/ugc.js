@@ -445,6 +445,17 @@ export default function UgcPage() {
             </p>
           </div>
 
+          <div style={{ textAlign: 'center', marginTop: 8, marginBottom: 8 }}>
+            <button
+              type="button"
+              onClick={() => setAuthModalOpen(true)}
+              className={`${styles.submit} ${styles.submitReady}`}
+              style={{ maxWidth: 320, margin: '0 auto' }}
+            >
+              Get started for free.
+            </button>
+          </div>
+
           <div className="ugc-carousel-wrap">
             <div className="ugc-carousel" role="region" aria-label="UGC examples">
               {LANDING_VIDEOS.map((v) => (
@@ -543,7 +554,7 @@ export default function UgcPage() {
               className={`${styles.submit} ${styles.submitReady}`}
               style={{ maxWidth: 320, margin: '0 auto' }}
             >
-              Sign up &amp; get started →
+              Get started for free.
             </button>
             <p className={styles.subtitle} style={{ marginTop: 16, fontSize: 13 }}>
               Already have an account?{' '}
@@ -564,37 +575,11 @@ export default function UgcPage() {
     );
   }
 
-  // Pre-creator paywall gate. Authed but no plan/credits — must pick a
-  // plan before they can enter the creator. In-flight or completed
-  // work passes through (processing/extending/combining/final/result)
-  // because credit was already reserved or spent.
-  const gateableSteps = new Set(['choose', 'animate', 'gen-image']);
-  if (
-    entitlement &&
-    !entitlement.canSwap &&
-    gateableSteps.has(step) &&
-    storyScenes.length === 0
-  ) {
-    return (
-      <main className={styles.page}>
-        <div className={styles.hero}>
-          <span className={styles.eyebrow}>◆ Pick a plan</span>
-          <h1 className={styles.headline}>
-            One step to <span className={styles.accent}>start creating</span>
-          </h1>
-          <p className={styles.subtitle}>
-            Pick a plan to unlock the UGC creator. Cancel anytime.
-          </p>
-        </div>
-        {error && <div className={styles.error}>{error}</div>}
-        <Paywall
-          entitlement={entitlement}
-          onError={(msg) => setError(msg)}
-          onTrialStarted={() => { fetchEntitlement(); }}
-        />
-      </main>
-    );
-  }
+  // No pre-creator paywall gate. Authed users without credits can
+  // still enter the creator, pick an image, write a script, and click
+  // Generate. The /api/ugc-image and /api/ugc-animate endpoints will
+  // return 402 paywall and the existing handlers will surface the
+  // Paywall step at that point — same flow as face-swap.
 
   if (step === 'gen-image' && imageJob) {
     return (
