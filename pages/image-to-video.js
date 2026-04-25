@@ -258,7 +258,7 @@ export default function ImageToVideoPage() {
               file={imageFile}
               onFileSelected={setImageFile}
               onRemove={() => setImageFile(null)}
-              maxSizeMB={50}
+              maxSizeMB={1024}
             />
           </div>
 

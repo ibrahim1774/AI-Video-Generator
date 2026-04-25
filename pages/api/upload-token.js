@@ -22,7 +22,7 @@ export default async function handler(req, res) {
       body: req.body,
       onBeforeGenerateToken: async () => ({
         allowedContentTypes: ['video/*', 'image/*'],
-        maximumSizeInBytes: 100 * 1024 * 1024,
+        maximumSizeInBytes: 1024 * 1024 * 1024,
         addRandomSuffix: true,
       }),
       onUploadCompleted: async () => {

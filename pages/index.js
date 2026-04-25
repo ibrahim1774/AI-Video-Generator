@@ -550,7 +550,7 @@ export default function Home() {
             file={videoFile}
             onFileSelected={setVideoFile}
             onRemove={() => setVideoFile(null)}
-            maxSizeMB={100}
+            maxSizeMB={1024}
             compact
           />
           <UploadZone
@@ -561,7 +561,7 @@ export default function Home() {
             file={faceFile}
             onFileSelected={setFaceFile}
             onRemove={() => setFaceFile(null)}
-            maxSizeMB={50}
+            maxSizeMB={1024}
             compact
           />
         </div>
