@@ -2,12 +2,15 @@ import { useRef, useState } from 'react';
 
 import styles from './UploadZone.module.css';
 
+// Decimal units (1000-based) — matches what macOS Finder, iOS, and most
+// file browsers report, so our "X MB" agrees with what the user sees on
+// disk. (Binary MiB would inflate the number by ~5%.)
 function formatSize(bytes) {
   if (!bytes && bytes !== 0) return '';
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+  if (bytes < 1000) return `${bytes} B`;
+  if (bytes < 1000 * 1000) return `${(bytes / 1000).toFixed(1)} KB`;
+  if (bytes < 1000 * 1000 * 1000) return `${(bytes / (1000 * 1000)).toFixed(1)} MB`;
+  return `${(bytes / (1000 * 1000 * 1000)).toFixed(2)} GB`;
 }
 
 export default function UploadZone({
@@ -29,7 +32,7 @@ export default function UploadZone({
 
   const tryAccept = (selected) => {
     if (!selected) return;
-    if (maxSizeMB && selected.size > maxSizeMB * 1024 * 1024) {
+    if (maxSizeMB && selected.size > maxSizeMB * 1000 * 1000) {
       setSizeError(
         `File too large (${formatSize(selected.size)}) — max ${maxSizeMB} MB.`
       );
