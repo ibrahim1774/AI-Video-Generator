@@ -133,7 +133,7 @@ export default async function handler(req, res) {
       allow_promotion_codes: true,
       billing_address_collection: 'auto',
       subscription_data: {
-        ...(trialBlocked ? {} : { trial_period_days: 1 }),
+        ...(plan === 'yearly' && !trialBlocked ? { trial_period_days: 1 } : {}),
         metadata: subMetadata,
       },
       metadata: subMetadata,

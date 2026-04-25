@@ -124,18 +124,14 @@ export default function Paywall({ entitlement, onTrialStarted, onError, returnTo
               ? 'Add more credits or upgrade'
               : showTopups
                 ? 'Need more credits?'
-                : 'Start with a 1-day free trial'}
+                : 'Pick a plan'}
           </h2>
           <p className={styles.subtitle}>
             {isTrialing
               ? 'Buy a top-up pack to keep going during your trial, or convert to a monthly/yearly plan below.'
               : showTopups
                 ? 'Buy a top-up pack. Credits never expire and stack on your plan.'
-                : 'Both plans start with 2 free credits — enough for one full UGC clip — for 24 hours.'}
-          </p>
-          <p className={styles.subtitle} style={{ marginTop: 8, fontSize: 13, opacity: 0.85 }}>
-            Each generation uses our most powerful (and pricey) AI models &mdash;
-            that's the trade for high-quality output.
+                : 'Yearly plans start with a 1-day free trial. Cancel anytime.'}
           </p>
         </header>
 
@@ -162,17 +158,15 @@ export default function Paywall({ entitlement, onTrialStarted, onError, returnTo
         {showPlans && (
           <div className={styles.tiersTwo}>
             <article className={styles.tier}>
-              {!isTrialing && <div className={styles.tierBadge}>2 credits free for 24h</div>}
               <div className={styles.tierHead}>
                 <h3 className={styles.tierName}>Monthly</h3>
                 <div className={styles.price}>
-                  <span className={styles.amount}>$9</span>
+                  <span className={styles.amount}>$5</span>
                   <span className={styles.period}>/ month</span>
                 </div>
               </div>
               <ul className={styles.feats}>
-                <li>10 video generations / month</li>
-                {isTrialing ? <li>Convert anytime to lock in $9/mo</li> : <li>2 free credits for 24h, then $9/month</li>}
+                <li>Monthly billing — $5/month</li>
                 <li>Cancel anytime</li>
                 <li>720p or 1080p, no watermark</li>
               </ul>
@@ -185,26 +179,25 @@ export default function Paywall({ entitlement, onTrialStarted, onError, returnTo
                 {busy === 'monthly'
                   ? 'Redirecting…'
                   : isTrialing
-                    ? 'Convert to monthly → $9/mo'
-                    : 'Start free trial → $9/mo'}
+                    ? 'Convert to monthly → $5/mo'
+                    : 'Subscribe → $5/mo'}
               </button>
             </article>
 
             <article className={`${styles.tier} ${styles.tierFeatured}`}>
               <div className={styles.tierBadge}>
-                {isTrialing ? 'Best value' : 'Best value · 2 credits free for 24h'}
+                {isTrialing ? 'Best value' : 'Best value · 1-day free trial'}
               </div>
               <div className={styles.tierHead}>
                 <h3 className={styles.tierName}>Yearly</h3>
                 <div className={styles.price}>
-                  <span className={styles.amount}>$89</span>
+                  <span className={styles.amount}>$49</span>
                   <span className={styles.period}>/ year</span>
                 </div>
               </div>
               <ul className={styles.feats}>
-                <li>50 video generations / year</li>
-                {isTrialing ? <li>Convert anytime to lock in $89/yr</li> : <li>2 free credits for 24h, then $89/year</li>}
-                <li>~18% cheaper than monthly</li>
+                {isTrialing ? <li>Convert anytime to lock in $49/yr</li> : <li>1-day free trial, then $49/year</li>}
+                <li>Save 18% vs monthly</li>
                 <li>One charge, cancel anytime</li>
               </ul>
               <button
@@ -216,8 +209,8 @@ export default function Paywall({ entitlement, onTrialStarted, onError, returnTo
                 {busy === 'yearly'
                   ? 'Redirecting…'
                   : isTrialing
-                    ? 'Convert to yearly → $89/yr'
-                    : 'Start free trial → $89/yr'}
+                    ? 'Convert to yearly → $49/yr'
+                    : 'Start free trial → $49/yr'}
               </button>
             </article>
           </div>
