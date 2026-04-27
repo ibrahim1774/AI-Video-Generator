@@ -55,7 +55,18 @@ export default async function handler(req, res) {
       const customer = await stripe().customers.retrieve(customerId);
       const md = customer && !customer.deleted ? customer.metadata || {} : {};
       const existingCredits = parseInt(md.creditsRemaining || '0', 10) || 0;
-      const seededCredits = Math.max(existingCredits, CAPS[plan]);
+      // Trialing yearly subs only get the 2-credit trial pool (tracked
+      // separately via TRIAL_CREDITS / trialCreditsUsed). Seeding the
+      // full cap here would let the user spend cap+TRIAL_CREDITS during
+      // the trial — the entitlement reader treats md.creditsRemaining
+      // as top-ups and adds it on top of the trial pool. Leave it at 0
+      // (or whatever existing top-ups they have) and let the rollover
+      // path in readPaidEntitlement grant the full cap on the
+      // trialing → active transition (current_period_start jumps).
+      const isTrialing = sub && sub.status === 'trialing';
+      const seededCredits = isTrialing
+        ? existingCredits
+        : Math.max(existingCredits, CAPS[plan]);
       await stripe().customers.update(customerId, {
         metadata: {
           ...md,

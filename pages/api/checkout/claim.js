@@ -76,7 +76,13 @@ export default async function handler(req, res) {
     const customer = await stripe().customers.retrieve(customerId);
     const md = customer && !customer.deleted ? customer.metadata || {} : {};
     const existingCredits = parseInt(md.creditsRemaining || '0', 10) || 0;
-    const seededCredits = Math.max(existingCredits, CAPS[plan]);
+    // See /api/checkout/confirm.js for the rationale: trialing subs
+    // only get the 2-credit trial pool until current_period_start
+    // jumps on conversion to active.
+    const isTrialing = sub && sub.status === 'trialing';
+    const seededCredits = isTrialing
+      ? existingCredits
+      : Math.max(existingCredits, CAPS[plan]);
     await stripe().customers.update(customerId, {
       metadata: {
         ...md,
