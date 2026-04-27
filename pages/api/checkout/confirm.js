@@ -90,11 +90,19 @@ export default async function handler(req, res) {
     // Bind Stripe customer <-> Supabase profile (authoritative link).
     await linkStripeCustomerToProfile(session.supabase, session.user.id, customerId);
 
-    const eventId = `pur-${checkoutSession.id}`;
+    // Trialing yearly subs haven't been charged yet — fire StartTrial
+    // so we don't pollute Purchase reporting. The actual Purchase fires
+    // from the /api/stripe-webhook.js handler when the trial converts
+    // and Stripe collects the first real payment.
+    const isTrialingSub =
+      plan && checkoutSession.subscription?.status === 'trialing';
+    const eventName = isTrialingSub ? 'StartTrial' : 'Purchase';
+    const eventId = `${isTrialingSub ? 'st' : 'pur'}-${checkoutSession.id}`;
+    const reportedValue = isTrialingSub ? 0 : value;
     await sendCapiEvent({
-      eventName: 'Purchase',
+      eventName,
       eventId,
-      value,
+      value: reportedValue,
       currency: 'USD',
       email: customerEmail,
       req,
@@ -112,7 +120,7 @@ export default async function handler(req, res) {
       tier: plan || 'unknown',
       videoCap: plan ? CAPS[plan] : 0,
       creditsAdded,
-      meta: { eventId, eventName: 'Purchase', value, currency: 'USD' },
+      meta: { eventId, eventName, value: reportedValue, currency: 'USD' },
     });
   } catch (err) {
     return res.status(500).json({ error: err.message });
