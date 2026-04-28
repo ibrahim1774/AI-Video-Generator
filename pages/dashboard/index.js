@@ -207,7 +207,7 @@ export default function DashboardPage() {
           <a
             href="mailto:support@davoxa.com"
             style={{
-              color: '#e0c488',
+              color: '#ededed',
               fontSize: 15,
               fontWeight: 500,
               textDecoration: 'none',

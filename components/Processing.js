@@ -185,8 +185,8 @@ export default function Processing({
             />
             <defs>
               <linearGradient id="ringGradient" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#E0C488" />
-                <stop offset="100%" stopColor="#8B7340" />
+                <stop offset="0%" stopColor="#ededed" />
+                <stop offset="100%" stopColor="#b0b0b0" />
               </linearGradient>
             </defs>
           </svg>

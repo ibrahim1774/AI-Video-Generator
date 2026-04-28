@@ -25,7 +25,7 @@
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #8b7340;
+  color: #b0b0b0;
   margin-bottom: 8px;
 }
 
@@ -83,7 +83,7 @@
   top: -10px;
   right: 16px;
   background: #1c170f;
-  color: #e0c488;
+  color: #ededed;
   font-size: 10px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -140,7 +140,7 @@
   position: absolute;
   left: 0;
   top: 0;
-  color: #b59453;
+  color: #a8a8a8;
   font-size: 8px;
   line-height: 1.7;
 }
@@ -178,7 +178,7 @@
 }
 
 .btnAccent {
-  background: linear-gradient(180deg, #d8b366 0%, #8b7340 100%);
+  background: linear-gradient(180deg, #e0e0e0 0%, #b0b0b0 100%);
   color: #1c170f;
 }
 

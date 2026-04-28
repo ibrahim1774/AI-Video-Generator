@@ -237,7 +237,7 @@ export default function ImageToVideoPage() {
             border: '1px solid rgba(224, 196, 136, 0.35)',
             borderRadius: 10,
             background: 'rgba(224, 196, 136, 0.06)',
-            color: '#e8d9af',
+            color: '#e6e6e6',
             fontSize: 13,
             lineHeight: 1.5,
             textAlign: 'center',

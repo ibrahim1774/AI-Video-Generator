@@ -27,7 +27,7 @@
 }
 
 .title {
-  color: #e0c488;
+  color: #ededed;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -51,7 +51,7 @@
 
 .btn:hover {
   border-color: rgba(224, 196, 136, 0.5);
-  color: #e0c488;
+  color: #ededed;
 }
 
 .list {
@@ -136,7 +136,7 @@
   right: 16px;
   background: rgba(10, 10, 12, 0.95);
   border: 1px solid rgba(224, 196, 136, 0.4);
-  color: #e0c488;
+  color: #ededed;
   padding: 6px 12px;
   border-radius: 8px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;

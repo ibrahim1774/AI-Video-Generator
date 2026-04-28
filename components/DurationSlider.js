@@ -32,11 +32,11 @@ export default function DurationSlider({
         }}
       >
         {label}:{' '}
-        <span style={{ color: '#e0c488' }}>{value} seconds</span>
+        <span style={{ color: '#ededed' }}>{value} seconds</span>
         {showCost && (
           <>
             {' · '}
-            <span style={{ color: '#e0c488' }}>
+            <span style={{ color: '#ededed' }}>
               {cost} credit{cost === 1 ? '' : 's'}
             </span>
           </>
@@ -49,7 +49,7 @@ export default function DurationSlider({
         step={1}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        style={{ width: '100%', accentColor: '#e0c488' }}
+        style={{ width: '100%', accentColor: '#ededed' }}
         aria-label={ariaLabel}
       />
       <div

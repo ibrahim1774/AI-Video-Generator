@@ -234,7 +234,7 @@
   border-radius: 10px;
   background: rgba(224, 196, 136, 0.12);
   border: 1px solid rgba(224, 196, 136, 0.35);
-  color: #e0c488;
+  color: #ededed;
   font-size: 13px;
   text-align: center;
   letter-spacing: 0.04em;
@@ -305,7 +305,7 @@
 }
 
 .required {
-  color: #e0c488;
+  color: #ededed;
   font-style: italic;
   text-transform: none;
   letter-spacing: 0.04em;

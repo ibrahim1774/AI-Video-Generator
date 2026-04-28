@@ -15,7 +15,7 @@
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #e0c488;
+  color: #ededed;
   margin-bottom: 8px;
 }
 
@@ -156,11 +156,11 @@
 .btnSecondary {
   background: rgba(224, 196, 136, 0.12);
   border: 1px solid rgba(224, 196, 136, 0.4);
-  color: #e0c488;
+  color: #ededed;
 }
 
 .btnPrimary {
-  background: linear-gradient(180deg, #e0c488 0%, #b59453 100%);
+  background: linear-gradient(180deg, #ededed 0%, #a8a8a8 100%);
   color: #1c170f;
 }
 

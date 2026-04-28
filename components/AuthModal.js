@@ -306,7 +306,7 @@ export default function AuthModal({
               borderRadius: 8,
               border: '1px solid rgba(224, 196, 136, 0.25)',
               background: 'rgba(224, 196, 136, 0.06)',
-              color: '#e8d9af',
+              color: '#e6e6e6',
               fontSize: 12,
               lineHeight: 1.5,
               textAlign: 'center',

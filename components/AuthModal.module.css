@@ -48,7 +48,7 @@
 }
 
 .closeBtn:hover {
-  color: #e0c488;
+  color: #ededed;
 }
 
 .header {
@@ -61,7 +61,7 @@
   font-size: 10px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #e0c488;
+  color: #ededed;
   margin-bottom: 6px;
 }
 
@@ -184,7 +184,7 @@
 
 .submitBtn {
   margin-top: 4px;
-  background: linear-gradient(180deg, #e0c488 0%, #b59453 100%);
+  background: linear-gradient(180deg, #ededed 0%, #a8a8a8 100%);
   color: #1c170f;
   border: none;
   border-radius: 8px;
@@ -214,7 +214,7 @@
 .link {
   background: transparent;
   border: none;
-  color: #e0c488;
+  color: #ededed;
   cursor: pointer;
   font-size: 12px;
   padding: 0;
