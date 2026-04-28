@@ -10,6 +10,7 @@ const FEATURE_TABS = [
   { href: '/', label: 'Face Swap' },
   { href: '/image-to-video', label: 'Image to Video' },
   { href: '/ugc', label: 'UGC Creator' },
+  { href: '/video/editing', label: 'Video Editor' },
 ];
 
 export default function Navbar() {
@@ -122,7 +123,7 @@ export default function Navbar() {
               style={{
                 fontSize: 12,
                 fontFamily: 'inherit',
-                color: '#e0c488',
+                color: '#ededed',
                 background: 'rgba(224, 196, 136, 0.08)',
                 border: '1px solid rgba(224, 196, 136, 0.3)',
                 padding: '5px 12px',
@@ -208,7 +209,7 @@ export default function Navbar() {
             <Link
               href="/sign-in"
               style={{
-                color: '#e0c488',
+                color: '#ededed',
                 fontSize: 12,
                 textDecoration: 'none',
                 letterSpacing: '0.04em',
@@ -230,7 +231,7 @@ export default function Navbar() {
               style={{
                 padding: '8px 14px',
                 fontSize: 13,
-                color: '#e0c488',
+                color: '#ededed',
                 borderBottom: '1px solid rgba(255,255,255,0.08)',
                 marginBottom: 4,
               }}
