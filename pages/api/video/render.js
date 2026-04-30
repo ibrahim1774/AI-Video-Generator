@@ -118,6 +118,24 @@ export default async function handler(req, res) {
         console.warn('[video/render] could not update completed row', dbErr.message);
       }
     }
+    // Also surface in /history so the user can find it for 24h.
+    try {
+      const admin = getSupabaseAdmin();
+      const expiresAt = new Date(Date.now() + 23 * 60 * 60 * 1000).toISOString();
+      await admin.from('videos').upsert(
+        {
+          user_id: session.user.id,
+          prediction_id: renderId,
+          kind: 'video-edit',
+          result_url: result.outputUrl,
+          is_blob_owned: true,
+          expires_at: expiresAt,
+        },
+        { onConflict: 'prediction_id', ignoreDuplicates: true }
+      );
+    } catch (histErr) {
+      console.warn('[video/render] history insert failed', histErr.message);
+    }
   } catch (err) {
     console.error('[video/render] ffmpeg failed', err);
     failJob(renderId, err.message || 'Render failed.');

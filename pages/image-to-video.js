@@ -151,6 +151,7 @@ export default function ImageToVideoPage() {
           startedAt={job.startedAt}
           vendor={job.vendor || 'kie'}
           kind="video"
+          historyKind="image-to-video"
           onComplete={(data) => {
             clearJob(FEATURE);
             setJob((prev) => ({ ...prev, resultUrl: data.resultUrl }));

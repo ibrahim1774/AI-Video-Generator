@@ -11,6 +11,7 @@ const FEATURE_TABS = [
   { href: '/image-to-video', label: 'Image to Video' },
   { href: '/ugc', label: 'UGC Creator' },
   { href: '/video/editing', label: 'Video Editor' },
+  { href: '/history', label: 'History' },
 ];
 
 export default function Navbar() {

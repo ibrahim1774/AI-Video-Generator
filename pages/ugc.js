@@ -465,6 +465,7 @@ export default function UgcPage() {
           startedAt={job.startedAt}
           vendor={job.vendor || 'kie'}
           kind="video"
+          historyKind="ugc"
           onComplete={(d) => onSceneComplete(d.resultUrl)}
           onError={onSceneError}
         />

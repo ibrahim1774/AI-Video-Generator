@@ -456,6 +456,7 @@ export default function Home() {
           predictionId={activeJob.predictionId}
           startedAt={activeJob.startedAt}
           kind="video"
+          historyKind="face-swap"
           onComplete={handleComplete}
           onError={handleError}
         />

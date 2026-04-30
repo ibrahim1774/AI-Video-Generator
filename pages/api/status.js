@@ -1,5 +1,6 @@
 import { getPrediction, normalizeStatus } from '../../lib/replicate';
 import { getKiePrediction, normalizeKieStatus } from '../../lib/kie';
+import { getUserFromRequest, getSupabaseAdmin } from '../../lib/supabaseServer';
 
 /*
  * Polling endpoint. Dispatches to either Replicate (default — used for
@@ -8,7 +9,38 @@ import { getKiePrediction, normalizeKieStatus } from '../../lib/kie';
  * vendor via the `vendor` query param, and that choice is persisted
  * alongside the predictionId in localStorage so resume-after-close
  * routes to the right backend.
+ *
+ * On the first poll that detects a completed prediction with a
+ * resultUrl, we also insert into the `videos` table so the result
+ * shows up in /history. Idempotent on prediction_id.
  */
+
+const ALLOWED_KINDS = ['face-swap', 'image-to-video', 'ugc'];
+const HISTORY_TTL_HOURS = 23;
+
+async function recordHistory({ session, predictionId, resultUrl, historyKind }) {
+  if (!session || !resultUrl || !ALLOWED_KINDS.includes(historyKind)) return;
+  try {
+    const admin = getSupabaseAdmin();
+    const expiresAt = new Date(Date.now() + HISTORY_TTL_HOURS * 60 * 60 * 1000).toISOString();
+    await admin
+      .from('videos')
+      .upsert(
+        {
+          user_id: session.user.id,
+          prediction_id: predictionId,
+          kind: historyKind,
+          result_url: resultUrl,
+          is_blob_owned: false,
+          expires_at: expiresAt,
+        },
+        { onConflict: 'prediction_id', ignoreDuplicates: true }
+      );
+  } catch (err) {
+    // Never break the poll on history-write failure.
+    console.warn('[status] history insert failed', err.message);
+  }
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -16,17 +48,26 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { predictionId, vendor } = req.query;
+  const { predictionId, vendor, historyKind } = req.query;
   if (!predictionId || typeof predictionId !== 'string') {
     return res.status(400).json({ error: 'predictionId is required.' });
   }
 
   const isKie = vendor === 'kie';
+  const session = await getUserFromRequest(req, res); // /api/status is gated by middleware so this is non-null
 
   try {
     if (isKie) {
       const record = await getKiePrediction(predictionId);
       const normalized = normalizeKieStatus(record);
+      if (normalized.status === 'complete' && normalized.resultUrl) {
+        await recordHistory({
+          session,
+          predictionId,
+          resultUrl: normalized.resultUrl,
+          historyKind,
+        });
+      }
       return res.status(200).json({
         predictionId,
         status: normalized.status,
@@ -36,6 +77,14 @@ export default async function handler(req, res) {
     }
     const prediction = await getPrediction(predictionId);
     const normalized = normalizeStatus(prediction);
+    if (normalized.status === 'complete' && normalized.resultUrl) {
+      await recordHistory({
+        session,
+        predictionId,
+        resultUrl: normalized.resultUrl,
+        historyKind,
+      });
+    }
     return res.status(200).json({
       predictionId,
       status: normalized.status,

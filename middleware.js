@@ -53,6 +53,7 @@ export async function middleware(req) {
     '/api/ugc-animate',
     '/api/signup-ip',
     '/api/video',
+    '/api/history',
   ];
   if (privateApiPrefixes.some((p) => pathname.startsWith(p))) {
     if (!user) {
@@ -67,7 +68,7 @@ export async function middleware(req) {
   // /ugc is intentionally NOT here: it's a marketing landing for
   // anonymous visitors and the creator for authed users, gated inline
   // in pages/ugc.js (mirrors how / works for face-swap).
-  const protectedPages = ['/dashboard', '/image-to-video', '/video/editing'];
+  const protectedPages = ['/dashboard', '/image-to-video', '/video/editing', '/history'];
   if (protectedPages.some((p) => pathname.startsWith(p)) && !user) {
     const redirect = req.nextUrl.clone();
     redirect.pathname = '/sign-in';
@@ -92,5 +93,7 @@ export const config = {
     '/api/ugc-animate/:path*',
     '/api/signup-ip/:path*',
     '/api/video/:path*',
+    '/api/history/:path*',
+    '/history/:path*',
   ],
 };

@@ -58,6 +58,7 @@ export default function Processing({
   kind = 'video',
   startedAt,
   vendor = 'replicate',
+  historyKind = '',
 }) {
   const phases = kind === 'image' ? IMAGE_PHASES : VIDEO_PHASES;
   const expected = EXPECTED_MS[kind] || EXPECTED_MS.video;
@@ -100,8 +101,11 @@ export default function Processing({
     const poll = setInterval(async () => {
       pollCount += 1;
       try {
+        const histPart = historyKind
+          ? `&historyKind=${encodeURIComponent(historyKind)}`
+          : '';
         const res = await fetch(
-          `/api/status?predictionId=${encodeURIComponent(predictionId)}&vendor=${encodeURIComponent(vendor)}`
+          `/api/status?predictionId=${encodeURIComponent(predictionId)}&vendor=${encodeURIComponent(vendor)}${histPart}`
         );
         const text = await res.text();
         let data = {};
