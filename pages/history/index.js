@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 
 import styles from '../../styles/History.module.css';
-import Navbar from '../../components/Navbar';
 import { getBrowserSupabase } from '../../lib/supabase';
 import { downloadVideo } from '../../lib/downloadResult';
 
@@ -86,12 +85,9 @@ export default function HistoryPage() {
 
   if (!authLoaded || !authUser) {
     return (
-      <>
-        <Navbar />
-        <main className={styles.page}>
-          <div className={styles.empty}>Loading…</div>
-        </main>
-      </>
+      <main className={styles.page}>
+        <div className={styles.empty}>Loading…</div>
+      </main>
     );
   }
 
@@ -100,7 +96,6 @@ export default function HistoryPage() {
       <Head>
         <title>History — Haelabs</title>
       </Head>
-      <Navbar />
       <main className={styles.page}>
         <header className={styles.header}>
           <div>

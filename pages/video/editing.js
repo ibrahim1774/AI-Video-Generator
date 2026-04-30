@@ -5,7 +5,6 @@ import { useRouter } from 'next/router';
 import styles from '../../styles/Editor.module.css';
 import UploadZone from '../../components/UploadZone';
 import AIChatPanel from '../../components/editor/AIChatPanel';
-import Navbar from '../../components/Navbar';
 import { uploadTempFile } from '../../lib/uploader';
 import { getBrowserSupabase } from '../../lib/supabase';
 import { bumpEntitlement } from '../../lib/entitlementBus';
@@ -195,12 +194,9 @@ export default function VideoEditingPage() {
 
   if (!authLoaded || !authUser) {
     return (
-      <>
-        <Navbar />
-        <main className={styles.page}>
-          <div className={styles.uploadPrompt}>Loading…</div>
-        </main>
-      </>
+      <main className={styles.page}>
+        <div className={styles.uploadPrompt}>Loading…</div>
+      </main>
     );
   }
 
@@ -211,7 +207,6 @@ export default function VideoEditingPage() {
       <Head>
         <title>Video Editor — Haelabs</title>
       </Head>
-      <Navbar />
       <main className={styles.page}>
         <header className={styles.header}>
           <div>
