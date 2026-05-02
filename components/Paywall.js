@@ -1,12 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import styles from './Paywall.module.css';
-
-const TOPUPS = [
-  { pack: 's', label: '$15', credits: 9 },
-  { pack: 'm', label: '$50', credits: 30 },
-  { pack: 'l', label: '$100', credits: 60 },
-];
+import TopupRow from './TopupRow';
 
 export default function Paywall({ entitlement, onTrialStarted, onError, returnTo }) {
   const [busy, setBusy] = useState(null); // 'monthly' | 'yearly' | 's' | 'm' | 'l'
@@ -71,29 +66,6 @@ export default function Paywall({ entitlement, onTrialStarted, onError, returnTo
         setTimeout(() => { window.location.href = data.url; }, 1500);
         return;
       }
-      window.location.href = data.url;
-    } catch (err) {
-      setLocalError(err.message);
-      onError && onError(err.message);
-      setBusy(null);
-    }
-  };
-
-  const startTopup = async (pack) => {
-    if (busy) return;
-    setBusy(pack);
-    setLocalError('');
-    try {
-      const res = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode: 'topup', pack, returnTo }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.url) {
-        throw new Error(data.error || 'Could not start checkout.');
-      }
-      firePixel(data.meta);
       window.location.href = data.url;
     } catch (err) {
       setLocalError(err.message);
@@ -217,22 +189,7 @@ export default function Paywall({ entitlement, onTrialStarted, onError, returnTo
         )}
 
         {showTopups && (
-          <div className={styles.topupRow}>
-            {TOPUPS.map((t) => (
-              <button
-                key={t.pack}
-                type="button"
-                className={styles.topupBtn}
-                onClick={() => startTopup(t.pack)}
-                disabled={busy !== null}
-              >
-                <span className={styles.topupPrice}>{t.label}</span>
-                <span className={styles.topupCredits}>
-                  {busy === t.pack ? 'Redirecting…' : `${t.credits} credits`}
-                </span>
-              </button>
-            ))}
-          </div>
+          <TopupRow returnTo={returnTo} onError={onError} onLocalError={setLocalError} />
         )}
 
         {localError && <div className={styles.error}>{localError}</div>}

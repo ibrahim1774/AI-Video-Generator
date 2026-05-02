@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 
 import styles from '../../styles/Home.module.css';
 import Paywall from '../../components/Paywall';
+import TopupRow from '../../components/TopupRow';
 import { getBrowserSupabase } from '../../lib/supabase';
 import { log } from '../../lib/debugLog';
 
@@ -164,11 +165,54 @@ export default function DashboardPage() {
         {error && <div className={styles.error}>{error}</div>}
 
         {canSwap ? (
-          <div style={{ textAlign: 'center', marginTop: 24 }}>
-            <a href="/" className={styles.submit + ' ' + styles.submitReady}>
-              Go to upload →
-            </a>
-          </div>
+          <>
+            <div style={{ textAlign: 'center', marginTop: 24 }}>
+              <a href="/" className={styles.submit + ' ' + styles.submitReady}>
+                Go to upload →
+              </a>
+            </div>
+            {!entitlement?.isAdmin &&
+              (entitlement?.tier === 'monthly' ||
+                entitlement?.tier === 'yearly' ||
+                entitlement?.status === 'trialing') && (
+                <section
+                  aria-label="Add credits"
+                  style={{
+                    maxWidth: 720,
+                    margin: '40px auto 0',
+                    padding: '24px 28px',
+                    borderRadius: 14,
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    background: 'rgba(255,255,255,0.02)',
+                    textAlign: 'center',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontFamily: 'var(--font-mono, ui-monospace, monospace)',
+                      fontSize: 11,
+                      letterSpacing: '0.22em',
+                      textTransform: 'uppercase',
+                      color: 'var(--gold)',
+                      marginBottom: 8,
+                    }}
+                  >
+                    ◆ Need more credits?
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: 'var(--text-dim, #9b978f)',
+                      marginBottom: 18,
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    Stack on top of your plan. Top-up credits never expire.
+                  </div>
+                  <TopupRow returnTo="/dashboard" onError={(msg) => setError(msg)} />
+                </section>
+              )}
+          </>
         ) : (
           <Paywall
             entitlement={entitlement}
