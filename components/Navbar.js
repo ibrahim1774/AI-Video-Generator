@@ -119,7 +119,8 @@ export default function Navbar() {
 
         <div className={styles.status}>
           {user && creditLabel && (
-            <span
+            <Link
+              href="/dashboard"
               className={styles.desktopOnly}
               style={{
                 fontSize: 12,
@@ -130,11 +131,14 @@ export default function Navbar() {
                 padding: '5px 12px',
                 borderRadius: 999,
                 whiteSpace: 'nowrap',
+                textDecoration: 'none',
+                cursor: 'pointer',
               }}
-              aria-label="Credits remaining"
+              aria-label="Credits remaining — click to manage"
+              title="Manage credits"
             >
               ◆ {creditLabel}
-            </span>
+            </Link>
           )}
           {user ? (
             <div style={{ position: 'relative' }} className={styles.desktopOnly}>
