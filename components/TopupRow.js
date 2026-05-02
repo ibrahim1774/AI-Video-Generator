@@ -14,9 +14,9 @@ import paywallStyles from './Paywall.module.css';
  */
 
 const TOPUPS = [
-  { pack: 's', label: '$15', credits: 9 },
-  { pack: 'm', label: '$50', credits: 30 },
-  { pack: 'l', label: '$100', credits: 60 },
+  { pack: 's', label: '$15', credits: 12 },
+  { pack: 'm', label: '$50', credits: 45 },
+  { pack: 'l', label: '$100', credits: 100 },
 ];
 
 function firePixel(meta) {
