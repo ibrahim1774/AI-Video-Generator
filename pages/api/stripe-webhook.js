@@ -1,4 +1,4 @@
-import { stripe, planFromPrice, PLANS } from '../../lib/stripe';
+import { stripe, planFromPrice, topupFromPrice, PLANS } from '../../lib/stripe';
 import { sendCapiEvent } from '../../lib/meta';
 
 /*
@@ -67,6 +67,8 @@ export default async function handler(req, res) {
   try {
     if (event.type === 'invoice.payment_succeeded') {
       await handleInvoicePaymentSucceeded(event.data.object, req);
+    } else if (event.type === 'checkout.session.completed') {
+      await handleCheckoutSessionCompleted(event.data.object, req);
     }
   } catch (err) {
     // Log and swallow — return 200 so Stripe doesn't retry on app-side
@@ -147,4 +149,68 @@ async function handleInvoicePaymentSucceeded(invoice, req) {
       invoice_id: invoice.id,
     },
   });
+}
+
+/*
+ * Top-up safety net. /api/checkout/confirm normally handles this when
+ * Stripe redirects the user back, but if they close the tab between
+ * paying and the redirect, the credits would never be granted. This
+ * webhook makes sure they always land. Idempotent via the same
+ * processedSessions metadata field /confirm uses, so the two paths
+ * never double-credit.
+ */
+async function handleCheckoutSessionCompleted(checkoutSession, req) {
+  if (checkoutSession.mode !== 'payment') return; // subs handled by invoice.payment_succeeded
+  if (checkoutSession.payment_status !== 'paid') return;
+
+  const customerId =
+    typeof checkoutSession.customer === 'string'
+      ? checkoutSession.customer
+      : checkoutSession.customer?.id;
+  if (!customerId) return;
+
+  // Re-retrieve with line_items expanded (event payload doesn't include them).
+  const fullSession = await stripe().checkout.sessions.retrieve(checkoutSession.id, {
+    expand: ['line_items.data.price'],
+  });
+  const price = fullSession.line_items?.data?.[0]?.price;
+  const topup = topupFromPrice(price);
+  if (!topup) return; // not one of our top-up packs
+
+  const customer = await stripe().customers.retrieve(customerId);
+  const md = customer && !customer.deleted ? customer.metadata || {} : {};
+  const sessionTag = checkoutSession.id.replace(/^cs_(test_|live_)/, '').slice(-32);
+  const processed = (md.processedSessions || '').split(',').filter(Boolean);
+  if (processed.includes(sessionTag)) return; // /confirm beat us to it
+
+  const current = parseInt(md.creditsRemaining || '0', 10) || 0;
+  const next = current + topup.credits;
+  const nextProcessed = [sessionTag, ...processed].slice(0, 10).join(',');
+  await stripe().customers.update(customerId, {
+    metadata: {
+      ...md,
+      creditsRemaining: String(next),
+      processedSessions: nextProcessed,
+    },
+  });
+
+  // Fire CAPI Purchase for the top-up. Browser pixel may not have
+  // fired (closed tab) — same eventId as /confirm would have used so
+  // Meta dedupes if both end up firing.
+  const value = topup.amountCents / 100;
+  const eventId = `pur-${checkoutSession.id}`;
+  sendCapiEvent({
+    eventName: 'Purchase',
+    eventId,
+    value,
+    currency: 'USD',
+    email: customer && !customer.deleted ? customer.email : undefined,
+    req,
+    customData: {
+      kind: 'topup',
+      pack: topup.key,
+      supabase_user_id: md.supabase_user_id,
+      via: 'webhook',
+    },
+  }).catch(() => {});
 }

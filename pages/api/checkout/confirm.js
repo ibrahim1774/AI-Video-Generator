@@ -1,8 +1,5 @@
 import { stripe, planFromPrice, topupFromPrice, PLANS, CAPS } from '../../../lib/stripe';
-import {
-  addCredits,
-  linkStripeCustomerToProfile,
-} from '../../../lib/entitlement';
+import { linkStripeCustomerToProfile } from '../../../lib/entitlement';
 import { getUserFromRequest } from '../../../lib/supabaseServer';
 import { sendCapiEvent } from '../../../lib/meta';
 
@@ -24,6 +21,17 @@ export default async function handler(req, res) {
     const checkoutSession = await stripe().checkout.sessions.retrieve(sessionId, {
       expand: ['line_items.data.price', 'subscription', 'customer'],
     });
+
+    // Hard guard: only grant on a session Stripe actually marks as
+    // paid (or no_payment_required for trialing subs that haven't
+    // been charged yet). Without this, anyone with a session_id
+    // could trigger a credit grant on an abandoned/unpaid checkout.
+    const okPaymentStatuses = new Set(['paid', 'no_payment_required']);
+    if (!okPaymentStatuses.has(checkoutSession.payment_status)) {
+      return res.status(400).json({
+        error: `Payment not completed (status: ${checkoutSession.payment_status}).`,
+      });
+    }
 
     const customerId =
       typeof checkoutSession.customer === 'string'
@@ -48,43 +56,74 @@ export default async function handler(req, res) {
     let value;
     let creditsAdded = 0;
 
+    // Idempotency: refresh during the response, browser-back, or a
+    // dup tab can fire /confirm twice for the same session_id. Track
+    // the last 10 processed session IDs in customer metadata so a
+    // re-fire returns success without re-granting. We store a 32-char
+    // tail of the session id (Stripe metadata is capped at 500 chars
+    // per value).
+    const sessionTag = checkoutSession.id.replace(/^cs_(test_|live_)/, '').slice(-32);
+
     if (plan) {
       const sub = checkoutSession.subscription;
       const periodStartMs =
         ((sub && sub.current_period_start) || Math.floor(Date.now() / 1000)) * 1000;
       const customer = await stripe().customers.retrieve(customerId);
       const md = customer && !customer.deleted ? customer.metadata || {} : {};
-      const existingCredits = parseInt(md.creditsRemaining || '0', 10) || 0;
-      // Trialing yearly subs only get the 2-credit trial pool (tracked
-      // separately via TRIAL_CREDITS / trialCreditsUsed). Seeding the
-      // full cap here would let the user spend cap+TRIAL_CREDITS during
-      // the trial — the entitlement reader treats md.creditsRemaining
-      // as top-ups and adds it on top of the trial pool. Leave it at 0
-      // (or whatever existing top-ups they have) and let the rollover
-      // path in readPaidEntitlement grant the full cap on the
-      // trialing → active transition (current_period_start jumps).
-      const isTrialing = sub && sub.status === 'trialing';
-      const seededCredits = isTrialing
-        ? existingCredits
-        : Math.max(existingCredits, CAPS[plan]);
-      await stripe().customers.update(customerId, {
-        metadata: {
-          ...md,
-          plan,
-          periodStart: String(periodStartMs),
-          creditsRemaining: String(seededCredits),
-          supabase_user_id: session.user.id,
-          videosUsedThisPeriod: '',
-          trialUsed: '',
-        },
-      });
+      const processed = (md.processedSessions || '').split(',').filter(Boolean);
+      const alreadyProcessed = processed.includes(sessionTag);
+
+      if (!alreadyProcessed) {
+        const existingCredits = parseInt(md.creditsRemaining || '0', 10) || 0;
+        // Trialing yearly subs only get the 2-credit trial pool (tracked
+        // separately via TRIAL_CREDITS / trialCreditsUsed). Seeding the
+        // full cap here would let the user spend cap+TRIAL_CREDITS during
+        // the trial — the entitlement reader treats md.creditsRemaining
+        // as top-ups and adds it on top of the trial pool. Leave it at 0
+        // (or whatever existing top-ups they have) and let the rollover
+        // path in readPaidEntitlement grant the full cap on the
+        // trialing → active transition (current_period_start jumps).
+        const isTrialing = sub && sub.status === 'trialing';
+        const seededCredits = isTrialing
+          ? existingCredits
+          : Math.max(existingCredits, CAPS[plan]);
+        const nextProcessed = [sessionTag, ...processed].slice(0, 10).join(',');
+        await stripe().customers.update(customerId, {
+          metadata: {
+            ...md,
+            plan,
+            periodStart: String(periodStartMs),
+            creditsRemaining: String(seededCredits),
+            supabase_user_id: session.user.id,
+            videosUsedThisPeriod: '',
+            trialUsed: '',
+            processedSessions: nextProcessed,
+          },
+        });
+      }
       eventKind = 'subscription';
       value = PLANS[plan].amountCents / 100;
     } else if (topup) {
-      await addCredits(customerId, topup.credits);
+      const customer = await stripe().customers.retrieve(customerId);
+      const md = customer && !customer.deleted ? customer.metadata || {} : {};
+      const processed = (md.processedSessions || '').split(',').filter(Boolean);
+      const alreadyProcessed = processed.includes(sessionTag);
+
+      if (!alreadyProcessed) {
+        const current = parseInt(md.creditsRemaining || '0', 10) || 0;
+        const next = current + topup.credits;
+        const nextProcessed = [sessionTag, ...processed].slice(0, 10).join(',');
+        await stripe().customers.update(customerId, {
+          metadata: {
+            ...md,
+            creditsRemaining: String(next),
+            processedSessions: nextProcessed,
+          },
+        });
+        creditsAdded = topup.credits;
+      }
       eventKind = 'topup';
       value = topup.amountCents / 100;
-      creditsAdded = topup.credits;
     }
 
     // Bind Stripe customer <-> Supabase profile (authoritative link).

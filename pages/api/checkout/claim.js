@@ -37,6 +37,14 @@ export default async function handler(req, res) {
       expand: ['line_items.data.price', 'subscription', 'customer'],
     });
 
+    // Same payment-status hard guard as /api/checkout/confirm.
+    const okPaymentStatuses = new Set(['paid', 'no_payment_required']);
+    if (!okPaymentStatuses.has(checkoutSession.payment_status)) {
+      return res.status(400).json({
+        error: `Payment not completed (status: ${checkoutSession.payment_status}).`,
+      });
+    }
+
     const customerId =
       typeof checkoutSession.customer === 'string'
         ? checkoutSession.customer
@@ -75,6 +83,20 @@ export default async function handler(req, res) {
       ((sub && sub.current_period_start) || Math.floor(Date.now() / 1000)) * 1000;
     const customer = await stripe().customers.retrieve(customerId);
     const md = customer && !customer.deleted ? customer.metadata || {} : {};
+    const sessionTag = checkoutSession.id.replace(/^cs_(test_|live_)/, '').slice(-32);
+    const processed = (md.processedSessions || '').split(',').filter(Boolean);
+    if (processed.includes(sessionTag)) {
+      // Already claimed via /confirm or a prior /claim — bind the
+      // profile (cheap, idempotent) and return success without
+      // re-seeding credits.
+      await linkStripeCustomerToProfile(session.supabase, session.user.id, customerId);
+      return res.status(200).json({
+        ok: true,
+        alreadyProcessed: true,
+        tier: plan,
+        videoCap: CAPS[plan],
+      });
+    }
     const existingCredits = parseInt(md.creditsRemaining || '0', 10) || 0;
     // See /api/checkout/confirm.js for the rationale: trialing subs
     // only get the 2-credit trial pool until current_period_start
@@ -83,6 +105,7 @@ export default async function handler(req, res) {
     const seededCredits = isTrialing
       ? existingCredits
       : Math.max(existingCredits, CAPS[plan]);
+    const nextProcessed = [sessionTag, ...processed].slice(0, 10).join(',');
     await stripe().customers.update(customerId, {
       metadata: {
         ...md,
@@ -92,6 +115,7 @@ export default async function handler(req, res) {
         supabase_user_id: session.user.id,
         videosUsedThisPeriod: '',
         trialUsed: '',
+        processedSessions: nextProcessed,
         pending_supabase_link: '',
       },
     });
