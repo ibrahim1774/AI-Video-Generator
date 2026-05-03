@@ -159,7 +159,7 @@ export default function Paywall({ entitlement, onTrialStarted, onError, returnTo
 
             <article className={`${styles.tier} ${styles.tierFeatured}`}>
               <div className={styles.tierBadge}>
-                {isTrialing ? 'Best value' : 'Best value · First year for $1'}
+                {isTrialing ? 'Best value' : 'Best value · 1-day trial · $1'}
               </div>
               <div className={styles.tierHead}>
                 <h3 className={styles.tierName}>Yearly</h3>
@@ -169,10 +169,10 @@ export default function Paywall({ entitlement, onTrialStarted, onError, returnTo
                 </div>
               </div>
               <ul className={styles.feats}>
-                <li>First year for $1, then $49/year</li>
+                <li>$1 today, then $49/year tomorrow unless cancelled</li>
                 <li>48 credits / year</li>
                 <li>Top up anytime for more credits</li>
-                <li>One charge, cancel anytime</li>
+                <li>Cancel anytime</li>
               </ul>
               <button
                 type="button"
@@ -184,7 +184,7 @@ export default function Paywall({ entitlement, onTrialStarted, onError, returnTo
                   ? 'Redirecting…'
                   : isTrialing
                     ? 'Convert to yearly → $1 today'
-                    : 'Get started → $1 today'}
+                    : 'Start trial → $1 today'}
               </button>
             </article>
           </div>
