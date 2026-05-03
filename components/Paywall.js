@@ -138,7 +138,7 @@ export default function Paywall({ entitlement, onTrialStarted, onError, returnTo
                 </div>
               </div>
               <ul className={styles.feats}>
-                <li>4 credits / month</li>
+                <li>Monthly billing &middot; charged today</li>
                 <li>Cancel anytime</li>
                 <li>720p or 1080p, no watermark</li>
               </ul>
@@ -169,10 +169,10 @@ export default function Paywall({ entitlement, onTrialStarted, onError, returnTo
               </div>
               <ul className={styles.feats}>
                 {isTrialing
-                  ? <li>Convert anytime to lock in $49/yr (48 credits)</li>
+                  ? <li>Convert anytime to lock in $49/yr</li>
                   : <li>$1 today &middot; $49/year after, unless cancelled in 24h</li>}
-                <li>48 credits / year</li>
-                <li>Save 18% vs monthly &middot; cancel anytime</li>
+                <li>Save 18% vs monthly</li>
+                <li>One charge, cancel anytime</li>
               </ul>
               <button
                 type="button"
