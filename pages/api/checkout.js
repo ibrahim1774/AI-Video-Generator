@@ -130,29 +130,24 @@ export default async function handler(req, res) {
       ? { pending_supabase_link: 'true' }
       : { supabase_user_id: session.user.id };
 
-    // Yearly: paid 1-day trial via Stripe-native pattern. Charge $1
-    // today as a one-time line item AND start the $49/yr recurring
-    // subscription with trial_period_days: 1. Stripe Checkout
-    // renders the full deal — "$1 today, then $49/year after 1-day
-    // trial" — natively, satisfying disclosure rules. After 24h,
-    // Stripe auto-bills the $49 unless the customer cancelled.
+    // Yearly: paid 1-day trial. Use Stripe's documented "trial
+    // deposit" pattern — recurring $49/yr with trial_period_days: 1
+    // PLUS subscription_data.add_invoice_items adding the $1 deposit
+    // to the trial-period invoice. Behavior:
+    //   - First invoice (today, trial start) = $0 trial + $1 deposit = $1
+    //   - Second invoice (tomorrow, trial end) = $49 yearly
+    //   - Then $49/year forever
+    // Customer can cancel during the 24h trial → no $49 charge.
     //
-    // Monthly: charges $5 immediately, no trial.
+    // Monthly: charges $5 immediately, no trial, no deposit.
     const yearlyTrialFlow = plan === 'yearly';
     const recurringPrice = await getOrCreatePrice(plan);
     const trialDepositPrice = yearlyTrialFlow ? await getOrCreateTrialDepositPrice() : null;
 
-    const lineItems = yearlyTrialFlow
-      ? [
-          { price: trialDepositPrice.id, quantity: 1 }, // $1 one-time deposit
-          { price: recurringPrice.id, quantity: 1 },    // $49/yr recurring
-        ]
-      : [{ price: recurringPrice.id, quantity: 1 }];
-
     const checkout = await stripe().checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
-      line_items: lineItems,
+      line_items: [{ price: recurringPrice.id, quantity: 1 }],
       ...(email ? { customer_email: email } : {}),
       success_url: `${origin}${successPath}`,
       cancel_url: `${origin}${isAnon ? '/' : '/dashboard?paid=0'}`,
@@ -172,7 +167,14 @@ export default async function handler(req, res) {
           }
         : {}),
       subscription_data: {
-        ...(yearlyTrialFlow && !trialBlocked ? { trial_period_days: 1 } : {}),
+        ...(yearlyTrialFlow
+          ? {
+              trial_period_days: 1,
+              add_invoice_items: [
+                { price: trialDepositPrice.id, quantity: 1 },
+              ],
+            }
+          : {}),
         metadata: subMetadata,
       },
       metadata: subMetadata,
