@@ -150,11 +150,14 @@ export default async function handler(req, res) {
       ...(email ? { customer_email: email } : {}),
       success_url: `${origin}${successPath}`,
       cancel_url: `${origin}${isAnon ? '/' : '/dashboard?paid=0'}`,
-      allow_promotion_codes: true,
       billing_address_collection: 'auto',
+      // Stripe forbids both `allow_promotion_codes` and `discounts` on
+      // the same session. Yearly applies the intro coupon directly;
+      // monthly leaves the promo-code field open in case you ever
+      // create a Stripe Promotion Code for a marketing run.
       ...(useIntroCoupon
         ? { discounts: [{ coupon: INTRO_COUPON.id }] }
-        : {}),
+        : { allow_promotion_codes: true }),
       subscription_data: {
         metadata: subMetadata,
       },
