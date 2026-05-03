@@ -158,6 +158,19 @@ export default async function handler(req, res) {
       cancel_url: `${origin}${isAnon ? '/' : '/dashboard?paid=0'}`,
       allow_promotion_codes: true,
       billing_address_collection: 'auto',
+      // Explicit disclosure block above the Subscribe button. Stripe
+      // renders this verbatim — no auto-summary ambiguity. Required
+      // for FTC/Stripe ToS auto-renewal disclosure on paid trials.
+      ...(yearlyTrialFlow
+        ? {
+            custom_text: {
+              submit: {
+                message:
+                  'You are starting a 1-day trial for $1. After 24 hours, your subscription auto-renews at $49/year unless you cancel before the trial ends. Cancel anytime from your account.',
+              },
+            },
+          }
+        : {}),
       subscription_data: {
         ...(yearlyTrialFlow && !trialBlocked ? { trial_period_days: 1 } : {}),
         metadata: subMetadata,
