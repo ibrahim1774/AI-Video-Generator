@@ -1,6 +1,7 @@
 import { getPrediction, normalizeStatus } from '../../lib/replicate';
 import { getKiePrediction, normalizeKieStatus } from '../../lib/kie';
 import { getUserFromRequest, getSupabaseAdmin } from '../../lib/supabaseServer';
+import { getEntitlement, settlePendingJob } from '../../lib/entitlement';
 
 /*
  * Polling endpoint. Dispatches to either Replicate (default — used for
@@ -56,6 +57,24 @@ export default async function handler(req, res) {
   const isKie = vendor === 'kie';
   const session = await getUserFromRequest(req, res); // /api/status is gated by middleware so this is non-null
 
+  // Idempotently settle the credit reservation we made when the job
+  // was queued. Refund on vendor failure, drop tracking on success.
+  // Only kie.ai jobs (image-to-video, ugc) are tracked today.
+  async function settleIfTerminal(status) {
+    if (!isKie || !session) return;
+    if (status !== 'complete' && status !== 'error') return;
+    try {
+      const entitlement = await getEntitlement({
+        supabase: session.supabase,
+        userId: session.user.id,
+        email: session.user.email,
+      });
+      await settlePendingJob(entitlement, predictionId, { refund: status === 'error' });
+    } catch (err) {
+      console.warn('[status] settle failed', err.message);
+    }
+  }
+
   try {
     if (isKie) {
       const record = await getKiePrediction(predictionId);
@@ -68,6 +87,7 @@ export default async function handler(req, res) {
           historyKind,
         });
       }
+      await settleIfTerminal(normalized.status);
       return res.status(200).json({
         predictionId,
         status: normalized.status,

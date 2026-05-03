@@ -1,6 +1,6 @@
 import { createKlingSinglePrediction } from '../../lib/kie';
 import { getUserFromRequest } from '../../lib/supabaseServer';
-import { getEntitlement, reserveCredits, refundCredits } from '../../lib/entitlement';
+import { getEntitlement, reserveCredits, refundCredits, trackPendingJob } from '../../lib/entitlement';
 import { sendCapiEvent } from '../../lib/meta';
 
 function isHttpUrl(value) {
@@ -71,6 +71,10 @@ export default async function handler(req, res) {
       mode: q,
       audio: wantAudio,
     });
+    // Track the queued job so /api/status can refund the cost if Kling
+    // ultimately rejects it (e.g. content moderation). Best-effort —
+    // a tracking failure must not block returning the predictionId.
+    trackPendingJob(entitlement, prediction.id, cost).catch(() => {});
     sendCapiEvent({
       eventName: 'Generate',
       eventId: `gen-${prediction.id}`,
