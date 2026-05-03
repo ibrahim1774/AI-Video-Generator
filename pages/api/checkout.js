@@ -2,39 +2,11 @@ import {
   stripe,
   getOrCreatePrice,
   getOrCreateTopupPrice,
-  getOrCreateTrialDepositPrice,
-  TRIAL_DEPOSIT,
   PLANS,
   TOPUPS,
 } from '../../lib/stripe';
-import { getUserFromRequest, getSupabaseAdmin } from '../../lib/supabaseServer';
+import { getUserFromRequest } from '../../lib/supabaseServer';
 import { sendCapiEvent } from '../../lib/meta';
-
-function clientIp(req) {
-  const xff = req.headers['x-forwarded-for'];
-  if (typeof xff === 'string' && xff.length) return xff.split(',')[0].trim();
-  return req.socket?.remoteAddress || null;
-}
-
-async function isTrialBlockedForIp(userId, req) {
-  const ip = clientIp(req);
-  if (!ip) return false;
-  try {
-    const admin = getSupabaseAdmin();
-    const { data, error } = await admin
-      .from('signup_ips')
-      .select('user_id')
-      .eq('ip', ip);
-    if (error) {
-      console.warn('[checkout] ip lookup failed', error.message);
-      return false;
-    }
-    return Array.isArray(data) && data.some((row) => row.user_id !== userId);
-  } catch (err) {
-    console.warn('[checkout] admin client unavailable', err.message);
-    return false;
-  }
-}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -113,15 +85,10 @@ export default async function handler(req, res) {
       });
     }
 
-    // Anonymous subscription: skip the IP-based trial block (we have
-    // no user_id to scope by) and route success_url through the
-    // claim-and-create-account flow on /sign-up. The user signs up
-    // with the same email Stripe collected; backend then links the
+    // Anonymous subscription: route success_url through the claim-
+    // and-create-account flow on /sign-up. The user signs up with
+    // the same email Stripe collected; backend then links the
     // Stripe customer to the new Supabase user.
-    const trialBlocked = isAnon
-      ? false
-      : await isTrialBlockedForIp(session.user.id, req);
-
     const successPath = isAnon
       ? `/sign-up?session_id={CHECKOUT_SESSION_ID}${returnQuery}`
       : `/dashboard?paid=1&session_id={CHECKOUT_SESSION_ID}${returnQuery}`;
@@ -130,62 +97,28 @@ export default async function handler(req, res) {
       ? { pending_supabase_link: 'true' }
       : { supabase_user_id: session.user.id };
 
-    // Yearly: paid 1-day trial. Use Stripe's documented "trial
-    // deposit" pattern — recurring $49/yr with trial_period_days: 1
-    // PLUS subscription_data.add_invoice_items adding the $1 deposit
-    // to the trial-period invoice. Behavior:
-    //   - First invoice (today, trial start) = $0 trial + $1 deposit = $1
-    //   - Second invoice (tomorrow, trial end) = $49 yearly
-    //   - Then $49/year forever
-    // Customer can cancel during the 24h trial → no $49 charge.
-    //
-    // Monthly: charges $5 immediately, no trial, no deposit.
-    const yearlyTrialFlow = plan === 'yearly';
-    const recurringPrice = await getOrCreatePrice(plan);
-    const trialDepositPrice = yearlyTrialFlow ? await getOrCreateTrialDepositPrice() : null;
+    // Subscription flow: charge the plan price immediately. No trial,
+    // no deposit — just a clean recurring sub. Monthly $5/mo, yearly
+    // $29/yr. Stripe Checkout displays the renewal terms natively.
+    const price = await getOrCreatePrice(plan);
 
     const checkout = await stripe().checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
-      line_items: [{ price: recurringPrice.id, quantity: 1 }],
+      line_items: [{ price: price.id, quantity: 1 }],
       ...(email ? { customer_email: email } : {}),
       success_url: `${origin}${successPath}`,
       cancel_url: `${origin}${isAnon ? '/' : '/dashboard?paid=0'}`,
       allow_promotion_codes: true,
       billing_address_collection: 'auto',
-      // Explicit disclosure block above the Subscribe button. Stripe
-      // renders this verbatim — no auto-summary ambiguity. Required
-      // for FTC/Stripe ToS auto-renewal disclosure on paid trials.
-      ...(yearlyTrialFlow
-        ? {
-            custom_text: {
-              submit: {
-                message:
-                  'You are starting a 1-day trial for $1. After 24 hours, your subscription auto-renews at $49/year unless you cancel before the trial ends. Cancel anytime from your account.',
-              },
-            },
-          }
-        : {}),
       subscription_data: {
-        ...(yearlyTrialFlow
-          ? {
-              trial_period_days: 1,
-              add_invoice_items: [
-                { price: trialDepositPrice.id, quantity: 1 },
-              ],
-            }
-          : {}),
         metadata: subMetadata,
       },
       metadata: subMetadata,
     });
 
-    // Pixel value: actual cents the customer pays today. Yearly = $1
-    // deposit; monthly = $5 first invoice. The $49 yearly renewal
-    // fires its own Purchase via the webhook (subscription_cycle).
-    const value = yearlyTrialFlow
-      ? TRIAL_DEPOSIT.amountCents / 100
-      : PLANS[plan].amountCents / 100;
+    // Pixel value: actual cents charged today.
+    const value = PLANS[plan].amountCents / 100;
     const eventId = `ic-${checkout.id}`;
     sendCapiEvent({
       eventName: 'InitiateCheckout',
@@ -197,14 +130,11 @@ export default async function handler(req, res) {
       customData: {
         kind: 'subscription',
         plan,
-        trialBlocked: trialBlocked ? 1 : 0,
-        paidTrial: yearlyTrialFlow ? 1 : 0,
         ...(session?.user?.id ? { supabase_user_id: session.user.id } : { anonymous: 1 }),
       },
     }).catch(() => {});
     return res.status(200).json({
       url: checkout.url,
-      trialBlocked,
       meta: { eventName: 'InitiateCheckout', eventId, value, currency: 'USD' },
     });
   } catch (err) {
