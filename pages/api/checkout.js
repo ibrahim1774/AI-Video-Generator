@@ -2,8 +2,8 @@ import {
   stripe,
   getOrCreatePrice,
   getOrCreateTopupPrice,
-  getOrCreateIntroCoupon,
-  INTRO_COUPON,
+  getOrCreateTrialDepositPrice,
+  TRIAL_DEPOSIT,
   PLANS,
   TOPUPS,
 } from '../../lib/stripe';
@@ -130,44 +130,46 @@ export default async function handler(req, res) {
       ? { pending_supabase_link: 'true' }
       : { supabase_user_id: session.user.id };
 
-    // Yearly: charge $1 today via a $48-off intro coupon, then auto-
-    // renew at $49/year. Stripe Checkout displays the full breakdown
-    // (price, discount, renewal date) on the checkout page itself,
-    // satisfying FTC + Stripe auto-renewal disclosure rules.
+    // Yearly: paid 1-day trial via Stripe-native pattern. Charge $1
+    // today as a one-time line item AND start the $49/yr recurring
+    // subscription with trial_period_days: 1. Stripe Checkout
+    // renders the full deal — "$1 today, then $49/year after 1-day
+    // trial" — natively, satisfying disclosure rules. After 24h,
+    // Stripe auto-bills the $49 unless the customer cancelled.
     //
-    // Monthly: charges $5 immediately, no coupon, no trial.
-    const price = await getOrCreatePrice(plan);
-    const useIntroCoupon = plan === 'yearly';
-    if (useIntroCoupon) {
-      // Touch the coupon so it exists by the time Stripe references it.
-      await getOrCreateIntroCoupon();
-    }
+    // Monthly: charges $5 immediately, no trial.
+    const yearlyTrialFlow = plan === 'yearly';
+    const recurringPrice = await getOrCreatePrice(plan);
+    const trialDepositPrice = yearlyTrialFlow ? await getOrCreateTrialDepositPrice() : null;
+
+    const lineItems = yearlyTrialFlow
+      ? [
+          { price: trialDepositPrice.id, quantity: 1 }, // $1 one-time deposit
+          { price: recurringPrice.id, quantity: 1 },    // $49/yr recurring
+        ]
+      : [{ price: recurringPrice.id, quantity: 1 }];
 
     const checkout = await stripe().checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
-      line_items: [{ price: price.id, quantity: 1 }],
+      line_items: lineItems,
       ...(email ? { customer_email: email } : {}),
       success_url: `${origin}${successPath}`,
       cancel_url: `${origin}${isAnon ? '/' : '/dashboard?paid=0'}`,
+      allow_promotion_codes: true,
       billing_address_collection: 'auto',
-      // Stripe forbids both `allow_promotion_codes` and `discounts` on
-      // the same session. Yearly applies the intro coupon directly;
-      // monthly leaves the promo-code field open in case you ever
-      // create a Stripe Promotion Code for a marketing run.
-      ...(useIntroCoupon
-        ? { discounts: [{ coupon: INTRO_COUPON.id }] }
-        : { allow_promotion_codes: true }),
       subscription_data: {
+        ...(yearlyTrialFlow && !trialBlocked ? { trial_period_days: 1 } : {}),
         metadata: subMetadata,
       },
       metadata: subMetadata,
     });
 
-    // Pixel value: actual cents the customer pays today. Coupon
-    // applies to yearly → $1; monthly → $5.
-    const value = useIntroCoupon
-      ? (PLANS[plan].amountCents - INTRO_COUPON.amountOffCents) / 100
+    // Pixel value: actual cents the customer pays today. Yearly = $1
+    // deposit; monthly = $5 first invoice. The $49 yearly renewal
+    // fires its own Purchase via the webhook (subscription_cycle).
+    const value = yearlyTrialFlow
+      ? TRIAL_DEPOSIT.amountCents / 100
       : PLANS[plan].amountCents / 100;
     const eventId = `ic-${checkout.id}`;
     sendCapiEvent({
@@ -181,7 +183,7 @@ export default async function handler(req, res) {
         kind: 'subscription',
         plan,
         trialBlocked: trialBlocked ? 1 : 0,
-        intro: useIntroCoupon ? 1 : 0,
+        paidTrial: yearlyTrialFlow ? 1 : 0,
         ...(session?.user?.id ? { supabase_user_id: session.user.id } : { anonymous: 1 }),
       },
     }).catch(() => {});

@@ -129,15 +129,23 @@ export default async function handler(req, res) {
     // Bind Stripe customer <-> Supabase profile (authoritative link).
     await linkStripeCustomerToProfile(session.supabase, session.user.id, customerId);
 
-    // Trialing yearly subs haven't been charged yet — fire StartTrial
-    // so we don't pollute Purchase reporting. The actual Purchase fires
-    // from the /api/stripe-webhook.js handler when the trial converts
-    // and Stripe collects the first real payment.
+    // Trialing yearly subs paid the $1 trial deposit but not the
+    // $49 yet — fire StartTrial with the deposit value. The full
+    // $49 Purchase fires from /api/stripe-webhook.js when the trial
+    // ends and Stripe bills the first yearly invoice (subscription_
+    // cycle).
     const isTrialingSub =
       plan && checkoutSession.subscription?.status === 'trialing';
     const eventName = isTrialingSub ? 'StartTrial' : 'Purchase';
     const eventId = `${isTrialingSub ? 'st' : 'pur'}-${checkoutSession.id}`;
-    const reportedValue = isTrialingSub ? 0 : value;
+    // Use Stripe's amount_total so we report exactly what was charged
+    // today (works for trialing yearly = $1 deposit, monthly = $5,
+    // top-ups, and the legacy non-trial flow).
+    const actualPaidToday =
+      typeof checkoutSession.amount_total === 'number'
+        ? checkoutSession.amount_total / 100
+        : value;
+    const reportedValue = isTrialingSub ? actualPaidToday : value;
     await sendCapiEvent({
       eventName,
       eventId,
