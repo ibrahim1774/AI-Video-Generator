@@ -2,10 +2,10 @@ import {
   stripe,
   getOrCreatePrice,
   getOrCreateTopupPrice,
-  getOrCreateTrialDayPrice,
+  getOrCreateIntroCoupon,
+  INTRO_COUPON,
   PLANS,
   TOPUPS,
-  TRIAL_DAY,
 } from '../../lib/stripe';
 import { getUserFromRequest, getSupabaseAdmin } from '../../lib/supabaseServer';
 import { sendCapiEvent } from '../../lib/meta';
@@ -126,29 +126,22 @@ export default async function handler(req, res) {
       ? `/sign-up?session_id={CHECKOUT_SESSION_ID}${returnQuery}`
       : `/dashboard?paid=1&session_id={CHECKOUT_SESSION_ID}${returnQuery}`;
 
-    const baseSubMetadata = isAnon
+    const subMetadata = isAnon
       ? { pending_supabase_link: 'true' }
       : { supabase_user_id: session.user.id };
 
-    // Yearly = paid 1-day trial. Customer is billed $1 today on a
-    // $1/day recurring price; the stripe-webhook handler migrates the
-    // subscription into a Subscription Schedule (phase 1: 1 iteration
-    // of the trial-day price; phase 2: $49/year forever) the moment
-    // the first invoice is paid. After 24h Stripe transitions to
-    // phase 2 and bills $49.
+    // Yearly: charge $1 today via a $48-off intro coupon, then auto-
+    // renew at $49/year. Stripe Checkout displays the full breakdown
+    // (price, discount, renewal date) on the checkout page itself,
+    // satisfying FTC + Stripe auto-renewal disclosure rules.
     //
-    // Skip the trial-block IP guard for yearly: customer is paying $1
-    // upfront so there's no free-trial-abuse concern.
-    const useTrialDay = plan === 'yearly';
-
-    const price = useTrialDay
-      ? await getOrCreateTrialDayPrice()
-      : await getOrCreatePrice(plan);
-
-    const subMetadata = {
-      ...baseSubMetadata,
-      ...(useTrialDay ? { pending_yearly_schedule: 'true' } : {}),
-    };
+    // Monthly: charges $5 immediately, no coupon, no trial.
+    const price = await getOrCreatePrice(plan);
+    const useIntroCoupon = plan === 'yearly';
+    if (useIntroCoupon) {
+      // Touch the coupon so it exists by the time Stripe references it.
+      await getOrCreateIntroCoupon();
+    }
 
     const checkout = await stripe().checkout.sessions.create({
       mode: 'subscription',
@@ -159,17 +152,19 @@ export default async function handler(req, res) {
       cancel_url: `${origin}${isAnon ? '/' : '/dashboard?paid=0'}`,
       allow_promotion_codes: true,
       billing_address_collection: 'auto',
+      ...(useIntroCoupon
+        ? { discounts: [{ coupon: INTRO_COUPON.id }] }
+        : {}),
       subscription_data: {
         metadata: subMetadata,
       },
       metadata: subMetadata,
     });
 
-    // Pixel value: actual money charged today. For yearly, that's the
-    // $1 trial deposit; the $49 is reported as Purchase via the
-    // webhook when phase 2 invoices.
-    const value = useTrialDay
-      ? TRIAL_DAY.amountCents / 100
+    // Pixel value: actual cents the customer pays today. Coupon
+    // applies to yearly → $1; monthly → $5.
+    const value = useIntroCoupon
+      ? (PLANS[plan].amountCents - INTRO_COUPON.amountOffCents) / 100
       : PLANS[plan].amountCents / 100;
     const eventId = `ic-${checkout.id}`;
     sendCapiEvent({
@@ -183,7 +178,7 @@ export default async function handler(req, res) {
         kind: 'subscription',
         plan,
         trialBlocked: trialBlocked ? 1 : 0,
-        paidTrial: useTrialDay ? 1 : 0,
+        intro: useIntroCoupon ? 1 : 0,
         ...(session?.user?.id ? { supabase_user_id: session.user.id } : { anonymous: 1 }),
       },
     }).catch(() => {});

@@ -1,11 +1,4 @@
-import {
-  stripe,
-  planFromPrice,
-  topupFromPrice,
-  getOrCreatePrice,
-  getOrCreateTrialDayPrice,
-  PLANS,
-} from '../../lib/stripe';
+import { stripe, planFromPrice, topupFromPrice, PLANS } from '../../lib/stripe';
 import { sendCapiEvent } from '../../lib/meta';
 
 /*
@@ -90,34 +83,14 @@ export default async function handler(req, res) {
 async function handleInvoicePaymentSucceeded(invoice, req) {
   if (!invoice.subscription) return;
   if (!invoice.amount_paid || invoice.amount_paid <= 0) return;
+  // First-invoice charge is reported by /api/checkout/confirm; skip
+  // here to avoid double-firing Purchase.
+  if (invoice.billing_reason === 'subscription_create') return;
 
   const subId =
     typeof invoice.subscription === 'string'
       ? invoice.subscription
       : invoice.subscription?.id;
-
-  // Paid 1-day trial flow: when the FIRST $1 invoice for a trial-day
-  // sub lands, migrate it into a Subscription Schedule that auto-
-  // converts to the yearly $49 price after 24h. This is what makes
-  // "$1 today, $49/year tomorrow unless cancelled" work in Stripe.
-  if (invoice.billing_reason === 'subscription_create') {
-    try {
-      const subForCheck = await stripe().subscriptions.retrieve(subId, {
-        expand: ['items.data.price'],
-      });
-      const meta = subForCheck.metadata || {};
-      const priceForCheck = subForCheck.items?.data?.[0]?.price;
-      const planForCheck = planFromPrice(priceForCheck);
-      if (planForCheck === 'trial-day' && meta.pending_yearly_schedule === 'true') {
-        await migrateTrialDayToYearlySchedule(subForCheck);
-      }
-    } catch (err) {
-      console.error('[stripe-webhook] trial-day schedule migration failed', err.message);
-    }
-    // subscription_create invoices for non-trial-day subs are still
-    // skipped for Purchase reporting (covered by /api/checkout/confirm).
-    return;
-  }
 
   const sub = await stripe().subscriptions.retrieve(subId, {
     expand: ['items.data.price'],
@@ -245,58 +218,3 @@ async function handleCheckoutSessionCompleted(checkoutSession, req) {
   }).catch(() => {});
 }
 
-/*
- * Migrate a paid-trial-day subscription into a Stripe Subscription
- * Schedule that auto-converts to the yearly $49 price after 1 day.
- *
- * Flow:
- *   1. Create a Schedule from the existing subscription via
- *      `from_subscription` (Stripe lifts the sub into the schedule).
- *   2. Update phases:
- *        Phase 1 = current trial-day price, iterations: 1
- *        Phase 2 = yearly $49 price, perpetual
- *   3. Stripe transitions to phase 2 automatically when phase 1's
- *      single iteration completes (~24h after sub start).
- *
- * Idempotent: clears `pending_yearly_schedule` from the sub metadata
- * after success, so the webhook won't re-migrate on retry.
- */
-async function migrateTrialDayToYearlySchedule(sub) {
-  const trialDayPrice = await getOrCreateTrialDayPrice();
-  const yearlyPrice = await getOrCreatePrice('yearly');
-
-  // Lift the existing subscription into a Schedule. Stripe creates a
-  // single-phase schedule mirroring the current sub state.
-  const schedule = await stripe().subscriptionSchedules.create({
-    from_subscription: sub.id,
-  });
-
-  // Replace phases: 1 day at $1, then $49/year forever.
-  await stripe().subscriptionSchedules.update(schedule.id, {
-    end_behavior: 'release',
-    phases: [
-      {
-        items: [{ price: trialDayPrice.id, quantity: 1 }],
-        iterations: 1,
-        proration_behavior: 'none',
-      },
-      {
-        items: [{ price: yearlyPrice.id, quantity: 1 }],
-        proration_behavior: 'none',
-      },
-    ],
-  });
-
-  // Mark the sub so we don't re-migrate.
-  try {
-    await stripe().subscriptions.update(sub.id, {
-      metadata: {
-        ...(sub.metadata || {}),
-        pending_yearly_schedule: '',
-        phase: 'trial-day',
-      },
-    });
-  } catch (err) {
-    console.warn('[stripe-webhook] could not clear pending flag', err.message);
-  }
-}
