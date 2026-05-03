@@ -1012,6 +1012,55 @@ export default function UgcPage() {
             Upload a character or generate one from a prompt. Each video takes
             2&ndash;4 minutes and includes native audio + lip-sync.
           </p>
+
+          {!authUser && (
+            <div
+              style={{
+                marginTop: 18,
+                padding: '14px 18px',
+                borderRadius: 12,
+                border: '1px solid rgba(255,255,255,0.12)',
+                background: 'rgba(255,255,255,0.03)',
+                maxWidth: 640,
+                marginLeft: 'auto',
+                marginRight: 'auto',
+                textAlign: 'center',
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: 'var(--font-mono, ui-monospace, monospace)',
+                  fontSize: 10,
+                  letterSpacing: '0.28em',
+                  textTransform: 'uppercase',
+                  color: 'var(--gold)',
+                  marginBottom: 8,
+                }}
+              >
+                ◆ Seedance alternative
+              </div>
+              <div
+                style={{
+                  fontSize: 16,
+                  fontWeight: 600,
+                  color: 'var(--text)',
+                  lineHeight: 1.35,
+                  marginBottom: 6,
+                }}
+              >
+                Start your 1-day paid trial for $1. <span style={{ color: 'var(--text-dim)' }}>(48 credits / year)</span>
+              </div>
+              <div
+                style={{
+                  fontSize: 12,
+                  lineHeight: 1.5,
+                  color: 'var(--text-dim)',
+                }}
+              >
+                After 1 day, your subscription automatically renews at $49/year unless cancelled before the trial ends.
+              </div>
+            </div>
+          )}
         </div>
 
         <div className={styles.shell}>

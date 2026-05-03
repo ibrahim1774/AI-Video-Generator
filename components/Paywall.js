@@ -103,7 +103,7 @@ export default function Paywall({ entitlement, onTrialStarted, onError, returnTo
               ? 'Buy a top-up pack to keep going during your trial, or convert to a monthly/yearly plan below.'
               : showTopups
                 ? 'Buy a top-up pack. Credits never expire and stack on your plan.'
-                : 'Yearly plans start with a 1-day free trial. Cancel anytime.'}
+                : 'Start your 1-day paid trial for $1. Cancel anytime in 24h to avoid the $49 charge.'}
           </p>
         </header>
 
@@ -138,7 +138,7 @@ export default function Paywall({ entitlement, onTrialStarted, onError, returnTo
                 </div>
               </div>
               <ul className={styles.feats}>
-                <li>Monthly billing — $5/month</li>
+                <li>4 credits / month</li>
                 <li>Cancel anytime</li>
                 <li>720p or 1080p, no watermark</li>
               </ul>
@@ -158,7 +158,7 @@ export default function Paywall({ entitlement, onTrialStarted, onError, returnTo
 
             <article className={`${styles.tier} ${styles.tierFeatured}`}>
               <div className={styles.tierBadge}>
-                {isTrialing ? 'Best value' : 'Best value · 1-day free trial'}
+                {isTrialing ? 'Best value' : 'Best value · 1-day paid trial · $1'}
               </div>
               <div className={styles.tierHead}>
                 <h3 className={styles.tierName}>Yearly</h3>
@@ -168,9 +168,11 @@ export default function Paywall({ entitlement, onTrialStarted, onError, returnTo
                 </div>
               </div>
               <ul className={styles.feats}>
-                {isTrialing ? <li>Convert anytime to lock in $49/yr</li> : <li>1-day free trial, then $49/year</li>}
-                <li>Save 18% vs monthly</li>
-                <li>One charge, cancel anytime</li>
+                {isTrialing
+                  ? <li>Convert anytime to lock in $49/yr (48 credits)</li>
+                  : <li>$1 today &middot; $49/year after, unless cancelled in 24h</li>}
+                <li>48 credits / year</li>
+                <li>Save 18% vs monthly &middot; cancel anytime</li>
               </ul>
               <button
                 type="button"
@@ -182,7 +184,7 @@ export default function Paywall({ entitlement, onTrialStarted, onError, returnTo
                   ? 'Redirecting…'
                   : isTrialing
                     ? 'Convert to yearly → $49/yr'
-                    : 'Start free trial → $49/yr'}
+                    : 'Start trial → $1 today'}
               </button>
             </article>
           </div>

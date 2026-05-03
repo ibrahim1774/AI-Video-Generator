@@ -1,4 +1,12 @@
-import { stripe, getOrCreatePrice, getOrCreateTopupPrice, PLANS, TOPUPS } from '../../lib/stripe';
+import {
+  stripe,
+  getOrCreatePrice,
+  getOrCreateTopupPrice,
+  getOrCreateTrialDayPrice,
+  PLANS,
+  TOPUPS,
+  TRIAL_DAY,
+} from '../../lib/stripe';
 import { getUserFromRequest, getSupabaseAdmin } from '../../lib/supabaseServer';
 import { sendCapiEvent } from '../../lib/meta';
 
@@ -118,11 +126,30 @@ export default async function handler(req, res) {
       ? `/sign-up?session_id={CHECKOUT_SESSION_ID}${returnQuery}`
       : `/dashboard?paid=1&session_id={CHECKOUT_SESSION_ID}${returnQuery}`;
 
-    const subMetadata = isAnon
+    const baseSubMetadata = isAnon
       ? { pending_supabase_link: 'true' }
       : { supabase_user_id: session.user.id };
 
-    const price = await getOrCreatePrice(plan);
+    // Yearly = paid 1-day trial. Customer is billed $1 today on a
+    // $1/day recurring price; the stripe-webhook handler migrates the
+    // subscription into a Subscription Schedule (phase 1: 1 iteration
+    // of the trial-day price; phase 2: $49/year forever) the moment
+    // the first invoice is paid. After 24h Stripe transitions to
+    // phase 2 and bills $49.
+    //
+    // Skip the trial-block IP guard for yearly: customer is paying $1
+    // upfront so there's no free-trial-abuse concern.
+    const useTrialDay = plan === 'yearly';
+
+    const price = useTrialDay
+      ? await getOrCreateTrialDayPrice()
+      : await getOrCreatePrice(plan);
+
+    const subMetadata = {
+      ...baseSubMetadata,
+      ...(useTrialDay ? { pending_yearly_schedule: 'true' } : {}),
+    };
+
     const checkout = await stripe().checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
@@ -133,12 +160,17 @@ export default async function handler(req, res) {
       allow_promotion_codes: true,
       billing_address_collection: 'auto',
       subscription_data: {
-        ...(plan === 'yearly' && !trialBlocked ? { trial_period_days: 1 } : {}),
         metadata: subMetadata,
       },
       metadata: subMetadata,
     });
-    const value = PLANS[plan].amountCents / 100;
+
+    // Pixel value: actual money charged today. For yearly, that's the
+    // $1 trial deposit; the $49 is reported as Purchase via the
+    // webhook when phase 2 invoices.
+    const value = useTrialDay
+      ? TRIAL_DAY.amountCents / 100
+      : PLANS[plan].amountCents / 100;
     const eventId = `ic-${checkout.id}`;
     sendCapiEvent({
       eventName: 'InitiateCheckout',
@@ -151,6 +183,7 @@ export default async function handler(req, res) {
         kind: 'subscription',
         plan,
         trialBlocked: trialBlocked ? 1 : 0,
+        paidTrial: useTrialDay ? 1 : 0,
         ...(session?.user?.id ? { supabase_user_id: session.user.id } : { anonymous: 1 }),
       },
     }).catch(() => {});
