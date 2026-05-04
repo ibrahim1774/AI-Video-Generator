@@ -1005,8 +1005,8 @@ export default function UgcPage() {
             className={styles.headline}
             style={{ fontSize: 'clamp(28px, 4.4vw, 46px)', margin: '12px 0 8px' }}
           >
-            From a Single Image to a Full Video &mdash;{' '}
-            <span className={styles.accent}>In Your Words.</span>
+            Turn Your Image Into a Talking, Moving Video &mdash;{' '}
+            <span className={styles.accent}>Just Type What They Say &amp; Do</span>
           </h1>
           <p className={styles.subtitle} style={{ fontSize: 14 }}>
             Upload a character or generate one from a prompt. Each video takes

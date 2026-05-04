@@ -138,10 +138,10 @@ export default function Paywall({ entitlement, onTrialStarted, onError, returnTo
                 </div>
               </div>
               <ul className={styles.feats}>
-                <li>Access to image and video model generations</li>
+                <li>Full access to AI Video generation</li>
+                <li>Includes credits to start creating immediately</li>
                 <li>Top up anytime for more credits</li>
                 <li>Cancel anytime</li>
-                <li>720p or 1080p, no watermark</li>
               </ul>
               <button
                 type="button"
@@ -170,8 +170,8 @@ export default function Paywall({ entitlement, onTrialStarted, onError, returnTo
               </div>
               <ul className={styles.feats}>
                 <li><strong>Save 50%</strong> vs paying monthly ($60/yr)</li>
-                <li>Access to image and video model generations</li>
-                <li>Top up anytime for more credits</li>
+                <li>Full access to AI Video generation</li>
+                <li>Includes credits to start creating immediately</li>
                 <li>One charge, cancel anytime</li>
               </ul>
               <button
