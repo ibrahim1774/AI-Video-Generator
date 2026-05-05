@@ -5,6 +5,7 @@ import {
 import { getUserFromRequest } from '../../lib/supabaseServer';
 import { getEntitlement, reserveCredits, refundCredits, trackPendingJob } from '../../lib/entitlement';
 import { sendCapiEvent } from '../../lib/meta';
+import { costForGeneration } from '../../lib/cost';
 
 function isHttpUrl(value) {
   if (typeof value !== 'string') return false;
@@ -26,11 +27,6 @@ function clampSceneDuration(d) {
   const n = Math.round(Number(d));
   if (!Number.isFinite(n)) return 3;
   return Math.max(1, Math.min(12, n));
-}
-
-// 1 credit per 3 seconds of video, rounded up. Min 1.
-function costForSeconds(total) {
-  return Math.max(1, Math.ceil(total / 3));
 }
 
 export default async function handler(req, res) {
@@ -66,7 +62,7 @@ export default async function handler(req, res) {
     totalSeconds = clampDuration(duration);
   }
 
-  const cost = costForSeconds(totalSeconds);
+  const cost = costForGeneration({ seconds: totalSeconds, mode: q, audio: wantAudio });
 
   let entitlement;
   try {

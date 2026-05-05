@@ -153,7 +153,7 @@ export default function UgcPage() {
     if (authUser) fetchEntitlement();
   }, [authUser, fetchEntitlement]);
 
-  const cost = costForDuration(duration);
+  const cost = costForDuration(duration, mode, audio);
   const storyScenes = story?.scenes || [];
   const latestScene = storyScenes[storyScenes.length - 1] || null;
   const atSceneCap = storyScenes.length >= MAX_SCENES;
@@ -882,7 +882,7 @@ export default function UgcPage() {
               </div>
             </label>
 
-            <DurationSlider value={duration} onChange={setDuration} />
+            <DurationSlider value={duration} onChange={setDuration} mode={mode} audio={audio} />
 
             <div className={styles.swapModeLabel} style={{ marginTop: 16 }}>Audio</div>
             <div className={styles.modeRow} role="radiogroup" aria-label="Audio">

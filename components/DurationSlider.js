@@ -1,13 +1,19 @@
 /*
  * Reusable duration slider for Kling v3 video generation.
- * Range 3–15s, 1s steps. Shows live cost (1 credit per 3s, rounded up).
+ * Range 3–15s, 1s steps. Shows live cost — defers to costForGeneration
+ * which factors in mode (std/pro) + audio (because pro+audio costs
+ * more on kie.ai's side and we mirror that).
  *
  * The slider uses a real range input so it works on touch and
  * keyboard, plus a small number of stop ticks below for orientation.
  */
 
-export function costForDuration(seconds) {
-  return Math.max(1, Math.ceil(Number(seconds) / 3));
+import { costForGeneration } from '../lib/cost';
+
+// Backwards-compat shim — older callers that didn't have mode/audio
+// context. Treats them as the std-silent baseline (= 1cr per 3s).
+export function costForDuration(seconds, mode = 'std', audio = false) {
+  return costForGeneration({ seconds, mode, audio });
 }
 
 export default function DurationSlider({
@@ -18,8 +24,10 @@ export default function DurationSlider({
   max = 15,
   showCost = true,
   ariaLabel = 'Duration',
+  mode = 'std',
+  audio = false,
 }) {
-  const cost = costForDuration(value);
+  const cost = costForGeneration({ seconds: value, mode, audio });
   return (
     <div>
       <div

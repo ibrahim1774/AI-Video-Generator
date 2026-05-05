@@ -284,7 +284,7 @@ export default function ImageToVideoPage() {
             />
           </label>
 
-          <DurationSlider value={duration} onChange={setDuration} />
+          <DurationSlider value={duration} onChange={setDuration} mode={mode} audio={audio} />
 
           <div className={styles.swapModeLabel} style={{ marginTop: 16 }}>Audio</div>
           <div className={styles.modeRow} role="radiogroup" aria-label="Audio">
@@ -344,7 +344,10 @@ export default function ImageToVideoPage() {
             {submitting && <span className={styles.spinner} aria-hidden="true" />}
             {submitting
               ? 'Starting…'
-              : `Generate (${costForDuration(duration)} credit${costForDuration(duration) === 1 ? '' : 's'})`}
+              : (() => {
+                const c = costForDuration(duration, mode, audio);
+                return `Generate (${c} credit${c === 1 ? '' : 's'})`;
+              })()}
           </button>
 
           {entitlement && entitlement.canSwap && (
