@@ -1006,32 +1006,18 @@ export default function UgcPage() {
   return (
     <>
       <Head><title>From a Single Image to a Full Video — Haelabs</title></Head>
-      <main className={styles.page} style={{ paddingTop: 24 }}>
-        <div className={styles.hero} style={{ marginBottom: 12 }}>
+      <main className={styles.page} style={{ paddingTop: 12 }}>
+        <div className={styles.hero} style={{ marginBottom: 8 }}>
           <span className={styles.eyebrow}>{chooseEyebrow}</span>
           <h1
             className={styles.headline}
-            style={{ fontSize: 'clamp(28px, 4.4vw, 46px)', margin: '12px 0 8px' }}
+            style={{ fontSize: 'clamp(22px, 3.6vw, 36px)', margin: '8px 0 6px', lineHeight: 1.15 }}
           >
             Turn Your Image Into a Talking, Moving Video &mdash;{' '}
             <span className={styles.accent}>Just Type What They Say &amp; Do</span>
           </h1>
-          <p className={styles.subtitle} style={{ fontSize: 14 }}>
-            {canUsePromptGenerator
-              ? 'Upload a character or generate one from a prompt. Each video takes 2–4 minutes and includes native audio + lip-sync.'
-              : 'Upload a character. Each video takes 2–4 minutes and includes native audio + lip-sync.'}
-          </p>
-          <p
-            style={{
-              marginTop: 6,
-              fontFamily: 'var(--font-mono, ui-monospace, monospace)',
-              fontSize: 11,
-              letterSpacing: '0.18em',
-              textTransform: 'uppercase',
-              color: 'var(--text-dim)',
-            }}
-          >
-            ◆ Seedance alternative &middot; not related to Seedance
+          <p className={styles.subtitle} style={{ fontSize: 13, margin: '4px 0 0' }}>
+            Each video takes 2&ndash;4 minutes &middot; native audio + lip-sync.
           </p>
         </div>
 
@@ -1048,6 +1034,7 @@ export default function UgcPage() {
               onFileSelected={handleUpload}
               onRemove={() => { setUploadFile(null); setImageUrl(null); }}
               maxSizeMB={1024}
+              compact
             />
             {imageBusy === 'upload' && (
               <div className={styles.usage} style={{ marginTop: 8 }}>Uploading…</div>
@@ -1100,9 +1087,9 @@ export default function UgcPage() {
               <textarea
                 value={script}
                 onChange={(e) => setScript(e.target.value.slice(0, 500))}
-                rows={4}
+                rows={3}
                 maxLength={500}
-                placeholder={'e.g. Smiles and waves at the camera, then says:\n"Hey everyone, today I am reviewing my favorite coffee."'}
+                placeholder='e.g. Smiles and waves, then says: "Hey everyone, today I am reviewing my favorite coffee."'
                 className={styles.ugcTextarea}
               />
               <span className={styles.ugcCharCount}>{script.length} / 500</span>
