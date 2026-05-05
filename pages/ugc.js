@@ -828,7 +828,7 @@ export default function UgcPage() {
         ? `◆ Scene ${storyScenes.length + 1} of ${MAX_SCENES} — continuing from last frame`
         : nextSceneType === 'new'
           ? `◆ Scene ${storyScenes.length + 1} of ${MAX_SCENES} — new image`
-          : '◆ Step 2 of 2 — Animate';
+          : '◆ Tell your character what to do';
 
     return (
       <>
@@ -994,7 +994,14 @@ export default function UgcPage() {
   const chooseEyebrow =
     nextSceneType === 'new'
       ? `◆ Scene ${storyScenes.length + 1} of ${MAX_SCENES} — pick a new image`
-      : '◆ Step 1 of 2 — Pick your character';
+      : '◆ Upload your image';
+  // Prompt-to-character generator costs 1 credit, so it only makes
+  // sense to surface for users on a paid plan (or trialing). Anon
+  // and free users see the upload box only.
+  const canUsePromptGenerator =
+    entitlement?.tier === 'monthly' ||
+    entitlement?.tier === 'yearly' ||
+    entitlement?.status === 'trialing';
   return (
     <>
       <Head><title>From a Single Image to a Full Video — Haelabs</title></Head>
@@ -1009,8 +1016,9 @@ export default function UgcPage() {
             <span className={styles.accent}>Just Type What They Say &amp; Do</span>
           </h1>
           <p className={styles.subtitle} style={{ fontSize: 14 }}>
-            Upload a character or generate one from a prompt. Each video takes
-            2&ndash;4 minutes and includes native audio + lip-sync.
+            {canUsePromptGenerator
+              ? 'Upload a character or generate one from a prompt. Each video takes 2–4 minutes and includes native audio + lip-sync.'
+              : 'Upload a character. Each video takes 2–4 minutes and includes native audio + lip-sync.'}
           </p>
           <p
             style={{
@@ -1027,7 +1035,10 @@ export default function UgcPage() {
         </div>
 
         <div className={styles.shell}>
-          <div className={styles.uploads}>
+          <div
+            className={styles.uploads}
+            style={canUsePromptGenerator ? undefined : { gridTemplateColumns: '1fr', maxWidth: 480, margin: '0 auto' }}
+          >
             <div>
               <UploadZone
                 label="Upload your own"
@@ -1044,46 +1055,48 @@ export default function UgcPage() {
               )}
             </div>
 
-            <div
-              style={{
-                padding: 16,
-                border: '1px dashed rgba(255,255,255,0.18)',
-                borderRadius: 12,
-                background: 'rgba(255,255,255,0.02)',
-              }}
-            >
-              <div className={styles.swapModeLabel} style={{ marginTop: 0 }}>
-                Or generate one (1 credit)
-              </div>
-              <textarea
-                value={imagePrompt}
-                onChange={(e) => setImagePrompt(e.target.value)}
-                rows={3}
-                placeholder="e.g. A 25-year-old woman with brown hair smiling at the camera, soft studio lighting."
+            {canUsePromptGenerator && (
+              <div
                 style={{
-                  width: '100%',
-                  padding: 12,
-                  borderRadius: 8,
-                  background: '#0f0f11',
-                  color: '#eee',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  fontFamily: 'inherit',
-                  fontSize: 14,
-                  resize: 'vertical',
-                  marginTop: 8,
+                  padding: 16,
+                  border: '1px dashed rgba(255,255,255,0.18)',
+                  borderRadius: 12,
+                  background: 'rgba(255,255,255,0.02)',
                 }}
-              />
-              <button
-                type="button"
-                onClick={handleGenerateImage}
-                disabled={!imagePrompt.trim() || imageBusy !== null}
-                className={`${styles.submit} ${imagePrompt.trim() && imageBusy === null ? styles.submitReady : ''} ${imageBusy === 'generate' ? styles.submitLoading : ''}`}
-                style={{ marginTop: 12 }}
               >
-                {imageBusy === 'generate' && <span className={styles.spinner} aria-hidden="true" />}
-                {imageBusy === 'generate' ? 'Starting…' : 'Generate image (1 credit)'}
-              </button>
-            </div>
+                <div className={styles.swapModeLabel} style={{ marginTop: 0 }}>
+                  Or generate one (1 credit)
+                </div>
+                <textarea
+                  value={imagePrompt}
+                  onChange={(e) => setImagePrompt(e.target.value)}
+                  rows={3}
+                  placeholder="e.g. A 25-year-old woman with brown hair smiling at the camera, soft studio lighting."
+                  style={{
+                    width: '100%',
+                    padding: 12,
+                    borderRadius: 8,
+                    background: '#0f0f11',
+                    color: '#eee',
+                    border: '1px solid rgba(255,255,255,0.12)',
+                    fontFamily: 'inherit',
+                    fontSize: 14,
+                    resize: 'vertical',
+                    marginTop: 8,
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={handleGenerateImage}
+                  disabled={!imagePrompt.trim() || imageBusy !== null}
+                  className={`${styles.submit} ${imagePrompt.trim() && imageBusy === null ? styles.submitReady : ''} ${imageBusy === 'generate' ? styles.submitLoading : ''}`}
+                  style={{ marginTop: 12 }}
+                >
+                  {imageBusy === 'generate' && <span className={styles.spinner} aria-hidden="true" />}
+                  {imageBusy === 'generate' ? 'Starting…' : 'Generate image (1 credit)'}
+                </button>
+              </div>
+            )}
           </div>
 
           {nextSceneType === 'new' && storyScenes.length > 0 && (
