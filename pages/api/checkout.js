@@ -5,8 +5,9 @@ import {
   PLANS,
   TOPUPS,
 } from '../../lib/stripe';
-import { getUserFromRequest } from '../../lib/supabaseServer';
+import { getUserFromRequest, getSupabaseAdmin } from '../../lib/supabaseServer';
 import { sendCapiEvent } from '../../lib/meta';
+import { linkStripeCustomerToProfile } from '../../lib/entitlement';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -47,11 +48,72 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Invalid top-up pack.' });
       }
       const price = await getOrCreateTopupPrice(pack);
+
+      // Bind a single Stripe customer to this user BEFORE checkout so
+      // the credit grant always lands somewhere we can find later.
+      // Order of preference:
+      //   1. profile.stripe_customer_id (already linked — reuse it)
+      //   2. existing Stripe customer by email (avoid creating dupes)
+      //   3. create a new customer
+      // In every case we set supabase_user_id on the customer metadata
+      // so the webhook fallback path knows who to link if /confirm
+      // never runs (the most common cause of "I bought credits but
+      // don't see them").
+      const admin = getSupabaseAdmin();
+      let customerId = null;
+      try {
+        const { data } = await admin
+          .from('profiles')
+          .select('stripe_customer_id')
+          .eq('id', session.user.id)
+          .maybeSingle();
+        customerId = data?.stripe_customer_id || null;
+      } catch (lookupErr) {
+        // Non-fatal — we'll fall through to email-based lookup.
+        console.warn('[checkout/topup] profile lookup failed', lookupErr.message);
+      }
+
+      if (!customerId && email) {
+        const found = await stripe().customers.list({ email, limit: 1 });
+        if (found.data.length > 0) customerId = found.data[0].id;
+      }
+
+      if (!customerId) {
+        const created = await stripe().customers.create({
+          email,
+          metadata: { supabase_user_id: session.user.id },
+        });
+        customerId = created.id;
+      }
+
+      // Persist the link immediately so a webhook-only grant path
+      // (user closes tab before /confirm fires) still ends up on a
+      // customer the dashboard can read from.
+      try {
+        await linkStripeCustomerToProfile(admin, session.user.id, customerId);
+      } catch (linkErr) {
+        console.warn('[checkout/topup] profile link failed', linkErr.message);
+      }
+
+      // Idempotently ensure the customer carries supabase_user_id.
+      // Cheap; preserves any other metadata Stripe may have on it.
+      try {
+        const customerNow = await stripe().customers.retrieve(customerId);
+        const md = customerNow && !customerNow.deleted ? customerNow.metadata || {} : {};
+        if (md.supabase_user_id !== session.user.id) {
+          await stripe().customers.update(customerId, {
+            metadata: { ...md, supabase_user_id: session.user.id },
+          });
+        }
+      } catch (mdErr) {
+        console.warn('[checkout/topup] metadata sync failed', mdErr.message);
+      }
+
       const checkout = await stripe().checkout.sessions.create({
         mode: 'payment',
         payment_method_types: ['card'],
         line_items: [{ price: price.id, quantity: 1 }],
-        customer_email: email,
+        customer: customerId,
         success_url: `${origin}/dashboard?paid=1&session_id={CHECKOUT_SESSION_ID}${returnQuery}`,
         cancel_url: `${origin}/dashboard?paid=0`,
         allow_promotion_codes: true,

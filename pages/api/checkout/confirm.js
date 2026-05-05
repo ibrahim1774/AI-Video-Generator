@@ -118,6 +118,10 @@ export default async function handler(req, res) {
             ...md,
             creditsRemaining: String(next),
             processedSessions: nextProcessed,
+            // Backfill so the webhook fallback can link this customer
+            // to the right Supabase user even if /confirm never runs
+            // for the *next* purchase from the same customer.
+            supabase_user_id: session.user.id,
           },
         });
         creditsAdded = topup.credits;

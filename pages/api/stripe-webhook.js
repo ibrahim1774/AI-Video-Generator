@@ -1,5 +1,7 @@
 import { stripe, planFromPrice, topupFromPrice, PLANS } from '../../lib/stripe';
 import { sendCapiEvent } from '../../lib/meta';
+import { getSupabaseAdmin } from '../../lib/supabaseServer';
+import { linkStripeCustomerToProfile } from '../../lib/entitlement';
 
 /*
  * Stripe webhook handler.
@@ -196,6 +198,18 @@ async function handleCheckoutSessionCompleted(checkoutSession, req) {
       processedSessions: nextProcessed,
     },
   });
+
+  // Defense-in-depth: ensure profile.stripe_customer_id points at this
+  // customer. Without this, /confirm-skipped flows (closed tab, signed
+  // out before redirect) leave credits on a customer the dashboard
+  // can't see. Best-effort — never break the credit grant.
+  if (md.supabase_user_id) {
+    try {
+      await linkStripeCustomerToProfile(getSupabaseAdmin(), md.supabase_user_id, customerId);
+    } catch (linkErr) {
+      console.warn('[webhook/topup] profile link failed', linkErr.message);
+    }
+  }
 
   // Fire CAPI Purchase for the top-up. Browser pixel may not have
   // fired (closed tab) — same eventId as /confirm would have used so
