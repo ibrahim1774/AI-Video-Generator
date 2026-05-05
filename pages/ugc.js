@@ -1019,6 +1019,18 @@ export default function UgcPage() {
           <p className={styles.subtitle} style={{ fontSize: 13, margin: '4px 0 0' }}>
             Each video takes 2&ndash;4 minutes &middot; native audio + lip-sync.
           </p>
+          <p
+            style={{
+              marginTop: 4,
+              fontFamily: 'var(--font-mono, ui-monospace, monospace)',
+              fontSize: 10,
+              letterSpacing: '0.16em',
+              textTransform: 'uppercase',
+              color: 'var(--text-dim)',
+            }}
+          >
+            ◆ Seedance alternative &middot; not related to Seedance
+          </p>
         </div>
 
         <form onSubmit={handleAnimate} className={styles.ugcCard}>
