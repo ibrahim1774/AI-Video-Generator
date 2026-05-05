@@ -311,3 +311,285 @@
   letter-spacing: 0.04em;
   margin-left: 6px;
 }
+
+/* /ugc single-screen card layout */
+.ugcCard {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 28px 24px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    radial-gradient(120% 60% at 50% 0%, rgba(255, 255, 255, 0.04), transparent 60%),
+    rgba(255, 255, 255, 0.015);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 30px 80px -40px rgba(0, 0, 0, 0.7);
+}
+
+.ugcSection {
+  margin-bottom: 24px;
+}
+
+.ugcSection:last-of-type {
+  margin-bottom: 0;
+}
+
+.ugcSectionTitle {
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 500;
+  color: #ededed;
+  margin: 0 0 12px;
+  letter-spacing: -0.005em;
+}
+
+.ugcOr {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0;
+}
+
+.ugcOrLine {
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.ugcOrText {
+  font-size: 11px;
+  color: #888;
+  letter-spacing: 0.18em;
+}
+
+.ugcDisclosure {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  overflow: hidden;
+}
+
+.ugcDisclosureSummary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.ugcDisclosureSummary::-webkit-details-marker {
+  display: none;
+}
+
+.ugcDisclosureIcon {
+  font-size: 14px;
+  color: #ededed;
+  opacity: 0.7;
+}
+
+.ugcDisclosureLabel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ugcDisclosureTitle {
+  font-size: 14px;
+  color: #ededed;
+}
+
+.ugcDisclosureHint {
+  font-size: 12px;
+  color: #888;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ugcDisclosureChevron {
+  color: #888;
+  font-size: 18px;
+  line-height: 1;
+  transition: transform 0.18s ease;
+}
+
+.ugcDisclosure[open] .ugcDisclosureChevron {
+  transform: rotate(180deg);
+}
+
+.ugcDisclosureBody {
+  padding: 0 16px 16px;
+}
+
+.ugcTextareaWrap {
+  position: relative;
+}
+
+.ugcTextarea {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  color: #ededed;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.ugcTextarea:focus {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.ugcCharCount {
+  position: absolute;
+  right: 14px;
+  bottom: 12px;
+  font-size: 11px;
+  color: #777;
+  pointer-events: none;
+}
+
+.ugcSlider {
+  width: 100%;
+  accent-color: #ededed;
+  margin: 8px 0 4px;
+}
+
+.ugcSliderLabels {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  margin-top: 8px;
+}
+
+.ugcSliderTick {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ugcSliderTickValue {
+  font-size: 13px;
+  color: #ededed;
+}
+
+.ugcSliderTickLabel {
+  font-size: 11px;
+  color: #888;
+}
+
+.ugcRowTwo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 520px) {
+  .ugcRowTwo {
+    grid-template-columns: 1fr;
+  }
+  .ugcCard {
+    padding: 22px 16px;
+  }
+}
+
+.ugcMiniLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #aaa;
+  margin-bottom: 8px;
+  letter-spacing: 0.02em;
+}
+
+.ugcCta {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px 20px;
+  margin-top: 8px;
+  border-radius: 14px;
+  border: none;
+  background: linear-gradient(180deg, #ededed, #c9c9c9);
+  color: #0a0a0b;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform 0.08s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+  box-shadow: 0 8px 24px -8px rgba(255, 255, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.ugcCta:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 32px -8px rgba(255, 255, 255, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.ugcCta:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.ugcCtaDisabled {
+  background: rgba(255, 255, 255, 0.08);
+  color: #888;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.ugcCtaIcon {
+  font-size: 16px;
+  display: inline-flex;
+}
+
+.ugcCtaContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  line-height: 1.1;
+}
+
+.ugcCtaTitle {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.ugcCtaSub {
+  font-size: 11px;
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+.ugcSecondaryLink {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #bbb;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.ugcFootNote {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 18px;
+  font-size: 12px;
+  color: #888;
+}

@@ -1035,191 +1035,214 @@ export default function UgcPage() {
           </p>
         </div>
 
-        <div className={styles.shell}>
-          <div
-            className={styles.uploads}
-            style={canUsePromptGenerator ? undefined : { gridTemplateColumns: '1fr', maxWidth: 480, margin: '0 auto' }}
-          >
-            <div>
-              <UploadZone
-                label="Upload your own"
-                sublabel="JPG or PNG · clear face/body"
-                icon="📤"
-                accept="image/jpeg,image/png"
-                file={uploadFile}
-                onFileSelected={handleUpload}
-                onRemove={() => { setUploadFile(null); setImageUrl(null); }}
-                maxSizeMB={1024}
-              />
-              {imageBusy === 'upload' && (
-                <div className={styles.usage} style={{ marginTop: 8 }}>Uploading…</div>
-              )}
-            </div>
+        <form onSubmit={handleAnimate} className={styles.ugcCard}>
+          {/* 1. Add your character */}
+          <section className={styles.ugcSection}>
+            <h3 className={styles.ugcSectionTitle}>1. Add your character</h3>
+            <UploadZone
+              label="Upload image"
+              sublabel="JPG or PNG · clear face/body"
+              icon="📤"
+              accept="image/jpeg,image/png"
+              file={uploadFile}
+              onFileSelected={handleUpload}
+              onRemove={() => { setUploadFile(null); setImageUrl(null); }}
+              maxSizeMB={1024}
+            />
+            {imageBusy === 'upload' && (
+              <div className={styles.usage} style={{ marginTop: 8 }}>Uploading…</div>
+            )}
 
             {canUsePromptGenerator && (
-              <div
-                style={{
-                  padding: 16,
-                  border: '1px dashed rgba(255,255,255,0.18)',
-                  borderRadius: 12,
-                  background: 'rgba(255,255,255,0.02)',
-                }}
-              >
-                <div className={styles.swapModeLabel} style={{ marginTop: 0 }}>
-                  Or generate one (1 credit)
+              <>
+                <div className={styles.ugcOr}>
+                  <span className={styles.ugcOrLine} />
+                  <span className={styles.ugcOrText}>OR</span>
+                  <span className={styles.ugcOrLine} />
                 </div>
-                <textarea
-                  value={imagePrompt}
-                  onChange={(e) => setImagePrompt(e.target.value)}
-                  rows={3}
-                  placeholder="e.g. A 25-year-old woman with brown hair smiling at the camera, soft studio lighting."
-                  style={{
-                    width: '100%',
-                    padding: 12,
-                    borderRadius: 8,
-                    background: '#0f0f11',
-                    color: '#eee',
-                    border: '1px solid rgba(255,255,255,0.12)',
-                    fontFamily: 'inherit',
-                    fontSize: 14,
-                    resize: 'vertical',
-                    marginTop: 8,
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={handleGenerateImage}
-                  disabled={!imagePrompt.trim() || imageBusy !== null}
-                  className={`${styles.submit} ${imagePrompt.trim() && imageBusy === null ? styles.submitReady : ''} ${imageBusy === 'generate' ? styles.submitLoading : ''}`}
-                  style={{ marginTop: 12 }}
-                >
-                  {imageBusy === 'generate' && <span className={styles.spinner} aria-hidden="true" />}
-                  {imageBusy === 'generate' ? 'Starting…' : 'Generate image (1 credit)'}
-                </button>
-              </div>
+                <details className={styles.ugcDisclosure}>
+                  <summary className={styles.ugcDisclosureSummary}>
+                    <span className={styles.ugcDisclosureIcon} aria-hidden="true">✦</span>
+                    <span className={styles.ugcDisclosureLabel}>
+                      <span className={styles.ugcDisclosureTitle}>Describe your character</span>
+                      <span className={styles.ugcDisclosureHint}>e.g. a woman in a white shirt, sitting in a cafe</span>
+                    </span>
+                    <span className={styles.ugcDisclosureChevron} aria-hidden="true">⌄</span>
+                  </summary>
+                  <div className={styles.ugcDisclosureBody}>
+                    <textarea
+                      value={imagePrompt}
+                      onChange={(e) => setImagePrompt(e.target.value)}
+                      rows={3}
+                      placeholder="e.g. A 25-year-old woman with brown hair smiling at the camera, soft studio lighting."
+                      className={styles.ugcTextarea}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleGenerateImage}
+                      disabled={!imagePrompt.trim() || imageBusy !== null}
+                      className={`${styles.submit} ${imagePrompt.trim() && imageBusy === null ? styles.submitReady : ''} ${imageBusy === 'generate' ? styles.submitLoading : ''}`}
+                      style={{ marginTop: 12 }}
+                    >
+                      {imageBusy === 'generate' && <span className={styles.spinner} aria-hidden="true" />}
+                      {imageBusy === 'generate' ? 'Starting…' : 'Generate image (1 credit)'}
+                    </button>
+                  </div>
+                </details>
+              </>
             )}
-          </div>
+          </section>
 
-          <form onSubmit={handleAnimate} style={{ marginTop: 24 }}>
-            <label className={styles.field} style={{ display: 'block' }}>
-              <span className={styles.swapModeLabel}>Script / direction</span>
+          {/* 2. Script */}
+          <section className={styles.ugcSection}>
+            <h3 className={styles.ugcSectionTitle}>2. What should they say &amp; do?</h3>
+            <div className={styles.ugcTextareaWrap}>
               <textarea
                 value={script}
-                onChange={(e) => setScript(e.target.value)}
+                onChange={(e) => setScript(e.target.value.slice(0, 500))}
                 rows={4}
-                placeholder='e.g. Smiles and waves at the camera, then says: "Hey everyone, today I am reviewing my favorite coffee."'
-                style={{
-                  width: '100%',
-                  padding: 12,
-                  borderRadius: 8,
-                  background: '#0f0f11',
-                  color: '#eee',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  fontFamily: 'inherit',
-                  fontSize: 14,
-                  resize: 'vertical',
-                }}
+                maxLength={500}
+                placeholder={'e.g. Smiles and waves at the camera, then says:\n"Hey everyone, today I am reviewing my favorite coffee."'}
+                className={styles.ugcTextarea}
               />
-              <div style={{ marginTop: 6, fontSize: 11, color: '#888' }}>
-                Tip: put dialogue in &ldquo;quotes&rdquo; so the model lip-syncs it.
+              <span className={styles.ugcCharCount}>{script.length} / 500</span>
+            </div>
+          </section>
+
+          {/* 3. Video length */}
+          <section className={styles.ugcSection}>
+            <h3 className={styles.ugcSectionTitle}>3. Video length</h3>
+            <input
+              type="range"
+              min={3}
+              max={15}
+              step={1}
+              value={duration}
+              onChange={(e) => setDuration(Number(e.target.value))}
+              className={styles.ugcSlider}
+              aria-label="Video length"
+            />
+            <div className={styles.ugcSliderLabels}>
+              <div className={styles.ugcSliderTick}>
+                <span className={styles.ugcSliderTickValue}>3s</span>
+                <span className={styles.ugcSliderTickLabel}>Short</span>
               </div>
-            </label>
-
-            <DurationSlider value={duration} onChange={setDuration} />
-
-            <div className={styles.swapModeLabel} style={{ marginTop: 16 }}>Audio</div>
-            <div className={styles.modeRow} role="radiogroup" aria-label="Audio">
-              <button
-                type="button"
-                role="radio"
-                aria-checked={audio === true}
-                className={`${styles.modeBtn} ${audio === true ? styles.modeBtnActive : ''}`}
-                onClick={() => setAudio(true)}
-              >
-                <span className={styles.modeName}>With audio</span>
-                <span className={styles.modeDetail}>Dialogue, lip-sync, ambient SFX</span>
-              </button>
-              <button
-                type="button"
-                role="radio"
-                aria-checked={audio === false}
-                className={`${styles.modeBtn} ${audio === false ? styles.modeBtnActive : ''}`}
-                onClick={() => setAudio(false)}
-              >
-                <span className={styles.modeName}>Silent</span>
-                <span className={styles.modeDetail}>Video only &middot; cheaper output</span>
-              </button>
+              <div className={styles.ugcSliderTick} style={{ textAlign: 'center' }}>
+                <span className={styles.ugcSliderTickValue}>{duration}s</span>
+                <span className={styles.ugcSliderTickLabel}>
+                  {duration <= 5 ? 'Short' : duration <= 9 ? 'Medium' : 'Long'}
+                </span>
+              </div>
+              <div className={styles.ugcSliderTick} style={{ textAlign: 'right' }}>
+                <span className={styles.ugcSliderTickValue}>15s</span>
+                <span className={styles.ugcSliderTickLabel}>Long</span>
+              </div>
             </div>
+          </section>
 
-            <div className={styles.swapModeLabel} style={{ marginTop: 16 }}>Quality</div>
-            <div className={styles.modeRow} role="radiogroup" aria-label="Quality">
-              <button
-                type="button"
-                role="radio"
-                aria-checked={mode === 'std'}
-                className={`${styles.modeBtn} ${mode === 'std' ? styles.modeBtnActive : ''}`}
-                onClick={() => setMode('std')}
-              >
-                <span className={styles.modeName}>Standard</span>
-                <span className={styles.modeDetail}>720p &middot; faster</span>
-              </button>
-              <button
-                type="button"
-                role="radio"
-                aria-checked={mode === 'pro'}
-                className={`${styles.modeBtn} ${mode === 'pro' ? styles.modeBtnActive : ''}`}
-                onClick={() => setMode('pro')}
-              >
-                <span className={styles.modeName}>Pro</span>
-                <span className={styles.modeDetail}>1080p &middot; sharper</span>
-              </button>
+          {/* Audio + Quality */}
+          <section className={styles.ugcRowTwo}>
+            <div>
+              <div className={styles.ugcMiniLabel}>
+                <span aria-hidden="true">𝅗𝅥</span> Audio
+              </div>
+              <div className={styles.modeRow} role="radiogroup" aria-label="Audio">
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={audio === true}
+                  className={`${styles.modeBtn} ${audio === true ? styles.modeBtnActive : ''}`}
+                  onClick={() => setAudio(true)}
+                >
+                  <span className={styles.modeName}>With voice</span>
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={audio === false}
+                  className={`${styles.modeBtn} ${audio === false ? styles.modeBtnActive : ''}`}
+                  onClick={() => setAudio(false)}
+                >
+                  <span className={styles.modeName}>Silent</span>
+                </button>
+              </div>
             </div>
+            <div>
+              <div className={styles.ugcMiniLabel}>
+                <span aria-hidden="true">▦</span> Quality
+              </div>
+              <div className={styles.modeRow} role="radiogroup" aria-label="Quality">
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={mode === 'std'}
+                  className={`${styles.modeBtn} ${mode === 'std' ? styles.modeBtnActive : ''}`}
+                  onClick={() => setMode('std')}
+                >
+                  <span className={styles.modeName}>Standard</span>
+                  <span className={styles.modeDetail}>720p</span>
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={mode === 'pro'}
+                  className={`${styles.modeBtn} ${mode === 'pro' ? styles.modeBtnActive : ''}`}
+                  onClick={() => setMode('pro')}
+                >
+                  <span className={styles.modeName}>Pro <span aria-hidden="true">♕</span></span>
+                  <span className={styles.modeDetail}>1080p</span>
+                </button>
+              </div>
+            </div>
+          </section>
 
-            {error && <div className={styles.error}>{error}</div>}
+          {error && <div className={styles.error}>{error}</div>}
 
-            <button
-              type="submit"
-              className={`${styles.submit} ${effectiveStartImage && !submitting ? styles.submitReady : ''} ${submitting ? styles.submitLoading : ''}`}
-              disabled={!effectiveStartImage || submitting}
-              style={{ marginTop: 16 }}
-            >
-              {submitting && <span className={styles.spinner} aria-hidden="true" />}
-              {submitting
-                ? 'Starting…'
-                : effectiveStartImage
-                  ? `Generate video (${cost} credit${cost === 1 ? '' : 's'})`
-                  : 'Upload an image to continue'}
-            </button>
-          </form>
+          <button
+            type="submit"
+            className={`${styles.ugcCta} ${(!effectiveStartImage || submitting) ? styles.ugcCtaDisabled : ''}`}
+            disabled={!effectiveStartImage || submitting}
+          >
+            {submitting && <span className={styles.spinner} aria-hidden="true" />}
+            <span className={styles.ugcCtaIcon} aria-hidden="true">✦</span>
+            <span className={styles.ugcCtaContent}>
+              <span className={styles.ugcCtaTitle}>
+                {submitting
+                  ? 'Starting…'
+                  : effectiveStartImage
+                    ? 'Generate video'
+                    : 'Upload an image to continue'}
+              </span>
+              {effectiveStartImage && !submitting && (
+                <span className={styles.ugcCtaSub}>Uses {cost} credit{cost === 1 ? '' : 's'}</span>
+              )}
+            </span>
+          </button>
 
           {nextSceneType === 'new' && storyScenes.length > 0 && (
             <div style={{ textAlign: 'center', marginTop: 12 }}>
               <button
                 type="button"
                 onClick={() => setStep('result')}
-                style={{
-                  background: 'transparent',
-                  border: '1px solid rgba(255,255,255,0.15)',
-                  color: '#bbb',
-                  padding: '8px 16px',
-                  borderRadius: 6,
-                  cursor: 'pointer',
-                  fontSize: 13,
-                  fontFamily: 'inherit',
-                }}
+                className={styles.ugcSecondaryLink}
               >
                 ← Back to scenes
               </button>
             </div>
           )}
 
+          <div className={styles.ugcFootNote}>
+            <span aria-hidden="true">🔒</span>
+            <span>Your videos are private and secure</span>
+          </div>
+
           {entitlement && entitlement.canSwap && (
-            <div className={styles.usage}>
+            <div className={styles.usage} style={{ marginTop: 8 }}>
               {entitlement.creditsRemaining} credit
               {entitlement.creditsRemaining === 1 ? '' : 's'} remaining
             </div>
           )}
-        </div>
+        </form>
 
         <Script src="https://fast.wistia.com/player.js" strategy="afterInteractive" async />
         {LANDING_VIDEOS.slice(0, 4).map((v) => (
