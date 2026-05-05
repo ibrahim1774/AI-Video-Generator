@@ -28,6 +28,13 @@ export default function AdminPage() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
 
+  // Heal-topups (orphaned credit) panel state — separate so the two
+  // tools don't clobber each other's UI.
+  const [healEmail, setHealEmail] = useState('');
+  const [healBusy, setHealBusy] = useState(false);
+  const [healReport, setHealReport] = useState(null);
+  const [healError, setHealError] = useState('');
+
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     const supabase = getBrowserSupabase();
@@ -48,6 +55,44 @@ export default function AdminPage() {
   useEffect(() => {
     if (authLoaded && !authUser) router.replace('/sign-in');
   }, [authLoaded, authUser, router]);
+
+  const callHeal = async (body) => {
+    setHealBusy(true);
+    setHealError('');
+    try {
+      const r = await fetch('/api/admin/heal-topups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await r.json();
+      if (!r.ok && r.status !== 409) {
+        // 409 = ambiguous (multiple customers); we still want to show the report
+        setHealError(`${data.error || 'Heal failed'}${data.code ? ` (${data.code})` : ''}`);
+        setHealReport(null);
+      } else {
+        setHealReport(data);
+      }
+    } catch (err) {
+      setHealError(err.message);
+      setHealReport(null);
+    } finally {
+      setHealBusy(false);
+    }
+  };
+
+  const handleHealCheck = (e) => {
+    e.preventDefault();
+    if (healBusy || !healEmail.trim()) return;
+    callHeal({ email: healEmail.trim(), dryRun: true });
+  };
+
+  const handleHealApply = (customerId) => {
+    if (healBusy) return;
+    const body = { email: healEmail.trim(), dryRun: false };
+    if (customerId) body.customerId = customerId;
+    callHeal(body);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -232,6 +277,211 @@ export default function AdminPage() {
             <div style={{ opacity: 0.6 }}>supabase user: {result.supabaseUserId}</div>
           </div>
         )}
+
+        {/* Fix orphaned top-ups */}
+        <div style={{ marginTop: 32 }}>
+          <div className={styles.hero} style={{ marginBottom: 12 }}>
+            <span className={styles.eyebrow}>◆ Fix orphaned credits</span>
+            <h2 className={styles.headline} style={{ fontSize: 'clamp(20px,3vw,28px)', margin: '8px 0 4px' }}>
+              Customer paid but doesn't see credits?
+            </h2>
+            <p className={styles.subtitle} style={{ fontSize: 13 }}>
+              Type the customer's email. The first click is a dry run that
+              shows what we'd change — review, then click Relink.
+            </p>
+          </div>
+
+          <form
+            onSubmit={handleHealCheck}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 14,
+              padding: 24,
+              borderRadius: 14,
+              border: '1px solid rgba(255,255,255,0.08)',
+              background: 'rgba(255,255,255,0.02)',
+            }}
+          >
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span style={{ fontSize: 12, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--text-dim)' }}>
+                Customer email
+              </span>
+              <input
+                type="email"
+                required
+                value={healEmail}
+                onChange={(e) => { setHealEmail(e.target.value); setHealReport(null); setHealError(''); }}
+                placeholder="customer@example.com"
+                style={{
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.14)',
+                  borderRadius: 9999,
+                  padding: '10px 16px',
+                  color: 'var(--text)',
+                  fontSize: 14,
+                  fontFamily: 'inherit',
+                }}
+              />
+            </label>
+
+            <button
+              type="submit"
+              disabled={healBusy || !healEmail.trim()}
+              style={{
+                alignSelf: 'flex-start',
+                background: 'rgba(255,255,255,0.08)',
+                color: 'var(--text)',
+                border: '1px solid rgba(255,255,255,0.18)',
+                borderRadius: 9999,
+                padding: '10px 24px',
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: healBusy ? 'not-allowed' : 'pointer',
+                opacity: healBusy ? 0.5 : 1,
+                fontFamily: 'inherit',
+              }}
+            >
+              {healBusy ? 'Checking…' : 'Check status'}
+            </button>
+          </form>
+
+          {healError && (
+            <div
+              style={{
+                marginTop: 16,
+                padding: 14,
+                borderRadius: 10,
+                border: '1px solid rgba(232,164,164,0.3)',
+                background: 'rgba(232,164,164,0.08)',
+                color: '#e8a4a4',
+                fontSize: 13,
+              }}
+            >
+              <strong>Failed:</strong> {healError}
+            </div>
+          )}
+
+          {healReport && (
+            <div
+              style={{
+                marginTop: 16,
+                padding: 16,
+                borderRadius: 10,
+                border: '1px solid rgba(216,216,216,0.3)',
+                background: 'rgba(255,255,255,0.04)',
+                fontSize: 13,
+                lineHeight: 1.6,
+                fontFamily: 'var(--font-mono)',
+              }}
+            >
+              {/* Already linked correctly */}
+              {healReport.ok && !healReport.dryRun && healReport.message?.includes('already linked') && (
+                <div style={{ color: '#a8d8a8' }}>
+                  ✓ Already linked correctly. No action needed.
+                  <div style={{ opacity: 0.6, marginTop: 6 }}>customer: {healReport.targetCustomerId}</div>
+                  <div style={{ opacity: 0.6 }}>credits available: {healReport.targetCustomer?.creditsRemaining ?? '—'}</div>
+                </div>
+              )}
+
+              {/* Successfully relinked */}
+              {healReport.ok && healReport.dryRun === false && healReport.previouslyLinked !== undefined && (
+                <div style={{ color: '#a8d8a8' }}>
+                  ✓ Relinked. Customer should now see <strong>{healReport.creditsVisibleToUser}</strong> credit{healReport.creditsVisibleToUser === 1 ? '' : 's'}.
+                  <div style={{ opacity: 0.6, marginTop: 6 }}>was: {healReport.previouslyLinked || '(none)'}</div>
+                  <div style={{ opacity: 0.6 }}>now: {healReport.nowLinked}</div>
+                </div>
+              )}
+
+              {/* Dry-run preview, single candidate */}
+              {healReport.dryRun === true && (
+                <>
+                  <div>Currently linked: <strong>{healReport.currentlyLinked || '(none)'}</strong></div>
+                  <div>Would link to: <strong>{healReport.targetCustomerId}</strong></div>
+                  <div>Credits on that customer: <strong>{healReport.targetCustomer?.creditsRemaining ?? '—'}</strong></div>
+                  {healReport.otherCandidates?.length > 0 && (
+                    <div style={{ marginTop: 8, opacity: 0.7 }}>
+                      Other Stripe customers for this email (will be ignored):
+                      <ul style={{ margin: '4px 0 0 16px' }}>
+                        {healReport.otherCandidates.map((c) => (
+                          <li key={c.id}>{c.id} — {c.creditsRemaining} cr</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleHealApply(null)}
+                    disabled={healBusy}
+                    style={{
+                      marginTop: 12,
+                      background: 'var(--gold)',
+                      color: '#000',
+                      border: 'none',
+                      borderRadius: 9999,
+                      padding: '10px 24px',
+                      fontSize: 14,
+                      fontWeight: 700,
+                      cursor: healBusy ? 'not-allowed' : 'pointer',
+                      opacity: healBusy ? 0.5 : 1,
+                      fontFamily: 'inherit',
+                    }}
+                  >
+                    {healBusy ? 'Relinking…' : 'Relink customer'}
+                  </button>
+                </>
+              )}
+
+              {/* Ambiguous: multiple customers, must pick one */}
+              {healReport.ambiguous && (
+                <>
+                  <div style={{ color: '#e8c879' }}>
+                    ⚠ {healReport.message}
+                  </div>
+                  <div style={{ marginTop: 6 }}>Currently linked: <strong>{healReport.currentlyLinked || '(none)'}</strong></div>
+                  <div style={{ marginTop: 8 }}>Pick which customer to link:</div>
+                  <ul style={{ margin: '6px 0 0', listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {healReport.candidates.map((c) => (
+                      <li key={c.id} style={{
+                        padding: 12,
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: 8,
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        gap: 12,
+                      }}>
+                        <span>
+                          <strong>{c.id}</strong> — {c.creditsRemaining} cr
+                          {c.id === healReport.suggestion && <span style={{ marginLeft: 8, opacity: 0.7 }}>(suggested)</span>}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleHealApply(c.id)}
+                          disabled={healBusy}
+                          style={{
+                            background: c.id === healReport.suggestion ? 'var(--gold)' : 'rgba(255,255,255,0.08)',
+                            color: c.id === healReport.suggestion ? '#000' : 'var(--text)',
+                            border: c.id === healReport.suggestion ? 'none' : '1px solid rgba(255,255,255,0.18)',
+                            borderRadius: 9999,
+                            padding: '6px 14px',
+                            fontSize: 12,
+                            fontWeight: 600,
+                            cursor: healBusy ? 'not-allowed' : 'pointer',
+                            opacity: healBusy ? 0.5 : 1,
+                            fontFamily: 'inherit',
+                          }}
+                        >
+                          Link this one
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </main>
     </>
   );
