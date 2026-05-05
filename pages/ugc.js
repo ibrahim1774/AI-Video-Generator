@@ -172,7 +172,8 @@ export default function UgcPage() {
       if (nextSceneType === 'new') {
         setPendingStartImage(url);
       }
-      setStep('animate');
+      // Stay on the choose view — the script + knobs + Generate button
+      // live inline below the upload zone now.
     } catch (err) {
       setError(err.message || 'Upload failed.');
     } finally {
@@ -1099,6 +1100,98 @@ export default function UgcPage() {
             )}
           </div>
 
+          <form onSubmit={handleAnimate} style={{ marginTop: 24 }}>
+            <label className={styles.field} style={{ display: 'block' }}>
+              <span className={styles.swapModeLabel}>Script / direction</span>
+              <textarea
+                value={script}
+                onChange={(e) => setScript(e.target.value)}
+                rows={4}
+                placeholder='e.g. Smiles and waves at the camera, then says: "Hey everyone, today I am reviewing my favorite coffee."'
+                style={{
+                  width: '100%',
+                  padding: 12,
+                  borderRadius: 8,
+                  background: '#0f0f11',
+                  color: '#eee',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  fontFamily: 'inherit',
+                  fontSize: 14,
+                  resize: 'vertical',
+                }}
+              />
+              <div style={{ marginTop: 6, fontSize: 11, color: '#888' }}>
+                Tip: put dialogue in &ldquo;quotes&rdquo; so the model lip-syncs it.
+              </div>
+            </label>
+
+            <DurationSlider value={duration} onChange={setDuration} />
+
+            <div className={styles.swapModeLabel} style={{ marginTop: 16 }}>Audio</div>
+            <div className={styles.modeRow} role="radiogroup" aria-label="Audio">
+              <button
+                type="button"
+                role="radio"
+                aria-checked={audio === true}
+                className={`${styles.modeBtn} ${audio === true ? styles.modeBtnActive : ''}`}
+                onClick={() => setAudio(true)}
+              >
+                <span className={styles.modeName}>With audio</span>
+                <span className={styles.modeDetail}>Dialogue, lip-sync, ambient SFX</span>
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={audio === false}
+                className={`${styles.modeBtn} ${audio === false ? styles.modeBtnActive : ''}`}
+                onClick={() => setAudio(false)}
+              >
+                <span className={styles.modeName}>Silent</span>
+                <span className={styles.modeDetail}>Video only &middot; cheaper output</span>
+              </button>
+            </div>
+
+            <div className={styles.swapModeLabel} style={{ marginTop: 16 }}>Quality</div>
+            <div className={styles.modeRow} role="radiogroup" aria-label="Quality">
+              <button
+                type="button"
+                role="radio"
+                aria-checked={mode === 'std'}
+                className={`${styles.modeBtn} ${mode === 'std' ? styles.modeBtnActive : ''}`}
+                onClick={() => setMode('std')}
+              >
+                <span className={styles.modeName}>Standard</span>
+                <span className={styles.modeDetail}>720p &middot; faster</span>
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={mode === 'pro'}
+                className={`${styles.modeBtn} ${mode === 'pro' ? styles.modeBtnActive : ''}`}
+                onClick={() => setMode('pro')}
+              >
+                <span className={styles.modeName}>Pro</span>
+                <span className={styles.modeDetail}>1080p &middot; sharper</span>
+              </button>
+            </div>
+
+            {error && <div className={styles.error}>{error}</div>}
+
+            <button
+              type="submit"
+              className={`${styles.submit} ${effectiveStartImage && !submitting ? styles.submitReady : ''} ${submitting ? styles.submitLoading : ''}`}
+              disabled={!effectiveStartImage || submitting}
+              style={{ marginTop: 16 }}
+            >
+              {submitting && <span className={styles.spinner} aria-hidden="true" />}
+              {submitting
+                ? 'Starting…'
+                : effectiveStartImage
+                  ? `Generate video (${cost} credit${cost === 1 ? '' : 's'})`
+                  : 'Upload an image to continue'}
+            </button>
+          </form>
+
           {nextSceneType === 'new' && storyScenes.length > 0 && (
             <div style={{ textAlign: 'center', marginTop: 12 }}>
               <button
@@ -1119,8 +1212,6 @@ export default function UgcPage() {
               </button>
             </div>
           )}
-
-          {error && <div className={styles.error}>{error}</div>}
 
           {entitlement && entitlement.canSwap && (
             <div className={styles.usage}>
