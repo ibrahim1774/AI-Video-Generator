@@ -1029,7 +1029,7 @@ export default function UgcPage() {
               color: 'var(--text-dim)',
             }}
           >
-            ◆ Seedance alternative &middot; not related to Seedance
+            ◆ Not affiliated with brands within the ads
           </p>
         </div>
 
