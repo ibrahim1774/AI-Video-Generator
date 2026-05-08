@@ -142,6 +142,10 @@ export default function Paywall({ entitlement, onTrialStarted, onError, returnTo
                 <li>Includes credits to start creating immediately</li>
                 <li>Top up anytime for more credits</li>
                 <li>Cancel anytime</li>
+                <li className={styles.featBonus}>
+                  <span className={styles.bonusTag}>Bonus</span>
+                  Access to AI Face Swap included
+                </li>
               </ul>
               <button
                 type="button"
@@ -173,6 +177,10 @@ export default function Paywall({ entitlement, onTrialStarted, onError, returnTo
                 <li>Full access to AI Video generation</li>
                 <li>Includes credits to start creating immediately</li>
                 <li>One charge, cancel anytime</li>
+                <li className={styles.featBonus}>
+                  <span className={styles.bonusTag}>Bonus</span>
+                  Access to AI Face Swap included
+                </li>
               </ul>
               <button
                 type="button"

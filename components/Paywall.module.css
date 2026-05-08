@@ -145,6 +145,36 @@
   line-height: 1.7;
 }
 
+.featBonus {
+  margin-top: 6px;
+  padding: 8px 10px 8px 12px !important;
+  background: linear-gradient(180deg, #fff3d1 0%, #ffe7a3 100%);
+  border: 1px solid rgba(180, 130, 40, 0.45);
+  border-radius: 8px;
+  color: #4a3410;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+}
+
+.featBonus::before {
+  display: none;
+}
+
+.bonusTag {
+  background: #1c170f;
+  color: #ffd97a;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 3px 7px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
 .btn {
   margin-top: auto;
   border: none;
