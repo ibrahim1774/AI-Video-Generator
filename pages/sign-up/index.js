@@ -52,6 +52,16 @@ export default function SignUpPage() {
 
   const isClaimFlow = Boolean(sessionId);
 
+  // Optional ?returnTo=/some/path — where to send the user after a
+  // successful signup (or after closing the modal). Validated to a
+  // same-origin path so this can never be used as an open redirect.
+  // When absent, defaults to '/' which preserves the original behavior
+  // of /sign-up and /sign-up?session_id=... unchanged.
+  const rawReturnTo =
+    typeof router.query.returnTo === 'string' ? router.query.returnTo : '';
+  const safeReturnTo =
+    rawReturnTo.startsWith('/') && !rawReturnTo.startsWith('//') ? rawReturnTo : '/';
+
   return (
     <>
       <Head>
@@ -91,8 +101,9 @@ export default function SignUpPage() {
         {(!isClaimFlow || (lockedEmail && claimable)) && (
           <AuthModal
             open={open}
-            onClose={() => (window.location.href = '/')}
+            onClose={() => (window.location.href = safeReturnTo)}
             initialMode="signup"
+            redirectTo={safeReturnTo}
             lockedEmail={lockedEmail}
             claimSessionId={sessionId}
           />
