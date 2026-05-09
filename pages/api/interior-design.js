@@ -23,8 +23,15 @@ const CREDITS_PER_PERIOD = 30;
 const PERIOD_MS = PERIOD_DAYS * 24 * 60 * 60 * 1000;
 
 const KIE_BASE = 'https://api.kie.ai/api/v1';
-const KIE_GENERATE_PATH = '/jobs/createTask';
-const KIE_RECORD_PATH = '/jobs/recordInfo';
+// Dedicated Flux Kontext endpoints (NOT the unified /jobs/createTask).
+//   POST /flux/kontext/generate  — body: { model, prompt, inputImage, aspectRatio }
+//   GET  /flux/kontext/record-info?taskId=…
+// Status field uses numeric values: 0=GENERATING, 1=SUCCESS,
+// 2=CREATE_TASK_FAILED, 3=GENERATE_FAILED. Result URL lives at
+// data.response.resultImageUrl.
+const KIE_GENERATE_PATH = '/flux/kontext/generate';
+const KIE_RECORD_PATH = '/flux/kontext/record-info';
+const KIE_FLUX_MODEL = 'flux-kontext-pro';
 
 const POLL_INTERVAL_MS = 3000;
 const POLL_TIMEOUT_MS = 120 * 1000;
@@ -277,12 +284,10 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'flux_kontext',
-        input: {
-          prompt: kiePrompt,
-          medias: [{ role: 'image', value: imageUrl }],
-          aspect_ratio: '4:3',
-        },
+        model: KIE_FLUX_MODEL,
+        prompt: kiePrompt,
+        inputImage: imageUrl,
+        aspectRatio: '4:3',
       }),
     });
     const createText = await createRes.text();
@@ -322,31 +327,51 @@ export default async function handler(req, res) {
         continue;
       }
       if (rec.code !== 200) continue;
-      const state = String(rec.data?.state || '').toLowerCase();
-      if (state === 'success' || state === 'succeed' || state === 'completed') {
-        const raw = rec.data?.resultJson;
-        let parsed = null;
-        try {
-          parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
-        } catch {
-          parsed = null;
-        }
-        if (parsed) {
-          resultUrl =
-            parsed.imageUrl ||
-            parsed.image_url ||
-            (Array.isArray(parsed.imageUrls) ? parsed.imageUrls[0] : null) ||
-            (Array.isArray(parsed.resultUrls) ? parsed.resultUrls[0] : null) ||
-            parsed.url ||
-            null;
+      // Flux Kontext uses a numeric status field:
+      //   0 = GENERATING, 1 = SUCCESS, 2 = CREATE_TASK_FAILED, 3 = GENERATE_FAILED
+      // We read both `successFlag` (the canonical Flux field) and `status`
+      // (in case it's serialized either way) and coerce to a number.
+      const rawStatus =
+        rec.data?.successFlag != null ? rec.data.successFlag : rec.data?.status;
+      const num = typeof rawStatus === 'number' ? rawStatus : parseInt(rawStatus, 10);
+      if (num === 1) {
+        // resultImageUrl is the canonical field; fall through to the
+        // legacy resultJson path defensively in case kie.ai changes it.
+        resultUrl =
+          rec.data?.response?.resultImageUrl ||
+          rec.data?.response?.imageUrl ||
+          (Array.isArray(rec.data?.response?.resultUrls)
+            ? rec.data.response.resultUrls[0]
+            : null) ||
+          null;
+        if (!resultUrl && rec.data?.resultJson) {
+          try {
+            const parsed =
+              typeof rec.data.resultJson === 'string'
+                ? JSON.parse(rec.data.resultJson)
+                : rec.data.resultJson;
+            resultUrl =
+              parsed?.imageUrl ||
+              parsed?.image_url ||
+              (Array.isArray(parsed?.imageUrls) ? parsed.imageUrls[0] : null) ||
+              (Array.isArray(parsed?.resultUrls) ? parsed.resultUrls[0] : null) ||
+              parsed?.url ||
+              null;
+          } catch {
+            // ignore
+          }
         }
         break;
       }
-      if (state === 'fail' || state === 'failed' || state === 'error') {
-        lastErr = rec.data?.failMsg || rec.data?.failCode || 'Generation failed.';
+      if (num === 2 || num === 3) {
+        lastErr =
+          rec.data?.errorMessage ||
+          rec.data?.failMsg ||
+          rec.data?.failCode ||
+          'Generation failed.';
         break;
       }
-      // state is waiting / generating / unknown — keep polling.
+      // num === 0 (GENERATING) or unknown — keep polling.
     }
 
     if (!resultUrl) {
