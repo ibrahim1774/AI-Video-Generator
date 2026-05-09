@@ -295,6 +295,63 @@
   opacity: 0.8;
 }
 
+.textarea {
+  width: 100%;
+  min-height: 72px;
+  padding: 12px 14px;
+  background: var(--surface-1);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: vertical;
+  transition: border-color 0.15s var(--ease), background 0.15s var(--ease);
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: rgba(201, 169, 110, 0.6);
+  background: var(--surface-2);
+}
+
+.textareaHint {
+  margin-top: 6px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.editPanel {
+  width: 100%;
+  max-width: 560px;
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-1);
+}
+
+.editPanelTitle {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text);
+}
+
+.editPanelHint {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin: 0;
+}
+
 .error {
   margin-top: 12px;
   padding: 10px 14px;

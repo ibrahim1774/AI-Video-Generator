@@ -47,10 +47,13 @@ export default function GlowUpPage() {
   const [dragOver, setDragOver] = useState(false);
 
   const [styleKey, setStyleKey] = useState('professional');
+  const [extraPrompt, setExtraPrompt] = useState('');
 
   // step: 'idle' | 'paywall' | 'processing' | 'done'
   const [step, setStep] = useState('idle');
   const [resultUrl, setResultUrl] = useState(null);
+  const [originalImageUrls, setOriginalImageUrls] = useState([]); // uploaded refs, for re-edits
+  const [editPrompt, setEditPrompt] = useState('');
   const [error, setError] = useState('');
   const [credits, setCredits] = useState(null);
 
@@ -174,11 +177,15 @@ export default function GlowUpPage() {
         uploaded.push(url);
       }
 
-      // 2. Call /api/glow-up with the urls + chosen style.
+      // 2. Call /api/glow-up with the urls + chosen style + optional extra direction.
       const r = await fetch('/api/glow-up', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageUrls: uploaded, style: styleKey }),
+        body: JSON.stringify({
+          imageUrls: uploaded,
+          style: styleKey,
+          extraPrompt: extraPrompt.trim() || undefined,
+        }),
       });
       const data = await r.json().catch(() => ({}));
       if (r.status === 402) {
@@ -189,11 +196,49 @@ export default function GlowUpPage() {
       if (!data.imageUrl) throw new Error('No image returned.');
 
       bumpEntitlement();
+      setOriginalImageUrls(uploaded);
       setResultUrl(data.imageUrl);
+      setEditPrompt('');
       setStep('done');
     } catch (err) {
       setError(err.message || 'Something went wrong.');
       setStep('idle');
+    }
+  };
+
+  const handleRegenerate = async () => {
+    setError('');
+    if (!resultUrl) return;
+    if (!editPrompt.trim()) {
+      setError('Tell us what to change.');
+      return;
+    }
+    setStep('processing');
+    try {
+      const r = await fetch('/api/glow-up', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'edit',
+          imageUrls: [resultUrl, ...originalImageUrls].slice(0, 5),
+          editPrompt: editPrompt.trim(),
+        }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (r.status === 402) {
+        setStep('paywall');
+        return;
+      }
+      if (!r.ok) throw new Error(data.error || 'Regeneration failed.');
+      if (!data.imageUrl) throw new Error('No image returned.');
+
+      bumpEntitlement();
+      setResultUrl(data.imageUrl);
+      setEditPrompt('');
+      setStep('done');
+    } catch (err) {
+      setError(err.message || 'Something went wrong.');
+      setStep('done');
     }
   };
 
@@ -213,6 +258,8 @@ export default function GlowUpPage() {
 
   const startOver = () => {
     setResultUrl(null);
+    setOriginalImageUrls([]);
+    setEditPrompt('');
     setStep('idle');
     setError('');
   };
@@ -292,6 +339,34 @@ export default function GlowUpPage() {
                 + New Glow Up
               </button>
             </div>
+
+            <div className={styles.editPanel}>
+              <h3 className={styles.editPanelTitle}>Edit this image</h3>
+              <p className={styles.editPanelHint}>
+                Describe a tweak — we&apos;ll regenerate from this portrait while
+                keeping your face. Uses 1 credit.
+              </p>
+              <textarea
+                value={editPrompt}
+                onChange={(e) => setEditPrompt(e.target.value.slice(0, 400))}
+                rows={3}
+                maxLength={400}
+                placeholder='e.g. add subtle glasses · change to a darker background · warmer lighting · slight smile'
+                className={styles.textarea}
+              />
+              <div className={styles.textareaHint}>{editPrompt.length} / 400</div>
+              {error && <div className={styles.error}>{error}</div>}
+              <button
+                type="button"
+                className={styles.cta}
+                onClick={handleRegenerate}
+                disabled={!editPrompt.trim()}
+              >
+                Regenerate with edit
+                <span className={styles.ctaSub}>Uses 1 glow-up credit</span>
+              </button>
+            </div>
+
             {credits && typeof credits.glowupCreditsRemaining === 'number' && (
               <div className={styles.usage}>
                 {credits.glowupCreditsRemaining} glow-ups left this period
@@ -396,6 +471,26 @@ export default function GlowUpPage() {
                     </button>
                   );
                 })}
+              </div>
+            </section>
+
+            {/* 3. Optional extra direction */}
+            <section className={styles.section}>
+              <div className={styles.sectionHead}>
+                <h3 className={styles.sectionTitle}>
+                  3. Extra direction <span style={{ color: 'var(--text-faint)', fontWeight: 400, fontSize: 13 }}>(optional)</span>
+                </h3>
+              </div>
+              <textarea
+                value={extraPrompt}
+                onChange={(e) => setExtraPrompt(e.target.value.slice(0, 400))}
+                rows={3}
+                maxLength={400}
+                placeholder='e.g. wearing a navy suit · shot from far away · close-up · holding a coffee cup · outdoor cafe background'
+                className={styles.textarea}
+              />
+              <div className={styles.textareaHint}>
+                {extraPrompt.length} / 400 · We&apos;ll blend this with the {STYLES.find((s) => s.key === styleKey)?.name} style.
               </div>
             </section>
 

@@ -47,6 +47,30 @@ const KIE_RECORD_PATH = '/gpt4o-image/record-info';
 const POLL_INTERVAL_MS = 3000;
 const POLL_TIMEOUT_MS = 120 * 1000;
 
+// Prompt the model receives in 'edit' mode. The first imageUrl in
+// filesUrl is the previously-generated portrait — kie.ai/4o treats
+// earlier files as the primary edit subject — and the rest are the
+// user's original reference photos for identity anchoring.
+const EDIT_PROMPT_PREFIX =
+  "You are given the most recent AI-generated portrait of a person, followed by reference photos of the same person. CRITICAL: Keep the person's face, facial structure, skin tone, eye color, and identity absolutely identical to the references — do NOT alter the face. Apply the following user-requested edit while preserving the realism, lighting quality, and overall premium portrait look:";
+
+// Sanitize and truncate user-provided text before injecting it into a
+// prompt sent to the model. Strips control chars, collapses whitespace,
+// and caps length so a hostile or runaway input can't blow out the
+// total prompt size.
+function safePromptFragment(s, max = 400) {
+  if (typeof s !== 'string') return '';
+  // Filter ASCII control chars (0-31, 127) by codepoint instead of a
+  // regex literal to keep the source ASCII-clean. Collapses whitespace
+  // and caps length so user input can't bloat the kie.ai prompt.
+  let out = '';
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    out += c < 32 || c === 127 ? ' ' : s[i];
+  }
+  return out.replace(/\s+/g, ' ').trim().slice(0, max);
+}
+
 const PROMPTS = {
   professional:
     "You are given reference photos of a person. Generate an ultra-realistic 4K professional corporate headshot. CRITICAL: Keep the person's face, facial structure, skin tone, eye color, and identity absolutely identical. Apply: soft studio lighting with a 45-degree key light and subtle fill, clean neutral background slightly blurred, professional business attire, ultra-sharp focus on eyes, 85mm portrait lens perspective, eye-level shot. Must look like it was shot by a professional photographer for a Fortune 500 LinkedIn profile.",
@@ -118,18 +142,37 @@ export default async function handler(req, res) {
     });
   }
 
-  // POST — validate body up front.
-  const { imageUrls, style } = req.body || {};
-  if (!Array.isArray(imageUrls) || imageUrls.length === 0 || imageUrls.length > 4) {
-    return res.status(400).json({ error: 'Provide 1–4 imageUrls.' });
+  // POST — validate body up front. Two modes:
+  //   - default ('generate'): style + 1–4 reference photos + optional extraPrompt
+  //   - 'edit': editPrompt + 1–5 imageUrls (first = previously-generated, rest = originals)
+  const body = req.body || {};
+  const mode = body.mode === 'edit' ? 'edit' : 'generate';
+  const imageUrls = Array.isArray(body.imageUrls) ? body.imageUrls : [];
+  const maxRefs = mode === 'edit' ? 5 : 4;
+  if (imageUrls.length === 0 || imageUrls.length > maxRefs) {
+    return res.status(400).json({ error: `Provide 1–${maxRefs} imageUrls.` });
   }
   for (const u of imageUrls) {
     if (typeof u !== 'string' || !u.startsWith('https://')) {
       return res.status(400).json({ error: 'Invalid image URL.' });
     }
   }
-  if (!PROMPTS[style]) {
-    return res.status(400).json({ error: 'Invalid style.' });
+
+  let kiePrompt;
+  if (mode === 'edit') {
+    const editFragment = safePromptFragment(body.editPrompt, 400);
+    if (!editFragment) {
+      return res.status(400).json({ error: 'editPrompt is required for edit mode.' });
+    }
+    kiePrompt = `${EDIT_PROMPT_PREFIX} ${editFragment}`;
+  } else {
+    if (!PROMPTS[body.style]) {
+      return res.status(400).json({ error: 'Invalid style.' });
+    }
+    const extra = safePromptFragment(body.extraPrompt, 400);
+    kiePrompt = extra
+      ? `${PROMPTS[body.style]} Additional user direction (incorporate without breaking the CRITICAL identity rules above): ${extra}`
+      : PROMPTS[body.style];
   }
 
   if (!isAdmin && (entitlement.tier === 'none' || !entitlement.activeSub)) {
@@ -187,7 +230,7 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        prompt: PROMPTS[style],
+        prompt: kiePrompt,
         filesUrl: imageUrls.slice(0, 5),
         size: '1:1',
       }),
