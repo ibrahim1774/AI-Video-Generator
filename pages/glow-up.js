@@ -287,9 +287,7 @@ export default function GlowUpPage() {
             Your most polished <span className={styles.titleAccent}>self</span>
           </h1>
           <p className={styles.subtitle}>
-            Upload 1–4 photos from different angles. Pick a style. We&apos;ll
-            generate a premium AI portrait that keeps your real face — just
-            elevated.
+            Upload 1–4 photos · pick a style · keeps your real face.
           </p>
         </div>
 
@@ -482,9 +480,9 @@ export default function GlowUpPage() {
               <textarea
                 value={extraPrompt}
                 onChange={(e) => setExtraPrompt(e.target.value.slice(0, 400))}
-                rows={3}
+                rows={2}
                 maxLength={400}
-                placeholder='e.g. wearing a navy suit · shot from far away · close-up · holding a coffee cup · outdoor cafe background'
+                placeholder='e.g. wearing a navy suit · close-up · outdoor cafe background'
                 className={styles.textarea}
               />
               <div className={styles.textareaHint}>
