@@ -2,6 +2,7 @@ import { put } from '@vercel/blob';
 
 import { getUserFromRequest, getSupabaseAdmin } from '../../lib/supabaseServer';
 import { stripe } from '../../lib/stripe';
+import { sendCapiEvent } from '../../lib/meta';
 
 /*
  * Glow-Up generation endpoint.
@@ -295,6 +296,25 @@ export default async function handler(req, res) {
       console.warn('[glow-up] mirror upload failed; serving kie.ai URL', mirrorErr.message);
       storedUrl = resultUrl;
     }
+
+    // Server-side CAPI Generate event — same shape as
+    // /api/ugc-image and /api/ugc-animate so Meta's reporting groups
+    // all generation events together. Best-effort: a CAPI failure
+    // never blocks returning the result.
+    sendCapiEvent({
+      eventName: 'Generate',
+      eventId: `gen-glow-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      value: 1,
+      currency: 'USD',
+      email: session.user.email,
+      req,
+      customData: {
+        feature: mode === 'edit' ? 'glow-up-edit' : 'glow-up',
+        credits: 1,
+        style: mode === 'edit' ? undefined : body.style,
+        supabase_user_id: session.user.id,
+      },
+    }).catch(() => {});
 
     return res.status(200).json({
       imageUrl: storedUrl,

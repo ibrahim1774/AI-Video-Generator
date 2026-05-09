@@ -2,6 +2,7 @@ import { put } from '@vercel/blob';
 
 import { getUserFromRequest, getSupabaseAdmin } from '../../lib/supabaseServer';
 import { stripe } from '../../lib/stripe';
+import { sendCapiEvent } from '../../lib/meta';
 
 /*
  * AI Interior Design generation endpoint.
@@ -419,6 +420,26 @@ export default async function handler(req, res) {
       console.warn('[interior-design] mirror upload failed; serving kie.ai URL', mirrorErr.message);
       storedUrl = resultUrl;
     }
+
+    // Server-side CAPI Generate event — same shape as /api/ugc-image,
+    // /api/ugc-animate, /api/glow-up. Best-effort: a CAPI failure
+    // never blocks returning the result.
+    sendCapiEvent({
+      eventName: 'Generate',
+      eventId: `gen-int-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      value: 1,
+      currency: 'USD',
+      email: session.user.email,
+      req,
+      customData: {
+        feature: 'interior-design',
+        credits: 1,
+        style,
+        keepFurniture: keep,
+        budgetFeel: budget,
+        supabase_user_id: session.user.id,
+      },
+    }).catch(() => {});
 
     return res.status(200).json({
       renderedImageUrl: storedUrl,
