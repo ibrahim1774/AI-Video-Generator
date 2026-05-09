@@ -106,6 +106,39 @@ const STYLE_PRODUCTS_FALLBACK = {
   ],
 };
 
+// Map the input photo's natural width/height to the closest aspect
+// ratio kie.ai's Flux Kontext accepts. Sending a ratio that matches
+// the input is what stops the model from rotating / re-framing the
+// view — feeding it a 4:3 target when the input is 3:4 (phone vertical)
+// is what was producing sideways results.
+function pickAspectRatio(w, h) {
+  if (!w || !h) return '4:3';
+  const r = w / h;
+  if (r >= 1.55) return '16:9';
+  if (r >= 1.2) return '4:3';
+  if (r >= 0.85) return '1:1';
+  if (r >= 0.65) return '3:4';
+  return '9:16';
+}
+
+// Read an image file's natural pixel dimensions.
+function readImageDimensions(file) {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const dims = { w: img.naturalWidth, h: img.naturalHeight };
+      try { URL.revokeObjectURL(url); } catch {}
+      resolve(dims);
+    };
+    img.onerror = () => {
+      try { URL.revokeObjectURL(url); } catch {}
+      resolve({ w: 0, h: 0 });
+    };
+    img.src = url;
+  });
+}
+
 function triggerDownload(href, filename) {
   try {
     const a = document.createElement('a');
@@ -174,7 +207,12 @@ function extractVideoFrame(file) {
               }
               settled = true;
               cleanup();
-              resolve({ blob, previewUrl: URL.createObjectURL(blob) });
+              resolve({
+                blob,
+                previewUrl: URL.createObjectURL(blob),
+                width: w,
+                height: h,
+              });
             },
             'image/png'
           );
@@ -260,8 +298,9 @@ export default function InteriorDesignPage() {
 
   const [styleKey, setStyleKey] = useState('modern-minimalist');
   const [userPrompt, setUserPrompt] = useState('');
-  const [keepFurniture, setKeepFurniture] = useState('redesign');
+  const [keepFurniture, setKeepFurniture] = useState('blend');
   const [budgetFeel, setBudgetFeel] = useState('mid-range');
+  const [aspectRatio, setAspectRatio] = useState('4:3'); // auto-detected on upload
 
   // step: 'idle' | 'paywall' | 'processing' | 'done'
   const [step, setStep] = useState('idle');
@@ -338,14 +377,16 @@ export default function InteriorDesignPage() {
     try {
       if (isImage) {
         const compressed = await maybeCompressImage(file);
+        const dims = await readImageDimensions(compressed);
         const localUrl = URL.createObjectURL(compressed);
         const url = await uploadTempFile(compressed);
         setUploadedUrl(url);
         setPreviewUrl(localUrl);
         setPreviewName(file.name);
         setPreviewKind('photo');
+        setAspectRatio(pickAspectRatio(dims.w, dims.h));
       } else {
-        const { blob, previewUrl: framePreview } = await extractVideoFrame(file);
+        const { blob, previewUrl: framePreview, width, height } = await extractVideoFrame(file);
         // Wrap blob in a File so uploader names it sensibly.
         const baseName = (file.name || 'video').replace(/\.[^.]+$/, '');
         const frameFile = new File([blob], `${baseName}-frame.png`, {
@@ -357,6 +398,7 @@ export default function InteriorDesignPage() {
         setPreviewUrl(framePreview);
         setPreviewName(`${file.name} · frame @ 1s`);
         setPreviewKind('video-frame');
+        setAspectRatio(pickAspectRatio(width, height));
       }
     } catch (err) {
       setError(err.message || 'Upload failed.');
@@ -404,6 +446,7 @@ export default function InteriorDesignPage() {
           userPrompt: userPrompt.trim() || undefined,
           keepFurniture,
           budgetFeel,
+          aspectRatio,
         }),
       });
       const data = await r.json().catch(() => ({}));

@@ -36,24 +36,34 @@ const KIE_FLUX_MODEL = 'flux-kontext-pro';
 const POLL_INTERVAL_MS = 3000;
 const POLL_TIMEOUT_MS = 120 * 1000;
 
+// Style prompts are written as "redecorate / restyle" instructions —
+// NOT "transform into" — so the model swaps furniture and decor while
+// leaving the room's architecture and camera angle intact. The
+// architecture-preservation clauses live in PRESERVE_SUFFIX below.
 const STYLE_PROMPTS = {
   'modern-minimalist':
-    'Transform into a modern minimalist interior. Clean lines, neutral whites and greys, uncluttered surfaces, hidden storage, statement lighting.',
+    'Restyle this room in a modern minimalist aesthetic. Use clean-lined furniture, a neutral white-and-grey palette, uncluttered surfaces, hidden storage, and a single statement light fixture.',
   scandinavian:
-    'Transform into a Scandinavian hygge interior. Light wood tones, white walls, cozy textiles, natural materials, warm ambient lighting.',
+    'Restyle this room in a Scandinavian hygge aesthetic. Use light-wood furniture, soft white textiles, cozy throws and cushions, natural materials, and warm ambient lighting.',
   'industrial-loft':
-    'Transform into an industrial loft interior. Exposed brick, steel beams, concrete surfaces, Edison bulb pendants, dark metal fixtures.',
+    'Restyle this room in an industrial loft aesthetic. Use leather and dark-metal furniture, Edison-bulb pendant lamps, rugged textile rugs, and a few raw-finish accent pieces. Keep the existing wall surfaces — do not add fake brick or beams that were not in the original room.',
   bohemian:
-    'Transform into a bohemian eclectic interior. Rich jewel tones, layered textiles, rattan furniture, plants, global-inspired patterns.',
+    'Restyle this room in a bohemian eclectic aesthetic. Use rattan furniture, layered jewel-toned textiles, macrame and woven decor, indoor plants, and globally-inspired accent pieces.',
   'mid-century-modern':
-    'Transform into a mid-century modern interior. Organic curves, walnut wood, mustard and teal accents, retro furniture silhouettes, sunburst details.',
+    'Restyle this room in a mid-century modern aesthetic. Use walnut-wood furniture with tapered legs, organic curved silhouettes, mustard and teal accents, and retro lighting fixtures.',
   japandi:
-    'Transform into a Japandi interior. Wabi-sabi minimalism, warm neutrals, natural linen and stone, low-profile furniture, zen simplicity.',
+    'Restyle this room in a Japandi aesthetic. Use low-profile wood furniture, warm neutral textiles, linen and stone accents, ceramics, and a few minimal decor pieces. Keep the room\'s architecture (walls, windows, doors, ceiling, floor) exactly as it appears in the photo — do not add new doorways, beams, shoji screens, or wall surfaces that were not already there.',
   coastal:
-    'Transform into a coastal beach house interior. Soft blues and whites, natural rattan, linen fabrics, whitewashed wood, breezy open feel.',
+    'Restyle this room in a coastal beach-house aesthetic. Use whitewashed wood furniture, natural rattan, soft blue and white linen textiles, jute rugs, and breezy decor accents.',
   'dark-moody':
-    'Transform into a dark moody interior. Deep charcoal and forest green walls, velvet furniture, brass accents, dramatic lighting, rich layered textures.',
+    'Restyle this room in a dark moody aesthetic. Use velvet and dark-wood furniture, brass accents, layered textiles in deep tones, and a few dramatic decor pieces. Keep the original wall colors as-is unless they read as already dark — do not repaint or re-clad the walls.',
 };
+
+// Appended to every prompt. Hard-locks architecture and camera so the
+// model can ONLY swap furniture and decor — not demolish, rotate, or
+// rebuild the room.
+const PRESERVE_SUFFIX =
+  'CRITICAL CONSTRAINTS: Keep the exact same room architecture — walls, windows, doorways, ceiling, floor, and overall layout must remain identical to the input photo. Do NOT add or remove doorways, walls, windows, or structural elements. Keep the same camera angle, perspective, framing, and orientation as the input — do not rotate or re-frame the view. Only swap and rearrange furniture and decor. Photorealistic architectural interior photography, natural lighting matching the original, high detail, 4K quality.';
 
 // Server-side source of truth for the shoppable product grid. The
 // page imports an identical map for instant rendering, but the API
@@ -143,8 +153,10 @@ const STYLE_PRODUCTS = {
 };
 
 const KEEP_FURNITURE_PROMPTS = {
-  blend: 'Keep existing furniture and blend the new style around it.',
-  redesign: 'Full redesign — replace existing furniture with new pieces.',
+  blend:
+    'Keep most of the existing furniture in place and add a few accent pieces in the chosen style. Restyle and recolor textiles, cushions, and decor to match.',
+  redesign:
+    'Replace the existing furniture with new pieces in the chosen style, but keep them arranged in the same general positions as the original room. Do NOT change the room itself.',
 };
 
 const BUDGET_PROMPTS = {
@@ -212,7 +224,7 @@ export default async function handler(req, res) {
 
   // Validate body.
   const body = req.body || {};
-  const { imageUrl, style, userPrompt, keepFurniture, budgetFeel } = body;
+  const { imageUrl, style, userPrompt, keepFurniture, budgetFeel, aspectRatio } = body;
   if (typeof imageUrl !== 'string' || !imageUrl.startsWith('https://')) {
     return res.status(400).json({ error: 'Valid imageUrl is required.' });
   }
@@ -221,7 +233,7 @@ export default async function handler(req, res) {
   }
   const keep = keepFurniture === 'blend' || keepFurniture === 'redesign'
     ? keepFurniture
-    : 'redesign';
+    : 'blend'; // conservative default: keep architecture, only restyle
   const budget =
     budgetFeel === 'luxury' || budgetFeel === 'mid-range' || budgetFeel === 'budget-friendly'
       ? budgetFeel
@@ -264,14 +276,23 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'KIE_API_KEY is not configured.' });
   }
 
-  // Build the kie.ai prompt.
+  // Validate aspect ratio against kie.ai's supported set. The page now
+  // detects the input photo's natural orientation and passes it here
+  // so phone-shot vertical rooms aren't squashed into 4:3 landscape
+  // (which is what was rotating the result). Default to 4:3 if absent.
+  const ALLOWED_RATIOS = new Set(['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3']);
+  const ratio = ALLOWED_RATIOS.has(aspectRatio) ? aspectRatio : '4:3';
+
+  // Build the kie.ai prompt. Order matters — preservation suffix is
+  // last so the model reads architecture/orientation rules right
+  // before generating.
   const userFragment = safePromptFragment(userPrompt, 400);
   const promptParts = [
     STYLE_PROMPTS[style],
-    userFragment ? `Additional user direction: ${userFragment}` : '',
     KEEP_FURNITURE_PROMPTS[keep],
     BUDGET_PROMPTS[budget],
-    'Photorealistic architectural interior photography, natural lighting, high detail, 4K quality.',
+    userFragment ? `Additional user direction: ${userFragment}` : '',
+    PRESERVE_SUFFIX,
   ].filter(Boolean);
   const kiePrompt = promptParts.join(' ');
 
@@ -287,7 +308,7 @@ export default async function handler(req, res) {
         model: KIE_FLUX_MODEL,
         prompt: kiePrompt,
         inputImage: imageUrl,
-        aspectRatio: '4:3',
+        aspectRatio: ratio,
       }),
     });
     const createText = await createRes.text();
