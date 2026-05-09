@@ -3,20 +3,28 @@ import { useEffect, useState } from 'react';
 import paywallStyles from './Paywall.module.css';
 
 /*
- * Top-up packs (one-time credit purchases). Used in two places:
- *   - inside Paywall.js, when a subscriber's credits hit zero
- *   - on /dashboard for active subscribers who still have credits
- *     and want to pre-load more (the dashboard hides the full Paywall
- *     when canSwap is true, so without this row there's no entry point)
+ * Top-up packs (one-time credit purchases). Two clearly-labeled groups:
+ *   - Video credits — for face-swap / UGC / image-to-video
+ *   - Image credits — for Glow Up and any future image features
  *
- * Reuses Paywall.module.css's .topupRow / .topupBtn / .topupPrice /
- * .topupCredits classes so the styling stays in one place.
+ * The two pools never mix; pricing/credit-counts are configured in
+ * lib/stripe.js (TOPUPS map, with `kind: 'video' | 'image'`).
+ *
+ * Used by:
+ *   - components/Paywall.js — when a subscriber's credits hit zero
+ *   - pages/dashboard — for active subscribers who want to pre-load more
  */
 
-const TOPUPS = [
+const VIDEO_PACKS = [
   { pack: 's', label: '$15', credits: 12 },
   { pack: 'm', label: '$50', credits: 45 },
   { pack: 'l', label: '$100', credits: 100 },
+];
+
+const IMAGE_PACKS = [
+  { pack: 'image-s', label: '$5', credits: 50 },
+  { pack: 'image-m', label: '$15', credits: 200 },
+  { pack: 'image-l', label: '$30', credits: 500 },
 ];
 
 function firePixel(meta) {
@@ -36,7 +44,6 @@ export default function TopupRow({ returnTo = '/dashboard', onError, onLocalErro
   const [busy, setBusy] = useState(null);
   const [localError, setLocalError] = useState('');
 
-  // Reset stuck "Redirecting…" state on BFCache restore (back from Stripe).
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     const onPageShow = (e) => {
@@ -73,10 +80,13 @@ export default function TopupRow({ returnTo = '/dashboard', onError, onLocalErro
     }
   };
 
-  return (
+  const renderRow = (heading, packs, creditLabel) => (
     <>
+      <div className={paywallStyles.topupGroupHead}>
+        <span className={paywallStyles.topupGroupTitle}>{heading}</span>
+      </div>
       <div className={paywallStyles.topupRow}>
-        {TOPUPS.map((t) => (
+        {packs.map((t) => (
           <button
             key={t.pack}
             type="button"
@@ -86,11 +96,18 @@ export default function TopupRow({ returnTo = '/dashboard', onError, onLocalErro
           >
             <span className={paywallStyles.topupPrice}>{t.label}</span>
             <span className={paywallStyles.topupCredits}>
-              {busy === t.pack ? 'Redirecting…' : `${t.credits} credits`}
+              {busy === t.pack ? 'Redirecting…' : `${t.credits} ${creditLabel}`}
             </span>
           </button>
         ))}
       </div>
+    </>
+  );
+
+  return (
+    <>
+      {renderRow('Video credits', VIDEO_PACKS, 'video credits')}
+      {renderRow('Image credits', IMAGE_PACKS, 'image credits')}
       {localError && (
         <div className={paywallStyles.error} style={{ marginTop: 12 }}>
           {localError}

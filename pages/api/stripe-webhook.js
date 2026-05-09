@@ -188,16 +188,23 @@ async function handleCheckoutSessionCompleted(checkoutSession, req) {
   const processed = (md.processedSessions || '').split(',').filter(Boolean);
   if (processed.includes(sessionTag)) return; // /confirm beat us to it
 
-  const current = parseInt(md.creditsRemaining || '0', 10) || 0;
-  const next = current + topup.credits;
   const nextProcessed = [sessionTag, ...processed].slice(0, 10).join(',');
-  await stripe().customers.update(customerId, {
-    metadata: {
-      ...md,
-      creditsRemaining: String(next),
-      processedSessions: nextProcessed,
-    },
-  });
+  const nextMd = {
+    ...md,
+    processedSessions: nextProcessed,
+  };
+  if (topup.kind === 'image') {
+    // Mirrors /api/checkout/confirm.js: image packs hit the image pool.
+    const current = parseInt(md.imageCreditsRemaining || '0', 10) || 0;
+    nextMd.imageCreditsRemaining = String(current + topup.credits);
+    if (!md.imagePeriodStart) {
+      nextMd.imagePeriodStart = String(Date.now());
+    }
+  } else {
+    const current = parseInt(md.creditsRemaining || '0', 10) || 0;
+    nextMd.creditsRemaining = String(current + topup.credits);
+  }
+  await stripe().customers.update(customerId, { metadata: nextMd });
 
   // Defense-in-depth: ensure profile.stripe_customer_id points at this
   // customer. Without this, /confirm-skipped flows (closed tab, signed

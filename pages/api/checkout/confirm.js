@@ -110,23 +110,34 @@ export default async function handler(req, res) {
       const alreadyProcessed = processed.includes(sessionTag);
 
       if (!alreadyProcessed) {
-        const current = parseInt(md.creditsRemaining || '0', 10) || 0;
-        const next = current + topup.credits;
         const nextProcessed = [sessionTag, ...processed].slice(0, 10).join(',');
-        await stripe().customers.update(customerId, {
-          metadata: {
-            ...md,
-            creditsRemaining: String(next),
-            processedSessions: nextProcessed,
-            // Backfill so the webhook fallback can link this customer
-            // to the right Supabase user even if /confirm never runs
-            // for the *next* purchase from the same customer.
-            supabase_user_id: session.user.id,
-          },
-        });
+        const nextMd = {
+          ...md,
+          processedSessions: nextProcessed,
+          // Backfill so the webhook fallback can link this customer
+          // to the right Supabase user even if /confirm never runs
+          // for the *next* purchase from the same customer.
+          supabase_user_id: session.user.id,
+        };
+        if (topup.kind === 'image') {
+          // Image packs feed the imageCreditsRemaining pool used by
+          // /api/glow-up. They never touch creditsRemaining (video).
+          const current = parseInt(md.imageCreditsRemaining || '0', 10) || 0;
+          nextMd.imageCreditsRemaining = String(current + topup.credits);
+          // Seed period start if missing so the next monthly refill
+          // happens 30 days from this top-up rather than instantly.
+          if (!md.imagePeriodStart) {
+            nextMd.imagePeriodStart = String(Date.now());
+          }
+        } else {
+          // Video packs feed the existing creditsRemaining pool.
+          const current = parseInt(md.creditsRemaining || '0', 10) || 0;
+          nextMd.creditsRemaining = String(current + topup.credits);
+        }
+        await stripe().customers.update(customerId, { metadata: nextMd });
         creditsAdded = topup.credits;
       }
-      eventKind = 'topup';
+      eventKind = topup.kind === 'image' ? 'topup-image' : 'topup';
       value = topup.amountCents / 100;
     }
 
