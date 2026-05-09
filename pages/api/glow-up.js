@@ -10,15 +10,16 @@ import { stripe } from '../../lib/stripe';
  *   - Auth: Supabase via getUserFromRequest (matches every other API
  *     route in the project; no NextAuth dependency).
  *   - Entitlement: read directly from Stripe customer metadata. We do
- *     NOT modify lib/entitlement.js — instead, this route maintains its
- *     own credit pool (`glowupCreditsRemaining` + `glowupPeriodStart`)
- *     on the same Stripe customer object. When the glow-up pool is
- *     exhausted, we fall back to the existing top-up pool
- *     (`creditsRemaining`) so customers' top-up purchases naturally
- *     extend their glow-up access.
- *   - Pool refill: 30 credits every 30 days for any active sub
+ *     NOT modify lib/entitlement.js. This route maintains its own
+ *     IMAGE credit pool (`imageCreditsRemaining` + `imagePeriodStart`)
+ *     on the same Stripe customer object — kept strictly separate
+ *     from the existing video credit pool (`creditsRemaining`) used
+ *     by face-swap / UGC / image-to-video. The two pools never mix.
+ *     If image credits run out, the user must wait for refill (or
+ *     top up — separate image top-up packs are not yet wired in).
+ *   - Pool refill: 30 image credits every 30 days for any active sub
  *     (monthly OR yearly). Yearly users effectively get 30 fresh
- *     glow-ups each rolling month.
+ *     image credits each rolling month.
  *   - Image gen: kie.ai's GPT-4o image endpoint
  *     (POST /api/v1/gpt4o-image/generate, polled via record-info).
  *     filesUrl accepts up to 5 reference URLs, so all 1–4 user photos
@@ -120,9 +121,7 @@ export default async function handler(req, res) {
     entitlement = {
       tier: 'admin',
       status: 'admin',
-      glowupCreditsRemaining: 9999,
-      creditsRemaining: 9999,
-      mainPool: 9999,
+      imageCreditsRemaining: 9999,
       nextPeriodStart: Date.now(),
       md: null,
       activeSub: { id: 'admin' },
@@ -135,9 +134,8 @@ export default async function handler(req, res) {
     return res.status(200).json({
       tier: entitlement.tier,
       status: entitlement.status,
-      glowupCreditsRemaining: entitlement.glowupCreditsRemaining,
-      creditsRemaining: entitlement.creditsRemaining,
-      glowupPeriodStart: entitlement.nextPeriodStart,
+      imageCreditsRemaining: entitlement.imageCreditsRemaining,
+      imagePeriodStart: entitlement.nextPeriodStart,
       periodCap: CREDITS_PER_PERIOD,
     });
   }
@@ -179,17 +177,13 @@ export default async function handler(req, res) {
     return res.status(402).json({ error: 'paywall' });
   }
 
-  // Decide which pool to charge from. Glow-up pool first, top-up pool
-  // (creditsRemaining) as fallback. Admins don't decrement anything.
-  let chargeFromMain = false;
-  let { glowupCreditsRemaining: glowup, mainPool } = entitlement;
+  // Image credits only — no fallback to the video credit pool.
+  let { imageCreditsRemaining: imageCredits } = entitlement;
   if (!isAdmin) {
-    if (glowup > 0) {
-      glowup -= 1;
-    } else if (mainPool > 0) {
-      chargeFromMain = true;
+    if (imageCredits > 0) {
+      imageCredits -= 1;
     } else {
-      return res.status(402).json({ error: 'paywall' });
+      return res.status(402).json({ error: 'paywall', reason: 'image-credits-exhausted' });
     }
   }
 
@@ -199,25 +193,20 @@ export default async function handler(req, res) {
   let creditReserved = false;
   if (!isAdmin && customerId && entitlement.md) {
     const reservedMd = { ...entitlement.md };
-    if (chargeFromMain) {
-      reservedMd.creditsRemaining = String(Math.max(0, mainPool - 1));
-    } else {
-      reservedMd.glowupCreditsRemaining = String(glowup);
-    }
-    reservedMd.glowupPeriodStart = String(entitlement.nextPeriodStart);
+    reservedMd.imageCreditsRemaining = String(imageCredits);
+    reservedMd.imagePeriodStart = String(entitlement.nextPeriodStart);
     try {
       await stripe().customers.update(customerId, { metadata: reservedMd });
       creditReserved = true;
     } catch (mdErr) {
       console.warn('[glow-up] credit reserve failed', mdErr.message);
-      // Without a successful reserve we'd risk over-grants on retries.
       return res.status(500).json({ error: 'Could not reserve credit.' });
     }
   }
 
   const kieKey = process.env.KIE_API_KEY;
   if (!kieKey) {
-    if (creditReserved) await refundCredit({ customerId, isAdmin, chargeFromMain, glowup, mainPool, md: entitlement.md, nextPeriodStart: entitlement.nextPeriodStart });
+    if (creditReserved) await refundCredit({ customerId, isAdmin, md: entitlement.md, nextPeriodStart: entitlement.nextPeriodStart });
     return res.status(500).json({ error: 'KIE_API_KEY is not configured.' });
   }
 
@@ -244,7 +233,7 @@ export default async function handler(req, res) {
     }
     if (!createRes.ok || createData.code !== 200 || !createData.data?.taskId) {
       console.error('[glow-up] kie.ai create failed', createRes.status, createText.slice(0, 500));
-      if (creditReserved) await refundCredit({ customerId, isAdmin, chargeFromMain, glowup, mainPool, md: entitlement.md, nextPeriodStart: entitlement.nextPeriodStart });
+      if (creditReserved) await refundCredit({ customerId, isAdmin, md: entitlement.md, nextPeriodStart: entitlement.nextPeriodStart });
       return res.status(502).json({ error: createData?.msg || 'Image generation failed.' });
     }
     const taskId = createData.data.taskId;
@@ -281,7 +270,7 @@ export default async function handler(req, res) {
     }
 
     if (!resultUrl) {
-      if (creditReserved) await refundCredit({ customerId, isAdmin, chargeFromMain, glowup, mainPool, md: entitlement.md, nextPeriodStart: entitlement.nextPeriodStart });
+      if (creditReserved) await refundCredit({ customerId, isAdmin, md: entitlement.md, nextPeriodStart: entitlement.nextPeriodStart });
       return res.status(502).json({ error: lastErr || 'Image generation timed out.' });
     }
 
@@ -309,21 +298,16 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       imageUrl: storedUrl,
-      glowupCreditsRemaining: isAdmin ? 9999 : glowup,
-      creditsRemaining: isAdmin
-        ? 9999
-        : chargeFromMain
-          ? Math.max(0, mainPool - 1)
-          : mainPool,
+      imageCreditsRemaining: isAdmin ? 9999 : imageCredits,
     });
   } catch (err) {
     console.error('[glow-up] failed', err);
-    if (creditReserved) await refundCredit({ customerId, isAdmin, chargeFromMain, glowup, mainPool, md: entitlement.md, nextPeriodStart: entitlement.nextPeriodStart });
+    if (creditReserved) await refundCredit({ customerId, isAdmin, md: entitlement.md, nextPeriodStart: entitlement.nextPeriodStart });
     return res.status(500).json({ error: err.message || 'Generation failed.' });
   }
 }
 
-async function refundCredit({ customerId, isAdmin, chargeFromMain, glowup, mainPool, md, nextPeriodStart }) {
+async function refundCredit({ customerId, isAdmin, md, nextPeriodStart }) {
   if (isAdmin || !customerId || !md) return;
   // Re-read current metadata before refund to avoid stomping a parallel
   // write. The window between reserve and refund is small but real.
@@ -331,16 +315,11 @@ async function refundCredit({ customerId, isAdmin, chargeFromMain, glowup, mainP
     const fresh = await stripe().customers.retrieve(customerId);
     const freshMd = fresh && !fresh.deleted ? fresh.metadata || {} : {};
     const next = { ...freshMd };
-    if (chargeFromMain) {
-      const cur = parseInt(freshMd.creditsRemaining || '0', 10) || 0;
-      next.creditsRemaining = String(cur + 1);
-    } else {
-      const cur = parseInt(freshMd.glowupCreditsRemaining || '0', 10) || 0;
-      next.glowupCreditsRemaining = String(cur + 1);
-    }
+    const cur = parseInt(freshMd.imageCreditsRemaining || '0', 10) || 0;
+    next.imageCreditsRemaining = String(cur + 1);
     // Preserve whatever periodStart we wrote during reserve.
-    if (next.glowupPeriodStart == null) {
-      next.glowupPeriodStart = String(nextPeriodStart);
+    if (next.imagePeriodStart == null) {
+      next.imagePeriodStart = String(nextPeriodStart);
     }
     await stripe().customers.update(customerId, { metadata: next });
   } catch (refundErr) {
@@ -352,9 +331,7 @@ async function resolveEntitlement(customerId) {
   const empty = {
     tier: 'none',
     status: 'none',
-    glowupCreditsRemaining: 0,
-    creditsRemaining: 0,
-    mainPool: 0,
+    imageCreditsRemaining: 0,
     nextPeriodStart: Date.now(),
     md: null,
     activeSub: null,
@@ -381,28 +358,23 @@ async function resolveEntitlement(customerId) {
       ...empty,
       tier: plan || 'none',
       status,
-      creditsRemaining: parseInt(md.creditsRemaining || '0', 10) || 0,
-      mainPool: parseInt(md.creditsRemaining || '0', 10) || 0,
       md,
     };
   }
 
   const now = Date.now();
-  const periodStart = parseInt(md.glowupPeriodStart || '0', 10) || 0;
-  let glowup = parseInt(md.glowupCreditsRemaining || '0', 10) || 0;
+  const periodStart = parseInt(md.imagePeriodStart || '0', 10) || 0;
+  let imageCredits = parseInt(md.imageCreditsRemaining || '0', 10) || 0;
   let nextPeriodStart = periodStart;
   if (!periodStart || now - periodStart >= PERIOD_MS) {
-    glowup = CREDITS_PER_PERIOD;
+    imageCredits = CREDITS_PER_PERIOD;
     nextPeriodStart = now;
   }
-  const mainPool = parseInt(md.creditsRemaining || '0', 10) || 0;
 
   return {
     tier: plan,
     status,
-    glowupCreditsRemaining: glowup,
-    creditsRemaining: mainPool,
-    mainPool,
+    imageCreditsRemaining: imageCredits,
     nextPeriodStart,
     md,
     activeSub,

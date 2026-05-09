@@ -74,7 +74,7 @@ export default function GlowUpPage() {
     return () => listener?.subscription?.unsubscribe?.();
   }, []);
 
-  // Fetch the glow-up credit balance once we know who the user is.
+  // Fetch the image credit balance once we know who the user is.
   useEffect(() => {
     if (!authUser) {
       setCredits(null);
@@ -83,7 +83,7 @@ export default function GlowUpPage() {
     fetch('/api/glow-up')
       .then((r) => r.json().catch(() => null))
       .then((d) => {
-        if (d && typeof d.glowupCreditsRemaining === 'number') {
+        if (d && typeof d.imageCreditsRemaining === 'number') {
           setCredits(d);
         }
       })
@@ -344,7 +344,7 @@ export default function GlowUpPage() {
               <h3 className={styles.editPanelTitle}>Edit this image</h3>
               <p className={styles.editPanelHint}>
                 Describe a tweak — we&apos;ll regenerate from this portrait while
-                keeping your face. Uses 1 credit.
+                keeping your face. Uses 1 image credit.
               </p>
               <textarea
                 value={editPrompt}
@@ -363,16 +363,14 @@ export default function GlowUpPage() {
                 disabled={!editPrompt.trim()}
               >
                 Regenerate with edit
-                <span className={styles.ctaSub}>Uses 1 glow-up credit</span>
+                <span className={styles.ctaSub}>Uses 1 image credit</span>
               </button>
             </div>
 
-            {credits && typeof credits.glowupCreditsRemaining === 'number' && (
+            {credits && typeof credits.imageCreditsRemaining === 'number' && (
               <div className={styles.usage}>
-                {credits.glowupCreditsRemaining} glow-ups left this period
-                {credits.creditsRemaining > 0
-                  ? ` · ${credits.creditsRemaining} bonus credit${credits.creditsRemaining === 1 ? '' : 's'}`
-                  : ''}
+                {credits.imageCreditsRemaining} image credit
+                {credits.imageCreditsRemaining === 1 ? '' : 's'} left this period
               </div>
             )}
           </div>
@@ -506,16 +504,14 @@ export default function GlowUpPage() {
               <span className={styles.ctaSub}>
                 {photos.length === 0
                   ? 'Upload at least 1 photo'
-                  : `Uses 1 glow-up credit · ${STYLES.find((s) => s.key === styleKey)?.name}`}
+                  : `Uses 1 image credit · ${STYLES.find((s) => s.key === styleKey)?.name}`}
               </span>
             </button>
 
-            {credits && typeof credits.glowupCreditsRemaining === 'number' && (
+            {credits && typeof credits.imageCreditsRemaining === 'number' && (
               <div className={styles.usage}>
-                {credits.glowupCreditsRemaining} glow-ups left this period
-                {credits.creditsRemaining > 0
-                  ? ` · ${credits.creditsRemaining} bonus credit${credits.creditsRemaining === 1 ? '' : 's'}`
-                  : ''}
+                {credits.imageCreditsRemaining} image credit
+                {credits.imageCreditsRemaining === 1 ? '' : 's'} left this period
               </div>
             )}
           </div>
