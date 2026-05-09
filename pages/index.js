@@ -558,7 +558,7 @@ export default function Home() {
             label="Reference face"
             sublabel="JPG / PNG · Front-facing"
             icon="👤"
-            accept="image/jpeg,image/png"
+            accept="image/*"
             file={faceFile}
             onFileSelected={setFaceFile}
             onRemove={() => setFaceFile(null)}

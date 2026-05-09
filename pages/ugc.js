@@ -1041,7 +1041,7 @@ export default function UgcPage() {
               label="Upload image"
               sublabel="JPG or PNG · clear face/body"
               icon="📤"
-              accept="image/jpeg,image/png"
+              accept="image/*"
               file={uploadFile}
               onFileSelected={handleUpload}
               onRemove={() => { setUploadFile(null); setImageUrl(null); }}
