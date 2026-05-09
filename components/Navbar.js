@@ -10,6 +10,7 @@ const FEATURE_TABS = [
   { href: '/', label: 'Face Swap' },
   { href: '/ugc', label: 'UGC Creator' },
   { href: '/glow-up', label: 'Glow Up' },
+  { href: '/interior-design', label: 'Interior Design' },
   { href: '/video/editing', label: 'Video Editor' },
   { href: '/history', label: 'History' },
 ];
