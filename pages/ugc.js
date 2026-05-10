@@ -845,7 +845,7 @@ export default function UgcPage() {
 
           <div style={calloutStyle}>
             ◆ Powered by Kling 3.0 — <strong>3&ndash;15 seconds</strong> per scene with
-            optional native audio. <strong>1 credit per 3 seconds</strong> of video.
+            optional native audio. <strong>1 credit per second</strong> of video.
             Generation takes 2&ndash;4 minutes.
           </div>
 
@@ -1025,7 +1025,7 @@ export default function UgcPage() {
             entitlement.tier === 'admin') && (
             <PricingBanner
               lines={[
-                { label: 'UGC video', cost: '1 credit per 3 seconds' },
+                { label: 'UGC video', cost: '1 credit per second' },
                 { label: 'AI character image', cost: '1 credit per generation' },
               ]}
               note="Pro + audio is billed at 1.5×"
