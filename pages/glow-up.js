@@ -3,6 +3,7 @@ import Head from 'next/head';
 
 import styles from '../styles/GlowUp.module.css';
 import Paywall from '../components/Paywall';
+import PricingBanner from '../components/PricingBanner';
 import AuthModal from '../components/AuthModal';
 import { uploadTempFile } from '../lib/uploader';
 import { getBrowserSupabase } from '../lib/supabase';
@@ -376,6 +377,10 @@ export default function GlowUpPage() {
             )}
           </div>
         ) : (
+          <>
+          <PricingBanner
+            lines={[{ label: 'Glow Up portrait', cost: '10 image credits per image' }]}
+          />
           <div className={styles.card}>
             {/* 1. Upload */}
             <section className={styles.section}>
@@ -518,6 +523,7 @@ export default function GlowUpPage() {
               </div>
             )}
           </div>
+          </>
         )}
       </main>
 

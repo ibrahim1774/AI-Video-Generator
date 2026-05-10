@@ -3,6 +3,7 @@ import Head from 'next/head';
 
 import styles from '../styles/InteriorDesign.module.css';
 import Paywall from '../components/Paywall';
+import PricingBanner from '../components/PricingBanner';
 import AuthModal from '../components/AuthModal';
 import { uploadTempFile } from '../lib/uploader';
 import { getBrowserSupabase } from '../lib/supabase';
@@ -642,6 +643,10 @@ export default function InteriorDesignPage() {
             )}
           </>
         ) : (
+          <>
+          <PricingBanner
+            lines={[{ label: 'AI Interior redesign', cost: '10 image credits per redesign' }]}
+          />
           <div className={styles.card}>
             {/* 1. Upload */}
             <section className={styles.section}>
@@ -817,6 +822,7 @@ export default function InteriorDesignPage() {
               </div>
             )}
           </div>
+          </>
         )}
       </main>
 

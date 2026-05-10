@@ -5,6 +5,7 @@ import { useRouter } from 'next/router';
 
 import styles from '../../styles/Home.module.css';
 import UploadZone from '../../components/UploadZone';
+import PricingBanner from '../../components/PricingBanner';
 import Processing from '../../components/Processing';
 import Paywall from '../../components/Paywall';
 import DurationSlider, { costForDuration } from '../../components/DurationSlider';
@@ -1020,6 +1021,14 @@ export default function Ugc2Page() {
             ◆ Not affiliated with brands within the ads
           </p>
         </div>
+
+        <PricingBanner
+          lines={[
+            { label: 'UGC video', cost: '1 credit per 3 seconds' },
+            { label: 'AI character image', cost: '1 credit per generation' },
+          ]}
+          note="Pro + audio is billed at 1.5×"
+        />
 
         <form onSubmit={handleAnimate} className={styles.ugcCard}>
           <section className={styles.ugcSection}>

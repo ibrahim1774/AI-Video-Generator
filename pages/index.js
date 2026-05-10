@@ -3,6 +3,7 @@ import Script from 'next/script';
 
 import styles from '../styles/Home.module.css';
 import UploadZone from '../components/UploadZone';
+import PricingBanner from '../components/PricingBanner';
 import Processing from '../components/Processing';
 import Result from '../components/Result';
 import Paywall from '../components/Paywall';
@@ -540,6 +541,10 @@ export default function Home() {
           ◆ You're subscribed. Upload your files to start swapping.
         </div>
       )}
+
+      <PricingBanner
+        lines={[{ label: 'Face Swap', cost: '1 credit per video' }]}
+      />
 
       <form className={styles.shell} onSubmit={handleSubmit}>
         <div className={styles.uploads} style={{ gap: 10, marginBottom: 12 }}>
