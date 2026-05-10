@@ -542,9 +542,14 @@ export default function Home() {
         </div>
       )}
 
-      <PricingBanner
-        lines={[{ label: 'Face Swap', cost: '1 credit per video' }]}
-      />
+      {entitlement &&
+        (entitlement.tier === 'monthly' ||
+          entitlement.tier === 'yearly' ||
+          entitlement.tier === 'admin') && (
+          <PricingBanner
+            lines={[{ label: 'Face Swap', cost: '1 credit per video' }]}
+          />
+        )}
 
       <form className={styles.shell} onSubmit={handleSubmit}>
         <div className={styles.uploads} style={{ gap: 10, marginBottom: 12 }}>

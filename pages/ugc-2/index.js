@@ -1008,27 +1008,20 @@ export default function Ugc2Page() {
           <p className={styles.subtitle} style={{ fontSize: 14, margin: '4px auto 0', textAlign: 'center' }}>
             Each video takes 2&ndash;4 minutes &middot; native audio + lip-sync.
           </p>
-          <p
-            style={{
-              marginTop: 4,
-              fontFamily: 'var(--font-mono, ui-monospace, monospace)',
-              fontSize: 10,
-              letterSpacing: '0.16em',
-              textTransform: 'uppercase',
-              color: 'var(--text-dim)',
-            }}
-          >
-            ◆ Not affiliated with brands within the ads
-          </p>
         </div>
 
-        <PricingBanner
-          lines={[
-            { label: 'UGC video', cost: '1 credit per 3 seconds' },
-            { label: 'AI character image', cost: '1 credit per generation' },
-          ]}
-          note="Pro + audio is billed at 1.5×"
-        />
+        {entitlement &&
+          (entitlement.tier === 'monthly' ||
+            entitlement.tier === 'yearly' ||
+            entitlement.tier === 'admin') && (
+            <PricingBanner
+              lines={[
+                { label: 'UGC video', cost: '1 credit per 3 seconds' },
+                { label: 'AI character image', cost: '1 credit per generation' },
+              ]}
+              note="Pro + audio is billed at 1.5×"
+            />
+          )}
 
         <form onSubmit={handleAnimate} className={styles.ugcCard}>
           <section className={styles.ugcSection}>

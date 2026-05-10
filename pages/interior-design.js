@@ -644,9 +644,14 @@ export default function InteriorDesignPage() {
           </>
         ) : (
           <>
-          <PricingBanner
-            lines={[{ label: 'AI Interior redesign', cost: '10 image credits per redesign' }]}
-          />
+          {credits &&
+            (credits.tier === 'monthly' ||
+              credits.tier === 'yearly' ||
+              credits.tier === 'admin') && (
+              <PricingBanner
+                lines={[{ label: 'AI Interior redesign', cost: '10 image credits per redesign' }]}
+              />
+            )}
           <div className={styles.card}>
             {/* 1. Upload */}
             <section className={styles.section}>

@@ -378,9 +378,14 @@ export default function GlowUpPage() {
           </div>
         ) : (
           <>
-          <PricingBanner
-            lines={[{ label: 'Glow Up portrait', cost: '10 image credits per image' }]}
-          />
+          {credits &&
+            (credits.tier === 'monthly' ||
+              credits.tier === 'yearly' ||
+              credits.tier === 'admin') && (
+              <PricingBanner
+                lines={[{ label: 'Glow Up portrait', cost: '10 image credits per image' }]}
+              />
+            )}
           <div className={styles.card}>
             {/* 1. Upload */}
             <section className={styles.section}>
