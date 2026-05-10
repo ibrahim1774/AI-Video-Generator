@@ -13,7 +13,15 @@ import paywallStyles from './Paywall.module.css';
  * Used by:
  *   - components/Paywall.js — when a subscriber's credits hit zero
  *   - pages/dashboard — for active subscribers who want to pre-load more
+ *
+ * Image-credit display inflation: when the host paywall is an image-
+ * feature surface ('glow-up' or 'interior-design'), the image-pack
+ * credit counts render multiplied by IMAGE_DISPLAY_MULTIPLIER and a
+ * "(= N images)" sub-line shows the literal allowance. Internal Stripe
+ * accounting is unchanged — purchases still grant the literal counts.
  */
+
+const IMAGE_DISPLAY_MULTIPLIER = 10;
 
 const VIDEO_PACKS = [
   { pack: 's', label: '$15', credits: 12 },
@@ -26,6 +34,11 @@ const IMAGE_PACKS = [
   { pack: 'image-m', label: '$15', credits: 200 },
   { pack: 'image-l', label: '$30', credits: 500 },
 ];
+
+const IMAGE_NOUNS = {
+  'glow-up': 'images',
+  'interior-design': 'redesigns',
+};
 
 function firePixel(meta) {
   if (!meta?.eventId) return;
@@ -40,7 +53,14 @@ function firePixel(meta) {
   } catch {}
 }
 
-export default function TopupRow({ returnTo = '/dashboard', onError, onLocalError }) {
+export default function TopupRow({
+  returnTo = '/dashboard',
+  onError,
+  onLocalError,
+  surface = 'video',
+}) {
+  const inflateImage = surface === 'glow-up' || surface === 'interior-design';
+  const imageNoun = IMAGE_NOUNS[surface] || 'images';
   const [busy, setBusy] = useState(null);
   const [localError, setLocalError] = useState('');
 
@@ -80,34 +100,47 @@ export default function TopupRow({ returnTo = '/dashboard', onError, onLocalErro
     }
   };
 
-  const renderRow = (heading, packs, creditLabel) => (
+  const renderRow = (heading, packs, creditLabel, inflate, subNoun) => (
     <>
       <div className={paywallStyles.topupGroupHead}>
         <span className={paywallStyles.topupGroupTitle}>{heading}</span>
       </div>
       <div className={paywallStyles.topupRow}>
-        {packs.map((t) => (
-          <button
-            key={t.pack}
-            type="button"
-            className={paywallStyles.topupBtn}
-            onClick={() => startTopup(t.pack)}
-            disabled={busy !== null}
-          >
-            <span className={paywallStyles.topupPrice}>{t.label}</span>
-            <span className={paywallStyles.topupCredits}>
-              {busy === t.pack ? 'Redirecting…' : `${t.credits} ${creditLabel}`}
-            </span>
-          </button>
-        ))}
+        {packs.map((t) => {
+          const display = inflate ? t.credits * IMAGE_DISPLAY_MULTIPLIER : t.credits;
+          return (
+            <button
+              key={t.pack}
+              type="button"
+              className={paywallStyles.topupBtn}
+              onClick={() => startTopup(t.pack)}
+              disabled={busy !== null}
+            >
+              <span className={paywallStyles.topupPrice}>{t.label}</span>
+              <span className={paywallStyles.topupCredits}>
+                {busy === t.pack
+                  ? 'Redirecting…'
+                  : `${display.toLocaleString()} ${creditLabel}`}
+              </span>
+              {inflate && (
+                <span
+                  className={paywallStyles.topupCredits}
+                  style={{ opacity: 0.7, marginTop: 2 }}
+                >
+                  = {t.credits} {subNoun}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
     </>
   );
 
   return (
     <>
-      {renderRow('Video credits', VIDEO_PACKS, 'video credits')}
-      {renderRow('Image credits', IMAGE_PACKS, 'image credits')}
+      {renderRow('Video credits', VIDEO_PACKS, 'video credits', false)}
+      {renderRow('Image credits', IMAGE_PACKS, 'image credits', inflateImage, imageNoun)}
       {localError && (
         <div className={paywallStyles.error} style={{ marginTop: 12 }}>
           {localError}

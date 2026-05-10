@@ -3,10 +3,149 @@ import { useEffect, useState } from 'react';
 import styles from './Paywall.module.css';
 import TopupRow from './TopupRow';
 
-export default function Paywall({ entitlement, onTrialStarted, onError, returnTo }) {
+// Cosmetic credit-display multiplier for image-credit surfaces.
+// Internally 1 image = 1 credit (Stripe metadata, /api/glow-up,
+// /api/interior-design); on image-feature paywalls we display the
+// number multiplied by this so plans / packs feel more substantial.
+// The info icon next to the inflated number always reveals the real
+// image count.
+const IMAGE_DISPLAY_MULTIPLIER = 10;
+
+// Image-credit allowance per period. Keep in sync with
+// CREDITS_PER_PERIOD in /api/glow-up.js and /api/interior-design.js.
+const IMAGE_PERIOD_CAP = 30;
+
+const SURFACE_COPY = {
+  video: {
+    monthlyName: 'Monthly',
+    yearlyName: 'Yearly',
+    pickHeader: 'Pick a plan',
+    pickSubtitle: 'Pick a plan to get started. Cancel anytime.',
+    monthlyFeats: [
+      'Full access to AI Video generation',
+      'Includes credits to start creating immediately',
+      'Top up anytime for more credits',
+      'Cancel anytime',
+    ],
+    yearlyFeats: [
+      { strong: 'Save 50%', after: ' vs paying monthly ($60/yr)' },
+      'Full access to AI Video generation',
+      'Includes credits to start creating immediately',
+      'One charge, cancel anytime',
+    ],
+    bonusLine: 'Access to AI Face Swap included',
+    creditsKind: 'video',
+  },
+  'glow-up': {
+    monthlyName: 'Glow Up Monthly Plan',
+    yearlyName: 'Glow Up Yearly Plan',
+    pickHeader: 'Pick a Glow Up plan',
+    pickSubtitle: 'Premium AI portraits, every month. Cancel anytime.',
+    monthlyFeats: [
+      'Access to Glow Up AI portraits',
+      { credits: true }, // injected with inflated count + info icon
+      'All 4 styles: Professional, Casual, Glow Up, SOAR',
+      'Top up anytime',
+      'Cancel anytime',
+    ],
+    yearlyFeats: [
+      { strong: 'Save 50%', after: ' vs paying monthly ($60/yr)' },
+      'Access to Glow Up AI portraits',
+      { credits: true },
+      'One charge, cancel anytime',
+    ],
+    bonusLine: 'Every other Haelabs tool included',
+    creditsKind: 'image',
+    imageNoun: 'images',
+  },
+  'interior-design': {
+    monthlyName: 'AI Interior Monthly Plan',
+    yearlyName: 'AI Interior Yearly Plan',
+    pickHeader: 'Pick an AI Interior plan',
+    pickSubtitle:
+      'Photorealistic room redesigns, every month. Cancel anytime.',
+    monthlyFeats: [
+      'Access to AI Interior Design',
+      { credits: true },
+      'Photo or video upload',
+      'All 8 styles (Modern Minimalist · Scandinavian · Industrial Loft · Bohemian · Mid-Century · Japandi · Coastal · Dark Moody)',
+      'Cancel anytime',
+    ],
+    yearlyFeats: [
+      { strong: 'Save 50%', after: ' vs paying monthly ($60/yr)' },
+      'Access to AI Interior Design',
+      { credits: true },
+      'One charge, cancel anytime',
+    ],
+    bonusLine: 'Every other Haelabs tool included',
+    creditsKind: 'image',
+    imageNoun: 'redesigns',
+  },
+};
+
+function CreditsLine({ multiplier, cap, noun, infoOpen, setInfoOpen }) {
+  const inflated = cap * multiplier;
+  return (
+    <>
+      <strong>{inflated.toLocaleString()} image credits</strong> per month
+      {' '}
+      <button
+        type="button"
+        className={styles.infoBtn}
+        aria-label={`= ${cap} ${noun} per month`}
+        onClick={() => setInfoOpen((v) => !v)}
+      >
+        ⓘ
+      </button>
+      {infoOpen && (
+        <span className={styles.infoTip}>
+          1 {noun.replace(/s$/, '')} = {multiplier} credits · {cap} {noun} included
+        </span>
+      )}
+    </>
+  );
+}
+
+function Feat({ entry, copy, infoOpen, setInfoOpen }) {
+  if (typeof entry === 'string') return <li>{entry}</li>;
+  if (entry && entry.strong) {
+    return (
+      <li>
+        <strong>{entry.strong}</strong>
+        {entry.after}
+      </li>
+    );
+  }
+  if (entry && entry.credits) {
+    return (
+      <li>
+        <CreditsLine
+          multiplier={IMAGE_DISPLAY_MULTIPLIER}
+          cap={IMAGE_PERIOD_CAP}
+          noun={copy.imageNoun || 'images'}
+          infoOpen={infoOpen}
+          setInfoOpen={setInfoOpen}
+        />
+      </li>
+    );
+  }
+  return null;
+}
+
+export default function Paywall({
+  entitlement,
+  onTrialStarted,
+  onError,
+  returnTo,
+  surface = 'video',
+}) {
   const [busy, setBusy] = useState(null); // 'monthly' | 'yearly' | 's' | 'm' | 'l'
   const [localError, setLocalError] = useState('');
   const [trialBlocked, setTrialBlocked] = useState(false);
+  const [infoOpenMonthly, setInfoOpenMonthly] = useState(false);
+  const [infoOpenYearly, setInfoOpenYearly] = useState(false);
+
+  const copy = SURFACE_COPY[surface] || SURFACE_COPY.video;
 
   // After redirecting to Stripe, the user may hit Back to return here.
   // Modern browsers restore the page from BFCache without re-running
@@ -77,13 +216,7 @@ export default function Paywall({ entitlement, onTrialStarted, onError, returnTo
   const isSubscriber =
     entitlement && (entitlement.tier === 'monthly' || entitlement.tier === 'yearly');
   const isTrialing = entitlement && entitlement.status === 'trialing';
-  // Top-ups available to anyone with a Stripe customer (subscriber or
-  // trialing). Trialing users who burn their 2 free credits can buy a
-  // pack to keep going without ending the trial.
   const showTopups = isSubscriber;
-  // Plan cards: show for new visitors (no sub) AND for trialing users
-  // who may want to convert before their trial ends. Hidden for fully
-  // active paid subscribers.
   const showPlans = !isSubscriber || isTrialing;
 
   return (
@@ -96,14 +229,14 @@ export default function Paywall({ entitlement, onTrialStarted, onError, returnTo
               ? 'Add more credits or upgrade'
               : showTopups
                 ? 'Need more credits?'
-                : 'Pick a plan'}
+                : copy.pickHeader}
           </h2>
           <p className={styles.subtitle}>
             {isTrialing
               ? 'Buy a top-up pack to keep going during your trial, or convert to a monthly/yearly plan below.'
               : showTopups
                 ? 'Buy a top-up pack. Credits never expire and stack on your plan.'
-                : 'Pick a plan to get started. Cancel anytime.'}
+                : copy.pickSubtitle}
           </p>
         </header>
 
@@ -131,21 +264,28 @@ export default function Paywall({ entitlement, onTrialStarted, onError, returnTo
           <div className={styles.tiersTwo}>
             <article className={styles.tier}>
               <div className={styles.tierHead}>
-                <h3 className={styles.tierName}>Monthly</h3>
+                <h3 className={styles.tierName}>{copy.monthlyName}</h3>
                 <div className={styles.price}>
                   <span className={styles.amount}>$5</span>
                   <span className={styles.period}>/ month</span>
                 </div>
               </div>
               <ul className={styles.feats}>
-                <li>Full access to AI Video generation</li>
-                <li>Includes credits to start creating immediately</li>
-                <li>Top up anytime for more credits</li>
-                <li>Cancel anytime</li>
-                <li className={styles.featBonus}>
-                  <span className={styles.bonusTag}>Bonus</span>
-                  Access to AI Face Swap included
-                </li>
+                {copy.monthlyFeats.map((entry, i) => (
+                  <Feat
+                    key={i}
+                    entry={entry}
+                    copy={copy}
+                    infoOpen={infoOpenMonthly}
+                    setInfoOpen={setInfoOpenMonthly}
+                  />
+                ))}
+                {copy.bonusLine && (
+                  <li className={styles.featBonus}>
+                    <span className={styles.bonusTag}>Bonus</span>
+                    {copy.bonusLine}
+                  </li>
+                )}
               </ul>
               <button
                 type="button"
@@ -166,21 +306,28 @@ export default function Paywall({ entitlement, onTrialStarted, onError, returnTo
                 Save 50% &middot; Best value
               </div>
               <div className={styles.tierHead}>
-                <h3 className={styles.tierName}>Yearly</h3>
+                <h3 className={styles.tierName}>{copy.yearlyName}</h3>
                 <div className={styles.price}>
                   <span className={styles.amount}>$29</span>
                   <span className={styles.period}>/ year</span>
                 </div>
               </div>
               <ul className={styles.feats}>
-                <li><strong>Save 50%</strong> vs paying monthly ($60/yr)</li>
-                <li>Full access to AI Video generation</li>
-                <li>Includes credits to start creating immediately</li>
-                <li>One charge, cancel anytime</li>
-                <li className={styles.featBonus}>
-                  <span className={styles.bonusTag}>Bonus</span>
-                  Access to AI Face Swap included
-                </li>
+                {copy.yearlyFeats.map((entry, i) => (
+                  <Feat
+                    key={i}
+                    entry={entry}
+                    copy={copy}
+                    infoOpen={infoOpenYearly}
+                    setInfoOpen={setInfoOpenYearly}
+                  />
+                ))}
+                {copy.bonusLine && (
+                  <li className={styles.featBonus}>
+                    <span className={styles.bonusTag}>Bonus</span>
+                    {copy.bonusLine}
+                  </li>
+                )}
               </ul>
               <button
                 type="button"
@@ -197,7 +344,12 @@ export default function Paywall({ entitlement, onTrialStarted, onError, returnTo
         )}
 
         {showTopups && (
-          <TopupRow returnTo={returnTo} onError={onError} onLocalError={setLocalError} />
+          <TopupRow
+            returnTo={returnTo}
+            onError={onError}
+            onLocalError={setLocalError}
+            surface={surface}
+          />
         )}
 
         {localError && <div className={styles.error}>{localError}</div>}

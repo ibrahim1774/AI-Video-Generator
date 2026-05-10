@@ -528,6 +528,7 @@ export default function InteriorDesignPage() {
             <Paywall
               entitlement={credits || null}
               returnTo="/interior-design"
+              surface="interior-design"
               onError={(msg) => setError(msg)}
               onTrialStarted={() => setStep('idle')}
             />
@@ -633,8 +634,10 @@ export default function InteriorDesignPage() {
 
             {credits && typeof credits.imageCreditsRemaining === 'number' && (
               <div className={styles.usage}>
-                {credits.imageCreditsRemaining} image credit
-                {credits.imageCreditsRemaining === 1 ? '' : 's'} left this period
+                {(credits.imageCreditsRemaining * 10).toLocaleString()} image credit
+                {credits.imageCreditsRemaining === 1 ? '' : 's'} left ·{' '}
+                = {credits.imageCreditsRemaining} redesign
+                {credits.imageCreditsRemaining === 1 ? '' : 's'}
               </div>
             )}
           </>
@@ -801,14 +804,16 @@ export default function InteriorDesignPage() {
               <span className={styles.ctaSub}>
                 {!uploadedUrl
                   ? 'Upload a photo or video to continue'
-                  : `Uses 1 image credit · ${STYLES.find((s) => s.key === styleKey)?.name}`}
+                  : `Uses 10 image credits · ${STYLES.find((s) => s.key === styleKey)?.name}`}
               </span>
             </button>
 
             {credits && typeof credits.imageCreditsRemaining === 'number' && (
               <div className={styles.usage}>
-                {credits.imageCreditsRemaining} image credit
-                {credits.imageCreditsRemaining === 1 ? '' : 's'} left this period
+                {(credits.imageCreditsRemaining * 10).toLocaleString()} image credit
+                {credits.imageCreditsRemaining === 1 ? '' : 's'} left ·{' '}
+                = {credits.imageCreditsRemaining} redesign
+                {credits.imageCreditsRemaining === 1 ? '' : 's'}
               </div>
             )}
           </div>

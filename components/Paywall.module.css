@@ -145,6 +145,43 @@
   line-height: 1.7;
 }
 
+.infoBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-left: 4px;
+  padding: 0;
+  border: 1px solid rgba(139, 115, 64, 0.45);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.6);
+  color: #6b5532;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+  vertical-align: middle;
+}
+
+.infoBtn:hover {
+  background: rgba(255, 224, 168, 0.85);
+  color: #3a2c0f;
+}
+
+.infoTip {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 6px 10px;
+  background: rgba(28, 23, 15, 0.9);
+  color: #ffe7a3;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
 .featBonus {
   margin-top: 6px;
   padding: 8px 10px 8px 12px !important;

@@ -296,6 +296,7 @@ export default function GlowUpPage() {
             <Paywall
               entitlement={credits || null}
               returnTo="/glow-up"
+              surface="glow-up"
               onError={(msg) => setError(msg)}
               onTrialStarted={() => {
                 setStep('idle');
@@ -342,7 +343,7 @@ export default function GlowUpPage() {
               <h3 className={styles.editPanelTitle}>Edit this image</h3>
               <p className={styles.editPanelHint}>
                 Describe a tweak — we&apos;ll regenerate from this portrait while
-                keeping your face. Uses 1 image credit.
+                keeping your face. Uses 10 image credits (1 image).
               </p>
               <textarea
                 value={editPrompt}
@@ -361,14 +362,16 @@ export default function GlowUpPage() {
                 disabled={!editPrompt.trim()}
               >
                 Regenerate with edit
-                <span className={styles.ctaSub}>Uses 1 image credit</span>
+                <span className={styles.ctaSub}>Uses 10 image credits (1 generation)</span>
               </button>
             </div>
 
             {credits && typeof credits.imageCreditsRemaining === 'number' && (
               <div className={styles.usage}>
-                {credits.imageCreditsRemaining} image credit
-                {credits.imageCreditsRemaining === 1 ? '' : 's'} left this period
+                {(credits.imageCreditsRemaining * 10).toLocaleString()} image credit
+                {credits.imageCreditsRemaining === 1 ? '' : 's'} left ·{' '}
+                = {credits.imageCreditsRemaining} image
+                {credits.imageCreditsRemaining === 1 ? '' : 's'}
               </div>
             )}
           </div>
@@ -502,14 +505,16 @@ export default function GlowUpPage() {
               <span className={styles.ctaSub}>
                 {photos.length === 0
                   ? 'Upload at least 1 photo'
-                  : `Uses 1 image credit · ${STYLES.find((s) => s.key === styleKey)?.name}`}
+                  : `Uses 10 image credits · ${STYLES.find((s) => s.key === styleKey)?.name}`}
               </span>
             </button>
 
             {credits && typeof credits.imageCreditsRemaining === 'number' && (
               <div className={styles.usage}>
-                {credits.imageCreditsRemaining} image credit
-                {credits.imageCreditsRemaining === 1 ? '' : 's'} left this period
+                {(credits.imageCreditsRemaining * 10).toLocaleString()} image credit
+                {credits.imageCreditsRemaining === 1 ? '' : 's'} left ·{' '}
+                = {credits.imageCreditsRemaining} image
+                {credits.imageCreditsRemaining === 1 ? '' : 's'}
               </div>
             )}
           </div>
