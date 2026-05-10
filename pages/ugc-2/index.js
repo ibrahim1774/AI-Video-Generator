@@ -1005,9 +1005,6 @@ export default function Ugc2Page() {
             Turn Your Image Into a Talking, Moving Video &mdash;{' '}
             <span className={styles.accent}>Just Type What They Say &amp; Do</span>
           </h1>
-          <p className={styles.subtitle} style={{ fontSize: 14, margin: '4px auto 0', textAlign: 'center' }}>
-            Each video takes 2&ndash;4 minutes &middot; native audio + lip-sync.
-          </p>
         </div>
 
         {entitlement &&
