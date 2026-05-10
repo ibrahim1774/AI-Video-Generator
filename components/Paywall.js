@@ -69,16 +69,15 @@ const SURFACE_COPY = {
     monthlyFeats: [
       'Access to AI Interior Design',
       { credits: true },
-      'Photo or video upload',
       'All 8 styles (Modern Minimalist · Scandinavian · Industrial Loft · Bohemian · Mid-Century · Japandi · Coastal · Dark Moody)',
-      'Customize each design (free-text prompt, keep furniture, budget feel)',
+      'Customize each design',
       'Cancel anytime',
     ],
     yearlyFeats: [
       { strong: 'Save 50%', after: ' vs paying monthly ($60/yr)' },
       'Access to AI Interior Design',
       { credits: true },
-      'Customize each design (free-text prompt, keep furniture, budget feel)',
+      'Customize each design',
       'One charge, cancel anytime',
     ],
     bonusLine: 'Access to every other Haelabs AI tool included',
