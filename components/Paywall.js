@@ -45,6 +45,7 @@ const SURFACE_COPY = {
       'Access to Glow Up AI portraits',
       { credits: true }, // injected with inflated count + info icon
       'All 4 styles: Professional, Casual, Glow Up, SOAR',
+      'Customize each shot with your own prompt + edit any result',
       'Top up anytime',
       'Cancel anytime',
     ],
@@ -52,9 +53,10 @@ const SURFACE_COPY = {
       { strong: 'Save 50%', after: ' vs paying monthly ($60/yr)' },
       'Access to Glow Up AI portraits',
       { credits: true },
+      'Customize each shot with your own prompt + edit any result',
       'One charge, cancel anytime',
     ],
-    bonusLine: 'Every other Haelabs tool included',
+    bonusLine: 'Access to every other Haelabs AI tool included',
     creditsKind: 'image',
     imageNoun: 'images',
   },
@@ -69,15 +71,17 @@ const SURFACE_COPY = {
       { credits: true },
       'Photo or video upload',
       'All 8 styles (Modern Minimalist · Scandinavian · Industrial Loft · Bohemian · Mid-Century · Japandi · Coastal · Dark Moody)',
+      'Customize each design (free-text prompt, keep furniture, budget feel)',
       'Cancel anytime',
     ],
     yearlyFeats: [
       { strong: 'Save 50%', after: ' vs paying monthly ($60/yr)' },
       'Access to AI Interior Design',
       { credits: true },
+      'Customize each design (free-text prompt, keep furniture, budget feel)',
       'One charge, cancel anytime',
     ],
-    bonusLine: 'Every other Haelabs tool included',
+    bonusLine: 'Access to every other Haelabs AI tool included',
     creditsKind: 'image',
     imageNoun: 'redesigns',
   },
@@ -192,7 +196,7 @@ export default function Paywall({
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan, returnTo }),
+        body: JSON.stringify({ plan, returnTo, surface }),
       });
       const data = await res.json();
       if (!res.ok || !data.url) {

@@ -22,7 +22,7 @@ export default async function handler(req, res) {
   const isAnon = !session;
   const email = session?.user?.email;
 
-  const { plan, mode, pack, returnTo } = req.body || {};
+  const { plan, mode, pack, returnTo, surface } = req.body || {};
 
   if (mode === 'topup' && isAnon) {
     return res.status(401).json({ error: 'Sign in required to buy a top-up.' });
@@ -162,7 +162,12 @@ export default async function handler(req, res) {
     // Subscription flow: charge the plan price immediately. No trial,
     // no deposit — just a clean recurring sub. Monthly $5/mo, yearly
     // $29/yr. Stripe Checkout displays the renewal terms natively.
-    const price = await getOrCreatePrice(plan);
+    // Surface picks the per-surface Product variant so the checkout
+    // page header shows the right name ("Glow Up Yearly Plan",
+    // "AI Interior Yearly Plan", etc). Same price, same entitlement.
+    const ALLOWED_SURFACES = new Set(['default', 'glow-up', 'interior-design']);
+    const safeSurface = ALLOWED_SURFACES.has(surface) ? surface : 'default';
+    const price = await getOrCreatePrice(plan, safeSurface);
 
     const checkout = await stripe().checkout.sessions.create({
       mode: 'subscription',
