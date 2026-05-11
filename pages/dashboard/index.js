@@ -135,20 +135,22 @@ export default function DashboardPage() {
       <Head>
         <title>Dashboard — Ariya Lab</title>
       </Head>
-      <main className={styles.page}>
-        <div className={styles.hero}>
-          <span className={styles.eyebrow}>◆ Dashboard</span>
-          <h1 className={styles.headline}>
+      <main className={styles.page} style={{ paddingTop: 20, paddingBottom: 40 }}>
+        <div className={styles.hero} style={{ marginBottom: 12 }}>
+          <h1
+            className={styles.headline}
+            style={{ fontSize: 'clamp(16px, 2vw, 20px)', margin: '4px 0 2px', lineHeight: 1.25, fontWeight: 500 }}
+          >
             Welcome, <span className={styles.accent}>{user.email}</span>
           </h1>
           {entitlement && (
-            <p className={styles.subtitle}>
+            <p className={styles.subtitle} style={{ fontSize: 12, lineHeight: 1.4, margin: 0 }}>
               {entitlement.tier === 'trial' || entitlement.status === 'trialing'
                 ? `Free trial — ${entitlement.creditsRemaining || 0} credit${entitlement.creditsRemaining === 1 ? '' : 's'} remaining`
                 : entitlement.tier === 'monthly' ||
       entitlement.tier === 'pro' ||
       entitlement.tier === 'yearly'
-                ? `${entitlement.tier === 'monthly' ? 'Monthly' : 'Yearly'} plan — ${entitlement.creditsRemaining} credits remaining`
+                ? `${entitlement.tier === 'monthly' ? 'Monthly' : entitlement.tier === 'pro' ? 'Pro' : 'Yearly'} plan — ${entitlement.creditsRemaining} credits remaining`
                 : 'No active plan. Pick one below to get started.'}
             </p>
           )}
@@ -230,8 +232,8 @@ export default function DashboardPage() {
           aria-label="Support contact"
           style={{
             maxWidth: 560,
-            margin: '48px auto 32px',
-            padding: '20px 24px',
+            margin: '24px auto 24px',
+            padding: '14px 18px',
             borderRadius: 12,
             border: '1px solid rgba(255,255,255,0.08)',
             background: 'rgba(255,255,255,0.02)',
