@@ -227,54 +227,6 @@ export default function DashboardPage() {
             }}
           />
         )}
-
-        <section
-          aria-label="Support contact"
-          style={{
-            maxWidth: 560,
-            margin: '24px auto 24px',
-            padding: '14px 18px',
-            borderRadius: 12,
-            border: '1px solid rgba(255,255,255,0.08)',
-            background: 'rgba(255,255,255,0.02)',
-            textAlign: 'center',
-          }}
-        >
-          <div
-            style={{
-              fontFamily: 'var(--font-mono, ui-monospace, monospace)',
-              fontSize: 11,
-              letterSpacing: '0.18em',
-              textTransform: 'uppercase',
-              color: 'rgba(255,255,255,0.5)',
-              marginBottom: 8,
-            }}
-          >
-            Billing or membership questions?
-          </div>
-          <a
-            href="mailto:support@davoxa.com"
-            style={{
-              color: '#ededed',
-              fontSize: 15,
-              fontWeight: 500,
-              textDecoration: 'none',
-              borderBottom: '1px solid rgba(224, 196, 136, 0.35)',
-            }}
-          >
-            support@davoxa.com
-          </a>
-          <div
-            style={{
-              marginTop: 8,
-              fontSize: 12,
-              color: 'rgba(255,255,255,0.55)',
-              lineHeight: 1.5,
-            }}
-          >
-            Email us anytime — we usually reply within a business day.
-          </div>
-        </section>
       </main>
     </>
   );
