@@ -3,10 +3,10 @@ import Head from 'next/head';
 export default function AppHead() {
   return (
     <Head>
-      <title>Haelabs — AI Face Swap</title>
+      <title>Haelabs — AI Video Generator</title>
       <meta
         name="description"
-        content="Haelabs is a luxury face-swap studio. Upload a video and a reference photo, and get a finished swap in seconds."
+        content="Haelabs is a luxury AI video studio. Generate UGC clips, swap faces, restyle portraits, and redesign interiors — all in one place."
       />
       <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       <meta name="theme-color" content="#060608" />
