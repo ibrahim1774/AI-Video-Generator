@@ -34,6 +34,7 @@ async function recordHistory({ session, predictionId, resultUrl, historyKind }) 
           result_url: resultUrl,
           is_blob_owned: false,
           expires_at: expiresAt,
+          surface: 'ariyalab',
         },
         { onConflict: 'prediction_id', ignoreDuplicates: true }
       );

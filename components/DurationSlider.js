@@ -1,19 +1,14 @@
 /*
- * Reusable duration slider for Kling v3 video generation.
- * Range 3–15s, 1s steps. Shows live cost — defers to costForGeneration
- * which factors in mode (std/pro) + audio (because pro+audio costs
- * more on kie.ai's side and we mirror that).
- *
- * The slider uses a real range input so it works on touch and
- * keyboard, plus a small number of stop ticks below for orientation.
+ * Reusable duration slider for Ariya Lab video generation.
+ * Range 3–15s, 1s steps. Live cost reflects the chosen model
+ * (standard | studio-pro) × resolution (480p|720p|1080p) × audio.
  */
 
 import { costForGeneration } from '../lib/cost';
 
-// Backwards-compat shim — older callers that didn't have mode/audio
-// context. Treats them as the std-silent baseline (= 1cr per 3s).
-export function costForDuration(seconds, mode = 'std', audio = false) {
-  return costForGeneration({ seconds, mode, audio });
+// Convenience helper for callers that compute cost outside the slider.
+export function costForDuration(seconds, model = 'standard', resolution = '480p', audio = false) {
+  return costForGeneration({ seconds, model, resolution, audio });
 }
 
 export default function DurationSlider({
@@ -24,10 +19,11 @@ export default function DurationSlider({
   max = 15,
   showCost = true,
   ariaLabel = 'Duration',
-  mode = 'std',
+  model = 'standard',
+  resolution = '480p',
   audio = false,
 }) {
-  const cost = costForGeneration({ seconds: value, mode, audio });
+  const cost = costForGeneration({ seconds: value, model, resolution, audio });
   return (
     <div>
       <div

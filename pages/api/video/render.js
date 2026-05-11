@@ -130,6 +130,7 @@ export default async function handler(req, res) {
           result_url: result.outputUrl,
           is_blob_owned: true,
           expires_at: expiresAt,
+          surface: 'ariyalab',
         },
         { onConflict: 'prediction_id', ignoreDuplicates: true }
       );

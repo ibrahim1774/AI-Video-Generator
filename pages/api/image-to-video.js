@@ -1,8 +1,10 @@
 import { createKlingSinglePrediction } from '../../lib/kie';
+import { createSeedancePrediction } from '../../lib/seedance';
 import { getUserFromRequest } from '../../lib/supabaseServer';
 import { getEntitlement, reserveCredits, refundCredits, trackPendingJob } from '../../lib/entitlement';
 import { sendCapiEvent } from '../../lib/meta';
-import { costForGeneration } from '../../lib/cost';
+import { nsEventId } from '../../lib/metaKeys';
+import { costForGeneration, MODELS, RESOLUTIONS } from '../../lib/cost';
 
 function isHttpUrl(value) {
   if (typeof value !== 'string') return false;
@@ -36,14 +38,22 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: `Entitlement check failed: ${err.message}` });
   }
 
-  const { imageUrl, prompt, mode, duration, audio } = req.body || {};
+  const {
+    imageUrl,
+    prompt,
+    duration,
+    audio,
+    model: modelRaw,
+    resolution: resolutionRaw,
+  } = req.body || {};
   if (!isHttpUrl(imageUrl)) {
     return res.status(400).json({ error: 'imageUrl is required (http/https URL).' });
   }
-  const q = mode === 'pro' ? 'pro' : 'std';
+  const model = MODELS.includes(modelRaw) ? modelRaw : 'standard';
+  const resolution = RESOLUTIONS.includes(resolutionRaw) ? resolutionRaw : '480p';
+  const wantAudio = Boolean(audio);
   const dur = clampDuration(duration);
-  const wantAudio = audio !== false;
-  const cost = costForGeneration({ seconds: dur, mode: q, audio: wantAudio });
+  const cost = costForGeneration({ seconds: dur, model, resolution, audio: wantAudio });
 
   try {
     await reserveCredits(entitlement, cost);
@@ -60,20 +70,29 @@ export default async function handler(req, res) {
   }
 
   try {
-    const prediction = await createKlingSinglePrediction({
-      imageUrl,
-      prompt: prompt || '',
-      duration: dur,
-      mode: q,
-      audio: wantAudio,
-    });
-    // Track the queued job so /api/status can refund the cost if Kling
-    // ultimately rejects it (e.g. content moderation). Best-effort —
-    // a tracking failure must not block returning the predictionId.
+    let prediction;
+    if (model === 'studio-pro') {
+      const klingMode = resolution === '1080p' ? 'pro' : 'std';
+      prediction = await createKlingSinglePrediction({
+        imageUrl,
+        prompt: prompt || '',
+        duration: dur,
+        mode: klingMode,
+        audio: wantAudio,
+      });
+    } else {
+      prediction = await createSeedancePrediction({
+        imageUrl,
+        prompt: prompt || '',
+        duration: dur,
+        resolution,
+        audio: wantAudio,
+      });
+    }
     trackPendingJob(entitlement, prediction.id, cost).catch(() => {});
     sendCapiEvent({
       eventName: 'Generate',
-      eventId: `gen-${prediction.id}`,
+      eventId: nsEventId(`gen-${prediction.id}`),
       value: cost,
       currency: 'USD',
       email: session.user.email,
@@ -82,16 +101,20 @@ export default async function handler(req, res) {
         feature: 'image-to-video',
         credits: cost,
         duration: dur,
-        quality: q,
+        model,
+        resolution,
         audio: wantAudio,
         supabase_user_id: session.user.id,
       },
     }).catch(() => {});
     return res.status(200).json({
       predictionId: prediction.id,
-      vendor: 'kie',
+      vendor: model === 'studio-pro' ? 'kie-kling' : 'kie-seedance',
       status: 'queued',
       cost,
+      model,
+      resolution,
+      audio: wantAudio,
     });
   } catch (err) {
     console.error('[image-to-video] failed; refunding credit', err);

@@ -2,6 +2,7 @@ import { createImagePrediction } from '../../lib/replicate';
 import { getUserFromRequest } from '../../lib/supabaseServer';
 import { getEntitlement, reserveCredits, refundCredits } from '../../lib/entitlement';
 import { sendCapiEvent } from '../../lib/meta';
+import { nsEventId } from '../../lib/metaKeys';
 
 const COST = 1;
 
@@ -44,7 +45,7 @@ export default async function handler(req, res) {
     const prediction = await createImagePrediction({ prompt });
     sendCapiEvent({
       eventName: 'Generate',
-      eventId: `gen-${prediction.id}`,
+      eventId: nsEventId(`gen-${prediction.id}`),
       value: COST,
       currency: 'USD',
       email: session.user.email,

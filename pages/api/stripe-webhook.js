@@ -1,5 +1,6 @@
 import { stripe, planFromPrice, topupFromPrice, PLANS } from '../../lib/stripe';
 import { sendCapiEvent } from '../../lib/meta';
+import { KEY, nsEventId } from '../../lib/metaKeys';
 import { getSupabaseAdmin } from '../../lib/supabaseServer';
 import { linkStripeCustomerToProfile } from '../../lib/entitlement';
 
@@ -100,7 +101,15 @@ async function handleInvoicePaymentSucceeded(invoice, req) {
   const price = sub.items?.data?.[0]?.price;
   const plan = planFromPrice(price);
 
-  const value = plan ? PLANS[plan].amountCents / 100 : invoice.amount_paid / 100;
+  // Cross-deployment isolation: Haelabs and Ariya Lab share the same
+  // Stripe customer + webhook stream. planFromPrice returns null for
+  // subscriptions whose lookup_key isn't in this deployment's PLANS /
+  // PLAN_SURFACES — that means the event belongs to the other site.
+  // Skip silently so we don't write to namespaced metadata or fire
+  // CAPI for someone else's purchase.
+  if (!plan) return;
+
+  const value = PLANS[plan].amountCents / 100;
 
   const customerId =
     typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id;
@@ -130,7 +139,7 @@ async function handleInvoicePaymentSucceeded(invoice, req) {
       await stripe().customers.update(customerId, {
         metadata: {
           ...customerMd,
-          lastReportedPeriodStart: String(periodStartMs),
+          [KEY.lastReportedPeriodStart]: String(periodStartMs),
         },
       });
     } catch (err) {
@@ -138,7 +147,7 @@ async function handleInvoicePaymentSucceeded(invoice, req) {
     }
   }
 
-  const eventId = `pur-inv-${invoice.id}`;
+  const eventId = nsEventId(`pur-inv-${invoice.id}`);
   await sendCapiEvent({
     eventName: 'Purchase',
     eventId,
@@ -185,24 +194,24 @@ async function handleCheckoutSessionCompleted(checkoutSession, req) {
   const customer = await stripe().customers.retrieve(customerId);
   const md = customer && !customer.deleted ? customer.metadata || {} : {};
   const sessionTag = checkoutSession.id.replace(/^cs_(test_|live_)/, '').slice(-32);
-  const processed = (md.processedSessions || '').split(',').filter(Boolean);
+  const processed = (md[KEY.processedSessions] || '').split(',').filter(Boolean);
   if (processed.includes(sessionTag)) return; // /confirm beat us to it
 
   const nextProcessed = [sessionTag, ...processed].slice(0, 10).join(',');
   const nextMd = {
     ...md,
-    processedSessions: nextProcessed,
+    [KEY.processedSessions]: nextProcessed,
   };
   if (topup.kind === 'image') {
     // Mirrors /api/checkout/confirm.js: image packs hit the image pool.
-    const current = parseInt(md.imageCreditsRemaining || '0', 10) || 0;
-    nextMd.imageCreditsRemaining = String(current + topup.credits);
-    if (!md.imagePeriodStart) {
-      nextMd.imagePeriodStart = String(Date.now());
+    const current = parseInt(md[KEY.imageCredits] || '0', 10) || 0;
+    nextMd[KEY.imageCredits] = String(current + topup.credits);
+    if (!md[KEY.imagePeriodStart]) {
+      nextMd[KEY.imagePeriodStart] = String(Date.now());
     }
   } else {
-    const current = parseInt(md.creditsRemaining || '0', 10) || 0;
-    nextMd.creditsRemaining = String(current + topup.credits);
+    const current = parseInt(md[KEY.credits] || '0', 10) || 0;
+    nextMd[KEY.credits] = String(current + topup.credits);
   }
   await stripe().customers.update(customerId, { metadata: nextMd });
 
@@ -222,7 +231,7 @@ async function handleCheckoutSessionCompleted(checkoutSession, req) {
   // fired (closed tab) — same eventId as /confirm would have used so
   // Meta dedupes if both end up firing.
   const value = topup.amountCents / 100;
-  const eventId = `pur-${checkoutSession.id}`;
+  const eventId = nsEventId(`pur-${checkoutSession.id}`);
   sendCapiEvent({
     eventName: 'Purchase',
     eventId,

@@ -2,6 +2,8 @@ import { createCharacterFramePrediction } from '../../lib/replicate';
 import { getUserFromRequest } from '../../lib/supabaseServer';
 import { getEntitlement, reserveCredits, refundCredits } from '../../lib/entitlement';
 import { sendCapiEvent } from '../../lib/meta';
+import { nsEventId } from '../../lib/metaKeys';
+import { FACE_SWAP_COST } from '../../lib/cost';
 
 function isHttpUrl(value) {
   if (typeof value !== 'string') return false;
@@ -13,7 +15,11 @@ function isHttpUrl(value) {
   }
 }
 
-const COST = 1;
+// Face swap = 1 stage-1 character frame on Replicate (~$0.025 nano-banana)
+// + 1 stage-2 motion-control video (~$0.10-0.20 Kling v3). At Ariya Lab's
+// inflated credit rate (~$0.0013/credit cost), 100 credits ≈ $0.13 of
+// underlying cost — covers stage-1 + stage-2 with modest margin.
+const COST = FACE_SWAP_COST;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -75,7 +81,7 @@ export default async function handler(req, res) {
     console.log('[character-frame] prediction created', { id: prediction.id });
     sendCapiEvent({
       eventName: 'Generate',
-      eventId: `gen-${prediction.id}`,
+      eventId: nsEventId(`gen-${prediction.id}`),
       value: COST,
       currency: 'USD',
       email: session.user.email,

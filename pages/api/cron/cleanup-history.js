@@ -27,9 +27,13 @@ export default async function handler(req, res) {
   try {
     const admin = getSupabaseAdmin();
     const nowIso = new Date().toISOString();
+    // Scope cleanup to ariyalab-owned rows so Haelabs's expired videos
+    // are NOT deleted by this deployment's cron. Each site cleans up
+    // its own rows.
     const { data, error } = await admin
       .from('videos')
       .select('id, result_url, is_blob_owned')
+      .eq('surface', 'ariyalab')
       .lt('expires_at', nowIso)
       .limit(500);
     if (error) {

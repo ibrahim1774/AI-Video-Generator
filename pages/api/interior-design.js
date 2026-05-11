@@ -3,6 +3,7 @@ import { put } from '@vercel/blob';
 import { getUserFromRequest, getSupabaseAdmin } from '../../lib/supabaseServer';
 import { stripe } from '../../lib/stripe';
 import { sendCapiEvent } from '../../lib/meta';
+import { KEY, nsEventId } from '../../lib/metaKeys';
 
 /*
  * AI Interior Design generation endpoint.
@@ -172,7 +173,7 @@ const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'ibrahim3709@gmail.com')
   .filter(Boolean);
 
 function isPaidPlan(plan) {
-  return plan === 'monthly' || plan === 'yearly';
+  return plan === 'monthly' || plan === 'pro' || plan === 'yearly';
 }
 
 function safePromptFragment(s, max = 400) {
@@ -260,8 +261,8 @@ export default async function handler(req, res) {
   let creditReserved = false;
   if (!isAdmin && customerId && entitlement.md) {
     const reservedMd = { ...entitlement.md };
-    reservedMd.imageCreditsRemaining = String(imageCredits);
-    reservedMd.imagePeriodStart = String(entitlement.nextPeriodStart);
+    reservedMd[KEY.imageCredits] = String(imageCredits);
+    reservedMd[KEY.imagePeriodStart] = String(entitlement.nextPeriodStart);
     try {
       await stripe().customers.update(customerId, { metadata: reservedMd });
       creditReserved = true;
@@ -426,7 +427,7 @@ export default async function handler(req, res) {
     // never blocks returning the result.
     sendCapiEvent({
       eventName: 'Generate',
-      eventId: `gen-int-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      eventId: nsEventId(`gen-int-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`),
       value: 1,
       currency: 'USD',
       email: session.user.email,
@@ -459,10 +460,10 @@ async function refundCredit({ customerId, isAdmin, md, nextPeriodStart }) {
     const fresh = await stripe().customers.retrieve(customerId);
     const freshMd = fresh && !fresh.deleted ? fresh.metadata || {} : {};
     const next = { ...freshMd };
-    const cur = parseInt(freshMd.imageCreditsRemaining || '0', 10) || 0;
-    next.imageCreditsRemaining = String(cur + 1);
-    if (next.imagePeriodStart == null) {
-      next.imagePeriodStart = String(nextPeriodStart);
+    const cur = parseInt(freshMd[KEY.imageCredits] || '0', 10) || 0;
+    next[KEY.imageCredits] = String(cur + 1);
+    if (next[KEY.imagePeriodStart] == null) {
+      next[KEY.imagePeriodStart] = String(nextPeriodStart);
     }
     await stripe().customers.update(customerId, { metadata: next });
   } catch (refundErr) {
@@ -484,7 +485,7 @@ async function resolveEntitlement(customerId) {
   const customer = await stripe().customers.retrieve(customerId);
   if (!customer || customer.deleted) return empty;
   const md = customer.metadata || {};
-  const plan = md.plan || null;
+  const plan = md[KEY.plan] || null;
 
   const subs = await stripe().subscriptions.list({
     customer: customerId,
@@ -501,8 +502,8 @@ async function resolveEntitlement(customerId) {
   }
 
   const now = Date.now();
-  const periodStart = parseInt(md.imagePeriodStart || '0', 10) || 0;
-  let imageCredits = parseInt(md.imageCreditsRemaining || '0', 10) || 0;
+  const periodStart = parseInt(md[KEY.imagePeriodStart] || '0', 10) || 0;
+  let imageCredits = parseInt(md[KEY.imageCredits] || '0', 10) || 0;
   let nextPeriodStart = periodStart;
   if (!periodStart || now - periodStart >= PERIOD_MS) {
     imageCredits = CREDITS_PER_PERIOD;

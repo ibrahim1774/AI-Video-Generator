@@ -7,6 +7,7 @@ import {
 } from '../../lib/stripe';
 import { getUserFromRequest, getSupabaseAdmin } from '../../lib/supabaseServer';
 import { sendCapiEvent } from '../../lib/meta';
+import { nsEventId } from '../../lib/metaKeys';
 import { linkStripeCustomerToProfile } from '../../lib/entitlement';
 
 /*
@@ -190,7 +191,7 @@ export default async function handler(req, res) {
         metadata: { supabase_user_id: session.user.id },
       });
       const value = TOPUPS[pack].amountCents / 100;
-      const eventId = `ic-${checkout.id}`;
+      const eventId = nsEventId(`ic-${checkout.id}`);
       sendCapiEvent({
         eventName: 'InitiateCheckout',
         eventId,
@@ -210,9 +211,9 @@ export default async function handler(req, res) {
       });
     }
 
-    if (plan !== 'monthly' && plan !== 'yearly') {
+    if (plan !== 'monthly' && plan !== 'pro' && plan !== 'yearly') {
       return res.status(400).json({
-        error: "Expected { plan: 'monthly'|'yearly' } or { mode: 'topup', pack: 's'|'m'|'l' }.",
+        error: "Expected { plan: 'monthly'|'pro'|'yearly' } or { mode: 'topup', pack: 's'|'m'|'l' }.",
       });
     }
 
@@ -275,7 +276,7 @@ export default async function handler(req, res) {
 
     // Pixel value: actual cents charged today.
     const value = PLANS[plan].amountCents / 100;
-    const eventId = `ic-${checkout.id}`;
+    const eventId = nsEventId(`ic-${checkout.id}`);
     sendCapiEvent({
       eventName: 'InitiateCheckout',
       eventId,

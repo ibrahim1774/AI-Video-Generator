@@ -2,6 +2,7 @@ import { stripe, planFromPrice, PLANS, CAPS } from '../../../lib/stripe';
 import { linkStripeCustomerToProfile } from '../../../lib/entitlement';
 import { getUserFromRequest } from '../../../lib/supabaseServer';
 import { sendCapiEvent } from '../../../lib/meta';
+import { KEY, nsEventId } from '../../../lib/metaKeys';
 
 /*
  * Claim a Stripe Checkout Session that was created anonymously
@@ -84,7 +85,7 @@ export default async function handler(req, res) {
     const customer = await stripe().customers.retrieve(customerId);
     const md = customer && !customer.deleted ? customer.metadata || {} : {};
     const sessionTag = checkoutSession.id.replace(/^cs_(test_|live_)/, '').slice(-32);
-    const processed = (md.processedSessions || '').split(',').filter(Boolean);
+    const processed = (md[KEY.processedSessions] || '').split(',').filter(Boolean);
     if (processed.includes(sessionTag)) {
       // Already claimed via /confirm or a prior /claim — bind the
       // profile (cheap, idempotent) and return success without
@@ -97,7 +98,7 @@ export default async function handler(req, res) {
         videoCap: CAPS[plan],
       });
     }
-    const existingCredits = parseInt(md.creditsRemaining || '0', 10) || 0;
+    const existingCredits = parseInt(md[KEY.credits] || '0', 10) || 0;
     // See /api/checkout/confirm.js for the rationale: trialing subs
     // only get the 2-credit trial pool until current_period_start
     // jumps on conversion to active.
@@ -109,13 +110,13 @@ export default async function handler(req, res) {
     await stripe().customers.update(customerId, {
       metadata: {
         ...md,
-        plan,
-        periodStart: String(periodStartMs),
-        creditsRemaining: String(seededCredits),
+        [KEY.plan]: plan,
+        [KEY.periodStart]: String(periodStartMs),
+        [KEY.credits]: String(seededCredits),
         supabase_user_id: session.user.id,
-        videosUsedThisPeriod: '',
-        trialUsed: '',
-        processedSessions: nextProcessed,
+        [KEY.videosUsedThisPeriod]: '',
+        [KEY.trialUsed]: '',
+        [KEY.processedSessions]: nextProcessed,
         pending_supabase_link: '',
       },
     });
@@ -129,7 +130,7 @@ export default async function handler(req, res) {
     // Stripe webhook when the post-trial invoice is paid.
     const isTrialingSub = sub?.status === 'trialing';
     const eventName = isTrialingSub ? 'StartTrial' : 'Purchase';
-    const eventId = `${isTrialingSub ? 'st' : 'pur'}-${checkoutSession.id}`;
+    const eventId = nsEventId(`${isTrialingSub ? 'st' : 'pur'}-${checkoutSession.id}`);
     const reportedValue = isTrialingSub ? 0 : value;
     await sendCapiEvent({
       eventName,

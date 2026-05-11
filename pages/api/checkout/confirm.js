@@ -2,6 +2,7 @@ import { stripe, planFromPrice, topupFromPrice, PLANS, CAPS } from '../../../lib
 import { linkStripeCustomerToProfile } from '../../../lib/entitlement';
 import { getUserFromRequest } from '../../../lib/supabaseServer';
 import { sendCapiEvent } from '../../../lib/meta';
+import { KEY, nsEventId } from '../../../lib/metaKeys';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -70,15 +71,15 @@ export default async function handler(req, res) {
         ((sub && sub.current_period_start) || Math.floor(Date.now() / 1000)) * 1000;
       const customer = await stripe().customers.retrieve(customerId);
       const md = customer && !customer.deleted ? customer.metadata || {} : {};
-      const processed = (md.processedSessions || '').split(',').filter(Boolean);
+      const processed = (md[KEY.processedSessions] || '').split(',').filter(Boolean);
       const alreadyProcessed = processed.includes(sessionTag);
 
       if (!alreadyProcessed) {
-        const existingCredits = parseInt(md.creditsRemaining || '0', 10) || 0;
+        const existingCredits = parseInt(md[KEY.credits] || '0', 10) || 0;
         // Trialing yearly subs only get the 2-credit trial pool (tracked
         // separately via TRIAL_CREDITS / trialCreditsUsed). Seeding the
         // full cap here would let the user spend cap+TRIAL_CREDITS during
-        // the trial — the entitlement reader treats md.creditsRemaining
+        // the trial — the entitlement reader treats md[KEY.credits]
         // as top-ups and adds it on top of the trial pool. Leave it at 0
         // (or whatever existing top-ups they have) and let the rollover
         // path in readPaidEntitlement grant the full cap on the
@@ -91,13 +92,13 @@ export default async function handler(req, res) {
         await stripe().customers.update(customerId, {
           metadata: {
             ...md,
-            plan,
-            periodStart: String(periodStartMs),
-            creditsRemaining: String(seededCredits),
+            [KEY.plan]: plan,
+            [KEY.periodStart]: String(periodStartMs),
+            [KEY.credits]: String(seededCredits),
             supabase_user_id: session.user.id,
-            videosUsedThisPeriod: '',
-            trialUsed: '',
-            processedSessions: nextProcessed,
+            [KEY.videosUsedThisPeriod]: '',
+            [KEY.trialUsed]: '',
+            [KEY.processedSessions]: nextProcessed,
           },
         });
       }
@@ -106,14 +107,14 @@ export default async function handler(req, res) {
     } else if (topup) {
       const customer = await stripe().customers.retrieve(customerId);
       const md = customer && !customer.deleted ? customer.metadata || {} : {};
-      const processed = (md.processedSessions || '').split(',').filter(Boolean);
+      const processed = (md[KEY.processedSessions] || '').split(',').filter(Boolean);
       const alreadyProcessed = processed.includes(sessionTag);
 
       if (!alreadyProcessed) {
         const nextProcessed = [sessionTag, ...processed].slice(0, 10).join(',');
         const nextMd = {
           ...md,
-          processedSessions: nextProcessed,
+          [KEY.processedSessions]: nextProcessed,
           // Backfill so the webhook fallback can link this customer
           // to the right Supabase user even if /confirm never runs
           // for the *next* purchase from the same customer.
@@ -122,17 +123,17 @@ export default async function handler(req, res) {
         if (topup.kind === 'image') {
           // Image packs feed the imageCreditsRemaining pool used by
           // /api/glow-up. They never touch creditsRemaining (video).
-          const current = parseInt(md.imageCreditsRemaining || '0', 10) || 0;
-          nextMd.imageCreditsRemaining = String(current + topup.credits);
+          const current = parseInt(md[KEY.imageCredits] || '0', 10) || 0;
+          nextMd[KEY.imageCredits] = String(current + topup.credits);
           // Seed period start if missing so the next monthly refill
           // happens 30 days from this top-up rather than instantly.
-          if (!md.imagePeriodStart) {
-            nextMd.imagePeriodStart = String(Date.now());
+          if (!md[KEY.imagePeriodStart]) {
+            nextMd[KEY.imagePeriodStart] = String(Date.now());
           }
         } else {
           // Video packs feed the existing creditsRemaining pool.
-          const current = parseInt(md.creditsRemaining || '0', 10) || 0;
-          nextMd.creditsRemaining = String(current + topup.credits);
+          const current = parseInt(md[KEY.credits] || '0', 10) || 0;
+          nextMd[KEY.credits] = String(current + topup.credits);
         }
         await stripe().customers.update(customerId, { metadata: nextMd });
         creditsAdded = topup.credits;
@@ -152,7 +153,7 @@ export default async function handler(req, res) {
     const isTrialingSub =
       plan && checkoutSession.subscription?.status === 'trialing';
     const eventName = isTrialingSub ? 'StartTrial' : 'Purchase';
-    const eventId = `${isTrialingSub ? 'st' : 'pur'}-${checkoutSession.id}`;
+    const eventId = nsEventId(`${isTrialingSub ? 'st' : 'pur'}-${checkoutSession.id}`);
     // Use Stripe's amount_total so we report exactly what was charged
     // today (works for trialing yearly = $1 deposit, monthly = $5,
     // top-ups, and the legacy non-trial flow).

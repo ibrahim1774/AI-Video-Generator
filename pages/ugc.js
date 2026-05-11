@@ -10,6 +10,8 @@ import Processing from '../components/Processing';
 import Paywall from '../components/Paywall';
 import AuthModal from '../components/AuthModal';
 import DurationSlider, { costForDuration } from '../components/DurationSlider';
+import ModelPicker from '../components/ModelPicker';
+import ResolutionPicker from '../components/ResolutionPicker';
 import { uploadTempFile } from '../lib/uploader';
 import { getBrowserSupabase } from '../lib/supabase';
 import { bumpEntitlement } from '../lib/entitlementBus';
@@ -67,8 +69,9 @@ export default function UgcPage() {
 
   const [script, setScript] = useState('');
   const [duration, setDuration] = useState(5);
-  const [mode, setMode] = useState('std');
-  const [audio, setAudio] = useState(true);
+  const [model, setModel] = useState('standard');
+  const [resolution, setResolution] = useState('480p');
+  const [audio, setAudio] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -154,7 +157,7 @@ export default function UgcPage() {
     if (authUser) fetchEntitlement();
   }, [authUser, fetchEntitlement]);
 
-  const cost = costForDuration(duration, mode, audio);
+  const cost = costForDuration(duration, model, resolution, audio);
   const storyScenes = story?.scenes || [];
   const latestScene = storyScenes[storyScenes.length - 1] || null;
   const atSceneCap = storyScenes.length >= MAX_SCENES;
@@ -240,7 +243,8 @@ export default function UgcPage() {
           imageUrl: effectiveStartImage,
           script,
           duration,
-          mode,
+          model,
+          resolution,
           audio,
         }),
       });
@@ -256,7 +260,8 @@ export default function UgcPage() {
         startImageUrl: effectiveStartImage,
         prompt: script,
         duration,
-        mode,
+        model,
+        resolution,
         audio,
         type: nextSceneType,
       };
@@ -289,7 +294,8 @@ export default function UgcPage() {
         startImageUrl: effectiveStartImage,
         prompt: script,
         duration,
-        mode,
+        model,
+        resolution,
         audio,
         type: nextSceneType,
       };
@@ -309,7 +315,7 @@ export default function UgcPage() {
       setNextSceneType('initial');
       setStep('result');
     },
-    [job, effectiveStartImage, script, duration, mode, audio, nextSceneType, story, imageUrl]
+    [job, effectiveStartImage, script, duration, model, resolution, audio, nextSceneType, story, imageUrl]
   );
 
   const onSceneError = useCallback((msg) => {
@@ -403,7 +409,8 @@ export default function UgcPage() {
     setJob(null);
     setImageJob(null);
     setAudio(true);
-    setMode('std');
+    setModel('standard');
+    setResolution('480p');
     setDuration(5);
     setPendingStartImage(null);
     setNextSceneType('initial');
@@ -883,55 +890,23 @@ export default function UgcPage() {
               </div>
             </label>
 
-            <DurationSlider value={duration} onChange={setDuration} mode={mode} audio={audio} />
-
-            <div className={styles.swapModeLabel} style={{ marginTop: 16 }}>Audio</div>
-            <div className={styles.modeRow} role="radiogroup" aria-label="Audio">
-              <button
-                type="button"
-                role="radio"
-                aria-checked={audio === true}
-                className={`${styles.modeBtn} ${audio === true ? styles.modeBtnActive : ''}`}
-                onClick={() => setAudio(true)}
-              >
-                <span className={styles.modeName}>With audio</span>
-                <span className={styles.modeDetail}>Dialogue, lip-sync, ambient SFX</span>
-              </button>
-              <button
-                type="button"
-                role="radio"
-                aria-checked={audio === false}
-                className={`${styles.modeBtn} ${audio === false ? styles.modeBtnActive : ''}`}
-                onClick={() => setAudio(false)}
-              >
-                <span className={styles.modeName}>Silent</span>
-                <span className={styles.modeDetail}>Video only &middot; cheaper output</span>
-              </button>
-            </div>
-
-            <div className={styles.swapModeLabel} style={{ marginTop: 16 }}>Quality</div>
-            <div className={styles.modeRow} role="radiogroup" aria-label="Quality">
-              <button
-                type="button"
-                role="radio"
-                aria-checked={mode === 'std'}
-                className={`${styles.modeBtn} ${mode === 'std' ? styles.modeBtnActive : ''}`}
-                onClick={() => setMode('std')}
-              >
-                <span className={styles.modeName}>Standard</span>
-                <span className={styles.modeDetail}>720p &middot; faster</span>
-              </button>
-              <button
-                type="button"
-                role="radio"
-                aria-checked={mode === 'pro'}
-                className={`${styles.modeBtn} ${mode === 'pro' ? styles.modeBtnActive : ''}`}
-                onClick={() => setMode('pro')}
-              >
-                <span className={styles.modeName}>Pro</span>
-                <span className={styles.modeDetail}>1080p &middot; sharper</span>
-              </button>
-            </div>
+            <ModelPicker value={model} onChange={setModel} />
+            <ResolutionPicker
+              model={model}
+              resolution={resolution}
+              audio={audio}
+              onChange={(next) => {
+                setResolution(next.resolution);
+                setAudio(next.audio);
+              }}
+            />
+            <DurationSlider
+              value={duration}
+              onChange={setDuration}
+              model={model}
+              resolution={resolution}
+              audio={audio}
+            />
 
             {error && <div className={styles.error}>{error}</div>}
 
@@ -1021,12 +996,13 @@ export default function UgcPage() {
 
         {entitlement &&
           (entitlement.tier === 'monthly' ||
-            entitlement.tier === 'yearly' ||
+      entitlement.tier === 'pro' ||
+      entitlement.tier === 'yearly' ||
             entitlement.tier === 'admin') && (
             <PricingBanner
               lines={[
-                { label: 'UGC video', cost: '1 credit per second' },
-                { label: 'AI character image', cost: '1 credit per generation' },
+                { label: 'UGC video', cost: '10 cr/sec at 480p no-audio (Standard model) — up to 100 cr/sec at 1080p audio (Studio Pro)' },
+                { label: 'AI character image', cost: '1 image credit per generation' },
               ]}
               note="Pro + audio is billed at 1.5×"
             />
@@ -1138,61 +1114,16 @@ export default function UgcPage() {
             </div>
           </section>
 
-          {/* Audio + Quality */}
-          <section className={styles.ugcRowTwo}>
-            <div>
-              <div className={styles.ugcMiniLabel}>
-                <span aria-hidden="true">𝅗𝅥</span> Audio
-              </div>
-              <div className={styles.modeRow} role="radiogroup" aria-label="Audio">
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={audio === true}
-                  className={`${styles.modeBtn} ${audio === true ? styles.modeBtnActive : ''}`}
-                  onClick={() => setAudio(true)}
-                >
-                  <span className={styles.modeName}>With voice</span>
-                </button>
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={audio === false}
-                  className={`${styles.modeBtn} ${audio === false ? styles.modeBtnActive : ''}`}
-                  onClick={() => setAudio(false)}
-                >
-                  <span className={styles.modeName}>Silent</span>
-                </button>
-              </div>
-            </div>
-            <div>
-              <div className={styles.ugcMiniLabel}>
-                <span aria-hidden="true">▦</span> Quality
-              </div>
-              <div className={styles.modeRow} role="radiogroup" aria-label="Quality">
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={mode === 'std'}
-                  className={`${styles.modeBtn} ${mode === 'std' ? styles.modeBtnActive : ''}`}
-                  onClick={() => setMode('std')}
-                >
-                  <span className={styles.modeName}>Standard</span>
-                  <span className={styles.modeDetail}>720p</span>
-                </button>
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={mode === 'pro'}
-                  className={`${styles.modeBtn} ${mode === 'pro' ? styles.modeBtnActive : ''}`}
-                  onClick={() => setMode('pro')}
-                >
-                  <span className={styles.modeName}>Pro <span aria-hidden="true">♕</span></span>
-                  <span className={styles.modeDetail}>1080p</span>
-                </button>
-              </div>
-            </div>
-          </section>
+          <ModelPicker value={model} onChange={setModel} />
+          <ResolutionPicker
+            model={model}
+            resolution={resolution}
+            audio={audio}
+            onChange={(next) => {
+              setResolution(next.resolution);
+              setAudio(next.audio);
+            }}
+          />
 
           {error && <div className={styles.error}>{error}</div>}
 

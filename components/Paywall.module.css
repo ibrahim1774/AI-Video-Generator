@@ -277,6 +277,18 @@
   gap: 16px;
 }
 
+.tiersThree {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 960px) {
+  .tiersThree {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 720px) {
   .tiersTwo {
     grid-template-columns: 1fr;

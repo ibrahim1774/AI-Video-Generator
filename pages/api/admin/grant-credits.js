@@ -1,5 +1,6 @@
 import { stripe } from '../../../lib/stripe';
 import { getUserFromRequest, getSupabaseAdmin } from '../../../lib/supabaseServer';
+import { KEY } from '../../../lib/metaKeys';
 
 /*
  * Admin tool to manually grant credits to a user by email.
@@ -94,10 +95,10 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: 'Stripe customer was deleted.', code: 'NO_CUSTOMER' });
     }
     const md = customer.metadata || {};
-    const before = Number.parseInt(md.creditsRemaining || '0', 10) || 0;
+    const before = Number.parseInt(md[KEY.credits] || '0', 10) || 0;
     const after = before + amount;
     await stripe().customers.update(customerId, {
-      metadata: { ...md, creditsRemaining: String(after) },
+      metadata: { ...md, [KEY.credits]: String(after) },
     });
 
     return res.status(200).json({

@@ -145,7 +145,9 @@ export default function DashboardPage() {
             <p className={styles.subtitle}>
               {entitlement.tier === 'trial' || entitlement.status === 'trialing'
                 ? `Free trial — ${entitlement.creditsRemaining || 0} credit${entitlement.creditsRemaining === 1 ? '' : 's'} remaining`
-                : entitlement.tier === 'monthly' || entitlement.tier === 'yearly'
+                : entitlement.tier === 'monthly' ||
+      entitlement.tier === 'pro' ||
+      entitlement.tier === 'yearly'
                 ? `${entitlement.tier === 'monthly' ? 'Monthly' : 'Yearly'} plan — ${entitlement.creditsRemaining} credits remaining`
                 : 'No active plan. Pick one below to get started.'}
             </p>

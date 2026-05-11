@@ -22,6 +22,7 @@ export default async function handler(req, res) {
       .from('videos')
       .select('id, kind, result_url, created_at, expires_at')
       .eq('user_id', session.user.id)
+      .eq('surface', 'ariyalab')
       .gt('expires_at', nowIso)
       .order('created_at', { ascending: false })
       .limit(100);

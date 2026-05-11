@@ -1,5 +1,6 @@
 import { stripe } from '../../../lib/stripe';
 import { getUserFromRequest, getSupabaseAdmin } from '../../../lib/supabaseServer';
+import { KEY } from '../../../lib/metaKeys';
 import { linkStripeCustomerToProfile } from '../../../lib/entitlement';
 
 /*
@@ -48,10 +49,10 @@ function summarizeCustomer(customer) {
   return {
     id: customer.id,
     email: customer.email,
-    creditsRemaining: Number.parseInt(md.creditsRemaining || '0', 10) || 0,
+    creditsRemaining: Number.parseInt(md[KEY.credits] || '0', 10) || 0,
     supabaseUserId: md.supabase_user_id || null,
-    processedSessions: (md.processedSessions || '').split(',').filter(Boolean),
-    plan: md.plan || null,
+    processedSessions: (md[KEY.processedSessions] || '').split(',').filter(Boolean),
+    plan: md[KEY.plan] || null,
   };
 }
 

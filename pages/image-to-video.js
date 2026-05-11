@@ -8,6 +8,8 @@ import Processing from '../components/Processing';
 import Result from '../components/Result';
 import Paywall from '../components/Paywall';
 import DurationSlider, { costForDuration } from '../components/DurationSlider';
+import ModelPicker from '../components/ModelPicker';
+import ResolutionPicker from '../components/ResolutionPicker';
 import { uploadTempFile } from '../lib/uploader';
 import { getBrowserSupabase } from '../lib/supabase';
 import { bumpEntitlement } from '../lib/entitlementBus';
@@ -24,9 +26,10 @@ export default function ImageToVideoPage() {
   const [step, setStep] = useState('upload'); // 'upload' | 'paywall' | 'processing' | 'result'
   const [imageFile, setImageFile] = useState(null);
   const [prompt, setPrompt] = useState('');
-  const [mode, setMode] = useState('std');
+  const [model, setModel] = useState('standard');
+  const [resolution, setResolution] = useState('480p');
   const [duration, setDuration] = useState(5);
-  const [audio, setAudio] = useState(true);
+  const [audio, setAudio] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [job, setJob] = useState(null);
@@ -97,7 +100,7 @@ export default function ImageToVideoPage() {
       const res = await fetch('/api/image-to-video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageUrl, prompt, mode, duration, audio }),
+        body: JSON.stringify({ imageUrl, prompt, model, resolution, duration, audio }),
       });
       const data = await res.json().catch(() => ({}));
       if (res.status === 402) {
@@ -284,55 +287,23 @@ export default function ImageToVideoPage() {
             />
           </label>
 
-          <DurationSlider value={duration} onChange={setDuration} mode={mode} audio={audio} />
-
-          <div className={styles.swapModeLabel} style={{ marginTop: 16 }}>Audio</div>
-          <div className={styles.modeRow} role="radiogroup" aria-label="Audio">
-            <button
-              type="button"
-              role="radio"
-              aria-checked={audio === true}
-              className={`${styles.modeBtn} ${audio === true ? styles.modeBtnActive : ''}`}
-              onClick={() => setAudio(true)}
-            >
-              <span className={styles.modeName}>With audio</span>
-              <span className={styles.modeDetail}>Dialogue, lip-sync, ambient SFX</span>
-            </button>
-            <button
-              type="button"
-              role="radio"
-              aria-checked={audio === false}
-              className={`${styles.modeBtn} ${audio === false ? styles.modeBtnActive : ''}`}
-              onClick={() => setAudio(false)}
-            >
-              <span className={styles.modeName}>Silent</span>
-              <span className={styles.modeDetail}>Video only &middot; cheaper output</span>
-            </button>
-          </div>
-
-          <div className={styles.swapModeLabel} style={{ marginTop: 16 }}>Quality</div>
-          <div className={styles.modeRow} role="radiogroup" aria-label="Quality">
-            <button
-              type="button"
-              role="radio"
-              aria-checked={mode === 'std'}
-              className={`${styles.modeBtn} ${mode === 'std' ? styles.modeBtnActive : ''}`}
-              onClick={() => setMode('std')}
-            >
-              <span className={styles.modeName}>Standard</span>
-              <span className={styles.modeDetail}>720p · faster</span>
-            </button>
-            <button
-              type="button"
-              role="radio"
-              aria-checked={mode === 'pro'}
-              className={`${styles.modeBtn} ${mode === 'pro' ? styles.modeBtnActive : ''}`}
-              onClick={() => setMode('pro')}
-            >
-              <span className={styles.modeName}>Pro</span>
-              <span className={styles.modeDetail}>1080p · sharper</span>
-            </button>
-          </div>
+          <ModelPicker value={model} onChange={setModel} />
+          <ResolutionPicker
+            model={model}
+            resolution={resolution}
+            audio={audio}
+            onChange={(next) => {
+              setResolution(next.resolution);
+              setAudio(next.audio);
+            }}
+          />
+          <DurationSlider
+            value={duration}
+            onChange={setDuration}
+            model={model}
+            resolution={resolution}
+            audio={audio}
+          />
 
           {error && <div className={styles.error}>{error}</div>}
 
@@ -345,7 +316,7 @@ export default function ImageToVideoPage() {
             {submitting
               ? 'Starting…'
               : (() => {
-                const c = costForDuration(duration, mode, audio);
+                const c = costForDuration(duration, model, resolution, audio);
                 return `Generate (${c} credit${c === 1 ? '' : 's'})`;
               })()}
           </button>

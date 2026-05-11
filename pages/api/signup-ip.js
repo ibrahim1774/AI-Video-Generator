@@ -1,5 +1,6 @@
 import { getUserFromRequest, getSupabaseAdmin } from '../../lib/supabaseServer';
 import { sendCapiEvent } from '../../lib/meta';
+import { nsEventId } from '../../lib/metaKeys';
 
 function clientIp(req) {
   const xff = req.headers['x-forwarded-for'];
@@ -72,7 +73,7 @@ export default async function handler(req, res) {
       ? !(Array.isArray(existing) && existing.some((row) => row.user_id === session.user.id))
       : false;
   if (isNewSignup) {
-    const eventId = `reg-${session.user.id}`;
+    const eventId = nsEventId(`reg-${session.user.id}`);
     sendCapiEvent({
       eventName: 'CompleteRegistration',
       eventId,
