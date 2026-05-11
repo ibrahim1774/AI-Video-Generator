@@ -9,17 +9,18 @@ import { getBrowserSupabase } from '../lib/supabase';
 import { subscribeEntitlement } from '../lib/entitlementBus';
 
 /*
- * Dedicated top-up page. Lets active subscribers buy more video or
- * image credits without scrolling through the dashboard.
+ * Dedicated top-up page.
  *
- *   - Anon → redirect to /sign-in
- *   - Authed + no sub → render <Paywall> so they can start a plan
- *   - Authed + active sub → show current balances + <TopupRow>
+ *   - Anon → redirect to /sign-in (middleware) or 'Sign in to buy'
+ *   - Authed without active sub → show top-up packs (preview) PLUS
+ *     a "subscribe first" notice and the full Paywall below.
+ *     Clicking a top-up button without a sub hits /api/checkout and
+ *     gets a 401; the TopupRow surfaces that as an inline error.
+ *   - Authed with active sub → balances at top, top-up packs, no
+ *     Paywall.
  *
- * The TopupRow component is the same one used inline on /dashboard
- * and inside <Paywall>, so packs / pricing / Stripe wiring stay in
- * one place. Returning from Stripe checkout lands back on /topup
- * via the `returnTo` field.
+ * The TopupRow component is reused from /dashboard and the inline
+ * Paywall, so pack pricing and Stripe wiring stay in one place.
  */
 export default function TopupPage() {
   const [user, setUser] = useState(null);
@@ -108,36 +109,6 @@ export default function TopupPage() {
       entitlement.tier === 'yearly' ||
       entitlement.tier === 'admin');
 
-  // No active sub yet → show the Paywall (with default 'video' surface
-  // so they see the full plan picker + both top-up groups). Top-ups
-  // require a Stripe customer, which is only created on subscription
-  // checkout, so we can't accept a top-up purchase from someone who
-  // hasn't subscribed yet.
-  if (!isSubscriber) {
-    return (
-      <>
-        <Head><title>Top up credits — Haelabs</title></Head>
-        <main style={pageStyle}>
-          <div style={heroStyle}>
-            <span style={eyebrowStyle}>◆ Top up</span>
-            <h1 style={titleStyle}>Start a plan to top up</h1>
-            <p style={subtitleStyle}>
-              Top-ups stack on an active subscription. Pick a plan below
-              and you can buy extra credit packs anytime after.
-            </p>
-          </div>
-          <Paywall
-            entitlement={entitlement}
-            returnTo="/topup"
-            onError={(msg) => setError(msg)}
-            onTrialStarted={() => fetchEntitlement()}
-          />
-          {error && <div className={paywallStyles.error}>{error}</div>}
-        </main>
-      </>
-    );
-  }
-
   const videoCreditsRemaining = entitlement?.creditsRemaining ?? 0;
   const imageCreditsRemainingInternal = imageBalance?.imageCreditsRemaining ?? 0;
   const imageCreditsDisplay = imageCreditsRemainingInternal * 10;
@@ -148,40 +119,66 @@ export default function TopupPage() {
       <main style={pageStyle}>
         <div style={heroStyle}>
           <span style={eyebrowStyle}>◆ Top up</span>
-          <h1 style={titleStyle}>Buy more credits</h1>
+          <h1 style={titleStyle}>
+            {isSubscriber ? 'Buy more credits' : 'Top-up credit packs'}
+          </h1>
           <p style={subtitleStyle}>
-            Credits never expire and stack on your plan&apos;s monthly allowance.
+            {isSubscriber
+              ? 'Credits never expire and stack on your plan’s monthly allowance.'
+              : 'Preview the top-up packs below. Top-ups stack on an active subscription — start a plan further down to enable them.'}
           </p>
         </div>
 
         <section className={paywallStyles.card} style={cardOverride}>
-          <div style={balancesStyle}>
-            <div style={balanceItemStyle}>
-              <span style={balanceLabelStyle}>Video credits</span>
-              <span style={balanceValueStyle}>{videoCreditsRemaining}</span>
-              <span style={balanceSubStyle}>
-                Face Swap · UGC · Image-to-Video
-              </span>
+          {isSubscriber && (
+            <div style={balancesStyle}>
+              <div style={balanceItemStyle}>
+                <span style={balanceLabelStyle}>Video credits</span>
+                <span style={balanceValueStyle}>{videoCreditsRemaining}</span>
+                <span style={balanceSubStyle}>
+                  Face Swap · UGC · Image-to-Video
+                </span>
+              </div>
+              <div style={balanceItemStyle}>
+                <span style={balanceLabelStyle}>Image credits</span>
+                <span style={balanceValueStyle}>
+                  {imageCreditsDisplay.toLocaleString()}
+                </span>
+                <span style={balanceSubStyle}>
+                  = {imageCreditsRemainingInternal} images · Glow Up · AI Interior
+                </span>
+              </div>
             </div>
-            <div style={balanceItemStyle}>
-              <span style={balanceLabelStyle}>Image credits</span>
-              <span style={balanceValueStyle}>
-                {imageCreditsDisplay.toLocaleString()}
-              </span>
-              <span style={balanceSubStyle}>
-                = {imageCreditsRemainingInternal} images · Glow Up · AI Interior
-              </span>
+          )}
+
+          {!isSubscriber && (
+            <div style={subscribeNoticeStyle}>
+              ◆ Top-up purchases require an active subscription. Start a plan
+              below first, then come back any time to add more credits.
             </div>
-          </div>
+          )}
 
           <TopupRow returnTo="/topup" onError={(msg) => setError(msg)} />
 
           {error && <div className={paywallStyles.error}>{error}</div>}
 
-          <footer style={footerStyle}>
-            <Link href="/dashboard" style={smallLinkStyle}>← Back to dashboard</Link>
-          </footer>
+          {isSubscriber && (
+            <footer style={footerStyle}>
+              <Link href="/dashboard" style={smallLinkStyle}>← Back to dashboard</Link>
+            </footer>
+          )}
         </section>
+
+        {!isSubscriber && (
+          <div style={{ marginTop: 32 }}>
+            <Paywall
+              entitlement={entitlement}
+              returnTo="/topup"
+              onError={(msg) => setError(msg)}
+              onTrialStarted={() => fetchEntitlement()}
+            />
+          </div>
+        )}
       </main>
     </>
   );
@@ -218,7 +215,7 @@ const titleStyle = {
 
 const subtitleStyle = {
   margin: '0 auto',
-  maxWidth: 560,
+  maxWidth: 600,
   color: 'var(--text-dim, #b8b6b1)',
   fontSize: 14,
   lineHeight: 1.5,
@@ -265,6 +262,18 @@ const balanceValueStyle = {
 const balanceSubStyle = {
   fontSize: 12,
   color: '#5e554a',
+};
+
+const subscribeNoticeStyle = {
+  padding: '12px 14px',
+  marginBottom: 16,
+  borderRadius: 10,
+  border: '1px solid rgba(139, 115, 64, 0.32)',
+  background: 'rgba(224, 196, 136, 0.18)',
+  color: '#3a2c0f',
+  fontSize: 13,
+  lineHeight: 1.5,
+  textAlign: 'center',
 };
 
 const footerStyle = {
