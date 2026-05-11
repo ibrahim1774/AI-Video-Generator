@@ -7,7 +7,10 @@ import UploadZone from '../components/UploadZone';
 import Processing from '../components/Processing';
 import Result from '../components/Result';
 import Paywall from '../components/Paywall';
-import DurationSlider, { costForDuration } from '../components/DurationSlider';
+import DurationSlider, {
+  costForDuration,
+  snapToStandardPreset,
+} from '../components/DurationSlider';
 import ModelPicker from '../components/ModelPicker';
 import ResolutionPicker from '../components/ResolutionPicker';
 import { uploadTempFile } from '../lib/uploader';
@@ -28,7 +31,7 @@ export default function ImageToVideoPage() {
   const [prompt, setPrompt] = useState('');
   const [model, setModel] = useState('standard');
   const [resolution, setResolution] = useState('480p');
-  const [duration, setDuration] = useState(5);
+  const [duration, setDuration] = useState(4);
   const [audio, setAudio] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -287,7 +290,13 @@ export default function ImageToVideoPage() {
             />
           </label>
 
-          <ModelPicker value={model} onChange={setModel} />
+          <ModelPicker
+            value={model}
+            onChange={(next) => {
+              setModel(next);
+              if (next === 'standard') setDuration((d) => snapToStandardPreset(d));
+            }}
+          />
           <ResolutionPicker
             model={model}
             resolution={resolution}

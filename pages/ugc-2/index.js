@@ -8,7 +8,11 @@ import UploadZone from '../../components/UploadZone';
 import PricingBanner from '../../components/PricingBanner';
 import Processing from '../../components/Processing';
 import Paywall from '../../components/Paywall';
-import DurationSlider, { costForDuration } from '../../components/DurationSlider';
+import DurationSlider, {
+  costForDuration,
+  snapToStandardPreset,
+  STANDARD_DURATION_PRESETS,
+} from '../../components/DurationSlider';
 import ModelPicker from '../../components/ModelPicker';
 import ResolutionPicker from '../../components/ResolutionPicker';
 import { uploadTempFile } from '../../lib/uploader';
@@ -76,7 +80,7 @@ export default function Ugc2Page() {
   const [imageJob, setImageJob] = useState(null);
 
   const [script, setScript] = useState('');
-  const [duration, setDuration] = useState(5);
+  const [duration, setDuration] = useState(4);
   const [model, setModel] = useState('standard');
   const [resolution, setResolution] = useState('480p');
   const [audio, setAudio] = useState(false);
@@ -413,7 +417,7 @@ export default function Ugc2Page() {
     setAudio(true);
     setModel('standard');
     setResolution('480p');
-    setDuration(5);
+    setDuration(4);
     setPendingStartImage(null);
     setNextSceneType('initial');
     setError('');
@@ -889,7 +893,13 @@ export default function Ugc2Page() {
               </div>
             </label>
 
-            <ModelPicker value={model} onChange={setModel} />
+            <ModelPicker
+              value={model}
+              onChange={(next) => {
+                setModel(next);
+                if (next === 'standard') setDuration((d) => snapToStandardPreset(d));
+              }}
+            />
             <ResolutionPicker
               model={model}
               resolution={resolution}
@@ -1072,6 +1082,43 @@ export default function Ugc2Page() {
 
           <section className={styles.ugcSection}>
             <h3 className={styles.ugcSectionTitle}>3. Video length</h3>
+            {model === 'standard' ? (
+              <div
+                role="radiogroup"
+                aria-label="Video length"
+                style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}
+              >
+                {STANDARD_DURATION_PRESETS.map((sec) => {
+                  const selected = duration === sec;
+                  return (
+                    <button
+                      key={sec}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      onClick={() => setDuration(sec)}
+                      style={{
+                        flex: '1 1 0',
+                        padding: '14px 12px',
+                        borderRadius: 12,
+                        border: selected
+                          ? '1px solid rgba(255,255,255,0.55)'
+                          : '1px solid rgba(255,255,255,0.12)',
+                        background: selected ? '#ededed' : '#0f0f11',
+                        color: selected ? '#0b0b0c' : '#ededed',
+                        fontFamily: 'inherit',
+                        fontSize: 15,
+                        fontWeight: selected ? 600 : 500,
+                        cursor: 'pointer',
+                        transition: 'background 120ms ease, color 120ms ease',
+                      }}
+                    >
+                      {sec}s
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (<>
             <input
               type="range"
               min={3}
@@ -1098,9 +1145,16 @@ export default function Ugc2Page() {
                 <span className={styles.ugcSliderTickLabel}>Long</span>
               </div>
             </div>
+            </>)}
           </section>
 
-          <ModelPicker value={model} onChange={setModel} />
+          <ModelPicker
+              value={model}
+              onChange={(next) => {
+                setModel(next);
+                if (next === 'standard') setDuration((d) => snapToStandardPreset(d));
+              }}
+            />
           <ResolutionPicker
             model={model}
             resolution={resolution}

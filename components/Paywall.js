@@ -7,12 +7,13 @@ import TopupRow from './TopupRow';
 const IMAGE_DISPLAY_MULTIPLIER = 10;
 const IMAGE_PERIOD_CAP = 30;
 
-// Ariya Lab video credit caps + ⌊credits/10⌋ = seconds of 480p no-audio.
+// Ariya Lab video credit caps. Base-quality short video = 4s × 10cr/s = 40cr.
 const PLAN_VIDEO_CAPS = {
   monthly: 760,
   pro: 2280,
   yearly: 3840,
 };
+const CREDITS_PER_BASE_VIDEO = 40;
 
 const SURFACE_COPY = {
   video: {
@@ -38,6 +39,7 @@ const SURFACE_COPY = {
       { strong: 'Best value', after: ' — biggest credit pool' },
       'Full access to AI Video generation',
       { videoCredits: true, plan: 'yearly' },
+      'Top up anytime for more credits',
       'One charge, cancel anytime',
     ],
     bonusLine: 'Access to AI Face Swap included',
@@ -132,7 +134,7 @@ function ImageCreditsLine({ multiplier, cap, noun, infoOpen, setInfoOpen }) {
 
 function VideoCreditsLine({ plan, infoOpen, setInfoOpen }) {
   const cap = PLAN_VIDEO_CAPS[plan] || 0;
-  const seconds = Math.floor(cap / 10);
+  const videosAtBase = Math.floor(cap / CREDITS_PER_BASE_VIDEO);
   return (
     <>
       <strong>{cap.toLocaleString()} video credits</strong> per period
@@ -140,14 +142,14 @@ function VideoCreditsLine({ plan, infoOpen, setInfoOpen }) {
       <button
         type="button"
         className={styles.infoBtn}
-        aria-label={`= ${seconds} seconds at 480p no-audio`}
+        aria-label={`= up to ${videosAtBase} short videos at the base level`}
         onClick={() => setInfoOpen((v) => !v)}
       >
         ⓘ
       </button>
       {infoOpen && (
         <span className={styles.infoTip}>
-          = {seconds} sec at 480p no-audio (Seedance 1.5 Pro, the default model). Higher resolutions & audio cost more.
+          Up to <strong>{videosAtBase} short videos</strong> at the base level. Higher quality (longer, HD, with audio) costs more credits.
         </span>
       )}
     </>
