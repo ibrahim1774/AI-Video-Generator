@@ -142,14 +142,14 @@ function VideoCreditsLine({ plan, infoOpen, setInfoOpen }) {
       <button
         type="button"
         className={styles.infoBtn}
-        aria-label={`= up to ${videosAtBase} short videos at the base level`}
+        aria-label={`approximately ${videosAtBase} short videos at the base level`}
         onClick={() => setInfoOpen((v) => !v)}
       >
         ⓘ
       </button>
       {infoOpen && (
         <span className={styles.infoTip}>
-          Up to <strong>{videosAtBase} short videos</strong> at the base level. Higher quality (longer, HD, with audio) costs more credits.
+          <strong>~{videosAtBase} short videos</strong> at the base level. Higher quality (longer, HD, with audio) costs more credits.
         </span>
       )}
     </>
