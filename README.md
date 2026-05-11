@@ -1,8 +1,8 @@
-# Haelabs
+# Ariya Lab
 
 A luxury, minimal AI motion-control SaaS built on **Next.js 14** (Pages Router) and the **Replicate** API.
 
-Upload a character image + a motion reference video, and Haelabs generates a finished MP4 of your character performing the reference motion — wrapped in a dark, premium UI. Internally the app calls top-rated image and video generation models via Replicate (model IDs are kept in `lib/replicate.js` and never surface in the user-facing UI).
+Upload a character image + a motion reference video, and Ariya Lab generates a finished MP4 of your character performing the reference motion — wrapped in a dark, premium UI. Internally the app calls top-rated image and video generation models via Replicate (model IDs are kept in `lib/replicate.js` and never surface in the user-facing UI).
 
 ---
 
@@ -104,7 +104,7 @@ Free-trial state lives in httpOnly cookies. Paid subscription state + usage coun
 ## File structure
 
 ```
-haelabs/
+ariyalab/
 ├── .env.example
 ├── .gitignore
 ├── README.md

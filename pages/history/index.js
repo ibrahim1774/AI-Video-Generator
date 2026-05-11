@@ -80,7 +80,7 @@ export default function HistoryPage() {
   }, [authUser]);
 
   const handleDownload = (url, kind) => {
-    downloadVideo(url, `haelabs-${kind}-${Date.now()}.mp4`);
+    downloadVideo(url, `ariyalab-${kind}-${Date.now()}.mp4`);
   };
 
   if (!authLoaded || !authUser) {
@@ -94,7 +94,7 @@ export default function HistoryPage() {
   return (
     <>
       <Head>
-        <title>History — Haelabs</title>
+        <title>History — Ariya Lab</title>
       </Head>
       <main className={styles.page}>
         <header className={styles.header}>

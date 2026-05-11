@@ -205,7 +205,7 @@ export default function VideoEditingPage() {
   return (
     <>
       <Head>
-        <title>Video Editor — Haelabs</title>
+        <title>Video Editor — Ariya Lab</title>
       </Head>
       <main className={styles.page}>
         <header className={styles.header}>
@@ -247,7 +247,7 @@ export default function VideoEditingPage() {
                     <span className={styles.canvasMeta}>Render complete</span>
                     <a
                       href={renderResult.outputUrl}
-                      download="haelabs-edit.mp4"
+                      download="ariyalab-edit.mp4"
                       className={styles.downloadBtn}
                     >
                       ↓ Download

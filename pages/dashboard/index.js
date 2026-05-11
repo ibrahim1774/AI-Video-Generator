@@ -133,7 +133,7 @@ export default function DashboardPage() {
   return (
     <>
       <Head>
-        <title>Dashboard — Haelabs</title>
+        <title>Dashboard — Ariya Lab</title>
       </Head>
       <main className={styles.page}>
         <div className={styles.hero}>

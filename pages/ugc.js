@@ -530,7 +530,7 @@ export default function UgcPage() {
           <div style={{ display: 'flex', gap: 12, marginTop: 20, flexWrap: 'wrap' }}>
             <button
               type="button"
-              onClick={() => triggerDownload(story.combinedUrl, 'haelabs-story.mp4')}
+              onClick={() => triggerDownload(story.combinedUrl, 'ariyalab-story.mp4')}
               className={`${styles.submit} ${styles.submitReady}`}
               style={{ flex: 1, minWidth: 200 }}
             >
@@ -834,7 +834,7 @@ export default function UgcPage() {
 
     return (
       <>
-        <Head><title>UGC Creator — Haelabs</title></Head>
+        <Head><title>UGC Creator — Ariya Lab</title></Head>
         <main className={styles.page}>
           <div className={styles.hero}>
             <span className={styles.eyebrow}>{eyebrow}</span>
@@ -1006,7 +1006,7 @@ export default function UgcPage() {
     entitlement?.status === 'trialing';
   return (
     <>
-      <Head><title>From a Single Image to a Full Video — Haelabs</title></Head>
+      <Head><title>From a Single Image to a Full Video — Ariya Lab</title></Head>
       <main className={styles.page} style={{ paddingTop: 12 }}>
         <div className={styles.hero} style={{ marginBottom: 8 }}>
           <span className={styles.eyebrow}>{chooseEyebrow}</span>

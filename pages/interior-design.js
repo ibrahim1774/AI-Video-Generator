@@ -512,7 +512,7 @@ export default function InteriorDesignPage() {
 
   return (
     <>
-      <Head><title>AI Interior Design — Haelabs</title></Head>
+      <Head><title>AI Interior Design — Ariya Lab</title></Head>
       <main className={styles.page}>
         <div className={styles.hero}>
           <span className={styles.eyebrow}>◆ Interior Design</span>

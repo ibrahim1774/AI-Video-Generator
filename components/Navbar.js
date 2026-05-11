@@ -98,8 +98,8 @@ export default function Navbar() {
         )}
 
         <Link href="/" className={styles.brand}>
-          <div className={styles.mark} aria-hidden="true">H</div>
-          <span className={styles.wordmark}>Haelabs</span>
+          <div className={styles.mark} aria-hidden="true">A</div>
+          <span className={styles.wordmark}>Ariya Lab</span>
         </Link>
 
         {showTabs && (

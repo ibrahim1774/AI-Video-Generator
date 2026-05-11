@@ -134,7 +134,7 @@ export default function AdminPage() {
   return (
     <>
       <Head>
-        <title>Admin — Haelabs</title>
+        <title>Admin — Ariya Lab</title>
       </Head>
       <main className={styles.page} style={{ maxWidth: 640, margin: '0 auto' }}>
         <div className={styles.hero}>
