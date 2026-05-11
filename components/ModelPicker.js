@@ -13,16 +13,8 @@
 import { useState } from 'react';
 
 const OPTIONS = [
-  {
-    key: 'standard',
-    label: 'Standard',
-    sub: 'Seedance · faster, cheaper',
-  },
-  {
-    key: 'studio-pro',
-    label: 'Studio Pro',
-    sub: 'Cinematic · less restrictive · ~4× credits',
-  },
+  { key: 'standard', label: 'Standard' },
+  { key: 'studio-pro', label: 'Studio Pro' },
 ];
 
 export default function ModelPicker({
@@ -70,7 +62,6 @@ export default function ModelPicker({
               aria-pressed={active}
             >
               <span style={pillTitleStyle}>{opt.label}</span>
-              <span style={pillSubStyle}>{opt.sub}</span>
             </button>
           );
         })}
@@ -79,12 +70,12 @@ export default function ModelPicker({
   );
 }
 
-const wrapStyle = { marginBottom: 14 };
+const wrapStyle = { marginBottom: 10 };
 const labelRowStyle = {
   display: 'flex',
   alignItems: 'center',
   gap: 8,
-  marginBottom: 6,
+  marginBottom: 4,
 };
 const labelStyle = {
   fontFamily: 'var(--font-mono, ui-monospace, monospace)',
@@ -120,27 +111,19 @@ const rowStyle = {
   gap: 8,
 };
 const pillStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 4,
-  padding: '10px 12px',
+  padding: '8px 10px',
   border: '1px solid rgba(255,255,255,0.18)',
   borderRadius: 10,
   background: 'rgba(255,255,255,0.04)',
   color: '#ededed',
   fontFamily: 'inherit',
-  textAlign: 'left',
+  textAlign: 'center',
 };
 const pillActiveStyle = {
   borderColor: 'rgba(224, 196, 136, 0.6)',
   background: 'rgba(224, 196, 136, 0.12)',
 };
 const pillTitleStyle = {
-  fontFamily: 'var(--font-display, Georgia, serif)',
-  fontSize: 15,
+  fontSize: 14,
   fontWeight: 600,
-};
-const pillSubStyle = {
-  fontSize: 11,
-  color: '#b8b6b1',
 };

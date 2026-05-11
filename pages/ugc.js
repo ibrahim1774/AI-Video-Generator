@@ -5,7 +5,6 @@ import { useRouter } from 'next/router';
 
 import styles from '../styles/Home.module.css';
 import UploadZone from '../components/UploadZone';
-import PricingBanner from '../components/PricingBanner';
 import Processing from '../components/Processing';
 import Paywall from '../components/Paywall';
 import AuthModal from '../components/AuthModal';
@@ -978,10 +977,6 @@ export default function UgcPage() {
   }
 
   // step === 'choose'
-  const chooseEyebrow =
-    nextSceneType === 'new'
-      ? `◆ Scene ${storyScenes.length + 1} of ${MAX_SCENES} — pick a new image`
-      : '◆ Upload your image';
   // Prompt-to-character generator costs 1 credit, so it only makes
   // sense to surface for users on a paid plan (or trialing). Anon
   // and free users see the upload box only.
@@ -992,31 +987,15 @@ export default function UgcPage() {
   return (
     <>
       <Head><title>From a Single Image to a Full Video — Ariya Lab</title></Head>
-      <main className={styles.page} style={{ paddingTop: 12 }}>
-        <div className={styles.hero} style={{ marginBottom: 8 }}>
-          <span className={styles.eyebrow}>{chooseEyebrow}</span>
+      <main className={styles.page} style={{ paddingTop: 8 }}>
+        <div className={styles.hero} style={{ marginBottom: 6 }}>
           <h1
             className={styles.headline}
-            style={{ fontSize: 'clamp(22px, 3.6vw, 36px)', margin: '8px 0 6px', lineHeight: 1.15 }}
+            style={{ fontSize: 'clamp(18px, 2.6vw, 26px)', margin: '4px 0', lineHeight: 1.2 }}
           >
-            Turn Your Image Into a Talking, Moving Video &mdash;{' '}
-            <span className={styles.accent}>Just Type What They Say &amp; Do</span>
+            Turn Your Image Into a Talking, Moving Video
           </h1>
         </div>
-
-        {entitlement &&
-          (entitlement.tier === 'monthly' ||
-      entitlement.tier === 'pro' ||
-      entitlement.tier === 'yearly' ||
-            entitlement.tier === 'admin') && (
-            <PricingBanner
-              lines={[
-                { label: 'UGC video', cost: '10 cr/sec at 480p no-audio (Standard model) — up to 100 cr/sec at 1080p audio (Studio Pro)' },
-                { label: 'AI character image', cost: '1 image credit per generation' },
-              ]}
-              note="Pro + audio is billed at 1.5×"
-            />
-          )}
 
         <form onSubmit={handleAnimate} className={styles.ugcCard}>
           {/* 1. Add your character */}

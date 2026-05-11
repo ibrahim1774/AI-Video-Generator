@@ -1,20 +1,15 @@
 /*
  * Resolution + audio selector for video generation.
  *
- * - Resolution pills: 480p / 720p / 1080p
- * - Audio toggle: silent / with audio
+ * - Resolution pills: 480p / 720p / 1080p (compact single-line)
+ * - Audio: iOS-style toggle switch on the label row
  *
- * The live credit cost on the Generate CTA reflects whatever the user
- * picks here. See lib/cost.js / RATE_TABLE for the exact rates.
+ * Live credit cost on the CTA reflects whatever the user picks.
  */
 
 import { ratePerSecond } from '../lib/cost';
 
-const RESOLUTIONS = [
-  { key: '480p', label: '480p', sub: 'fastest · cheapest' },
-  { key: '720p', label: '720p', sub: 'balanced' },
-  { key: '1080p', label: '1080p', sub: 'sharpest · pricier' },
-];
+const RESOLUTIONS = ['480p', '720p', '1080p'];
 
 export default function ResolutionPicker({
   model = 'standard',
@@ -29,20 +24,48 @@ export default function ResolutionPicker({
   };
   const currentRate = ratePerSecond({ model, resolution, audio });
   return (
-    <div style={{ marginBottom: 14 }}>
+    <div style={wrapStyle}>
       <div style={labelRowStyle}>
         <span style={labelStyle}>Quality</span>
-        <span style={rateStyle}>{currentRate} cr/sec at current selection</span>
+        <span style={rateStyle}>{currentRate} cr/sec</span>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={audio}
+          aria-label={audio ? 'Audio on, click to mute' : 'Audio off, click to enable'}
+          disabled={disabled}
+          onClick={() => update({ audio: !audio })}
+          style={{
+            ...switchRowStyle,
+            cursor: disabled ? 'not-allowed' : 'pointer',
+            opacity: disabled ? 0.55 : 1,
+          }}
+        >
+          <span style={switchLabelStyle}>{audio ? '🔊 Audio' : '🔇 Silent'}</span>
+          <span
+            style={{
+              ...switchTrackStyle,
+              background: audio ? 'rgba(224, 196, 136, 0.7)' : 'rgba(255,255,255,0.18)',
+            }}
+          >
+            <span
+              style={{
+                ...switchKnobStyle,
+                transform: audio ? 'translateX(16px)' : 'translateX(0)',
+              }}
+            />
+          </span>
+        </button>
       </div>
       <div style={resRowStyle}>
         {RESOLUTIONS.map((r) => {
-          const active = resolution === r.key;
+          const active = resolution === r;
           return (
             <button
-              key={r.key}
+              key={r}
               type="button"
               disabled={disabled}
-              onClick={() => update({ resolution: r.key })}
+              onClick={() => update({ resolution: r })}
               style={{
                 ...pillStyle,
                 ...(active ? pillActiveStyle : null),
@@ -51,38 +74,20 @@ export default function ResolutionPicker({
               }}
               aria-pressed={active}
             >
-              <span style={pillTitleStyle}>{r.label}</span>
-              <span style={pillSubStyle}>{r.sub}</span>
+              {r}
             </button>
           );
         })}
       </div>
-      <button
-        type="button"
-        onClick={() => update({ audio: !audio })}
-        disabled={disabled}
-        style={{
-          ...audioToggleStyle,
-          ...(audio ? audioToggleActiveStyle : null),
-          cursor: disabled ? 'not-allowed' : 'pointer',
-        }}
-        aria-pressed={audio}
-      >
-        <span style={{ fontWeight: 600 }}>
-          {audio ? '🔊 With audio' : '🔇 Silent'}
-        </span>
-        <span style={{ fontSize: 11, color: '#b8b6b1', marginLeft: 8 }}>
-          {audio ? 'tap to disable' : 'tap to enable'}
-        </span>
-      </button>
     </div>
   );
 }
 
+const wrapStyle = { marginBottom: 10 };
 const labelRowStyle = {
   display: 'flex',
-  alignItems: 'baseline',
-  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: 8,
   marginBottom: 6,
 };
 const labelStyle = {
@@ -95,49 +100,61 @@ const labelStyle = {
 const rateStyle = {
   fontSize: 11,
   color: '#b8b6b1',
+  marginRight: 'auto',
+};
+const switchRowStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 8,
+  padding: '4px 8px 4px 10px',
+  border: '1px solid rgba(255,255,255,0.14)',
+  borderRadius: 999,
+  background: 'rgba(255,255,255,0.04)',
+  color: '#ededed',
+  fontFamily: 'inherit',
+};
+const switchLabelStyle = {
+  fontSize: 12,
+  fontWeight: 600,
+  letterSpacing: '0.01em',
+};
+const switchTrackStyle = {
+  position: 'relative',
+  display: 'inline-block',
+  width: 32,
+  height: 16,
+  borderRadius: 999,
+  transition: 'background 120ms ease',
+};
+const switchKnobStyle = {
+  position: 'absolute',
+  top: 1,
+  left: 1,
+  width: 14,
+  height: 14,
+  borderRadius: '50%',
+  background: '#fffaf1',
+  boxShadow: '0 1px 2px rgba(0,0,0,0.3)',
+  transition: 'transform 120ms ease',
 };
 const resRowStyle = {
   display: 'grid',
   gridTemplateColumns: '1fr 1fr 1fr',
   gap: 8,
-  marginBottom: 8,
 };
 const pillStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 4,
-  padding: '10px 12px',
+  padding: '8px 10px',
   border: '1px solid rgba(255,255,255,0.18)',
   borderRadius: 10,
   background: 'rgba(255,255,255,0.04)',
   color: '#ededed',
   fontFamily: 'inherit',
-  textAlign: 'left',
+  fontSize: 14,
+  fontWeight: 500,
+  textAlign: 'center',
 };
 const pillActiveStyle = {
   borderColor: 'rgba(224, 196, 136, 0.6)',
   background: 'rgba(224, 196, 136, 0.12)',
-};
-const pillTitleStyle = {
-  fontFamily: 'var(--font-display, Georgia, serif)',
-  fontSize: 15,
   fontWeight: 600,
-};
-const pillSubStyle = {
-  fontSize: 11,
-  color: '#b8b6b1',
-};
-const audioToggleStyle = {
-  width: '100%',
-  padding: '10px 12px',
-  border: '1px solid rgba(255,255,255,0.18)',
-  borderRadius: 10,
-  background: 'rgba(255,255,255,0.04)',
-  color: '#ededed',
-  fontFamily: 'inherit',
-  textAlign: 'left',
-};
-const audioToggleActiveStyle = {
-  borderColor: 'rgba(224, 196, 136, 0.6)',
-  background: 'rgba(224, 196, 136, 0.12)',
 };

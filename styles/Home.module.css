@@ -317,7 +317,7 @@
   max-width: 760px;
   width: calc(100% - 16px);
   margin: 0 auto;
-  padding: 18px 16px;
+  padding: 14px 14px 12px;
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background:
@@ -329,7 +329,7 @@
 }
 
 .ugcSection {
-  margin-bottom: 14px;
+  margin-bottom: 10px;
 }
 
 .ugcSection:last-of-type {
@@ -338,10 +338,10 @@
 
 .ugcSectionTitle {
   font-family: inherit;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: #ededed;
-  margin: 0 0 8px;
+  margin: 0 0 6px;
   letter-spacing: -0.005em;
 }
 
