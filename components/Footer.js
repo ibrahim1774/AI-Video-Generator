@@ -29,7 +29,7 @@ export default function Footer() {
         Need help?
       </div>
       <a
-        href="mailto:support@ariyalab.online"
+        href="mailto:support@davoxa.com"
         style={{
           color: '#ededed',
           fontSize: 13,
@@ -38,7 +38,7 @@ export default function Footer() {
           borderBottom: '1px solid rgba(224, 196, 136, 0.35)',
         }}
       >
-        support@ariyalab.online
+        support@davoxa.com
       </a>
     </footer>
   );

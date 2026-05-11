@@ -87,7 +87,7 @@ export default function AuthModal({
             }
           } catch (claimErr) {
             setError(
-              `Signed in, but linking subscription failed: ${claimErr.message}. Email support@ariyalab.online if this persists.`
+              `Signed in, but linking subscription failed: ${claimErr.message}. Email support@davoxa.com if this persists.`
             );
             setBusy(null);
             return;
