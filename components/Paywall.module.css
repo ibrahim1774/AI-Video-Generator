@@ -74,6 +74,44 @@
   box-shadow: 0 8px 18px rgba(139, 115, 64, 0.22);
 }
 
+.bonusBanner {
+  position: relative;
+  margin: -2px 0 2px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #ffd97a 0%, #ffb74d 100%);
+  border: 1px solid rgba(180, 130, 40, 0.6);
+  color: #2a1d05;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(255, 183, 77, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+  animation: bonusPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes bonusPulse {
+  0%, 100% {
+    box-shadow: 0 4px 12px rgba(255, 183, 77, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+  }
+  50% {
+    box-shadow: 0 6px 18px rgba(255, 183, 77, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+  }
+}
+
+.bonusBannerHeadline {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  color: #1c170f;
+}
+
+.bonusBannerSub {
+  margin-top: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #4a3410;
+  letter-spacing: 0.02em;
+}
+
 .tierDisabled {
   opacity: 0.55;
 }

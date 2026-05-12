@@ -200,6 +200,7 @@ function PlanCard({
   period,
   feats,
   bonusLine,
+  bonusHighlight,
   copy,
   infoOpen,
   setInfoOpen,
@@ -221,6 +222,14 @@ function PlanCard({
           <span className={styles.period}>/ {period}</span>
         </div>
       </div>
+      {bonusHighlight && (
+        <div className={styles.bonusBanner}>
+          <div className={styles.bonusBannerHeadline}>
+            +{bonusHighlight.extra.toLocaleString()} bonus credits
+          </div>
+          <div className={styles.bonusBannerSub}>{bonusHighlight.sub}</div>
+        </div>
+      )}
       <ul className={styles.feats}>
         {feats.map((entry, i) => (
           <Feat
@@ -396,6 +405,14 @@ export default function Paywall({
               period="month"
               feats={copy.proFeats}
               bonusLine={copy.bonusLine}
+              bonusHighlight={
+                copy.creditsKind === 'video'
+                  ? {
+                      extra: PLAN_VIDEO_CAPS.pro - PLAN_VIDEO_CAPS.monthly,
+                      sub: '3× the credits of Monthly — just $4 more',
+                    }
+                  : null
+              }
               copy={copy}
               infoOpen={infoOpenPro}
               setInfoOpen={setInfoOpenPro}
