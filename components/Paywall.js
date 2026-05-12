@@ -290,15 +290,27 @@ export default function Paywall({
     return () => window.removeEventListener('pageshow', onPageShow);
   }, []);
 
-  const firePixel = (meta) => {
+  // `content` lets the caller pass a TikTok content_id + content_name
+  // so TikTok's "Content ID is missing" diagnostic stays clear.
+  const firePixel = (meta, content) => {
     if (!meta?.eventId) return;
     if (typeof window === 'undefined') return;
+    const baseParams = { value: meta.value, currency: meta.currency || 'USD' };
+    const id = content?.content_id || 'subscription';
+    const displayName = content?.content_name || id;
+    const ttParams = {
+      ...baseParams,
+      contents: [
+        { content_id: id, content_type: 'product', content_name: displayName },
+      ],
+      content_type: 'product',
+    };
     if (typeof window.fbq === 'function') {
       try {
         window.fbq(
           'track',
           meta.eventName || 'InitiateCheckout',
-          { value: meta.value, currency: meta.currency || 'USD' },
+          baseParams,
           { eventID: meta.eventId }
         );
       } catch {}
@@ -309,11 +321,10 @@ export default function Paywall({
         // here at click-time with the same eventId — TikTok dedupes
         // per (event_name, event_id) so distinct names with the same
         // id co-exist.
-        const params = { value: meta.value, currency: meta.currency || 'USD' };
-        window.ttq.track('AddToCart', params, { event_id: meta.eventId });
+        window.ttq.track('AddToCart', ttParams, { event_id: meta.eventId });
         window.ttq.track(
           meta.eventName || 'InitiateCheckout',
-          params,
+          ttParams,
           { event_id: meta.eventId }
         );
       } catch {}
@@ -334,7 +345,10 @@ export default function Paywall({
       if (!res.ok || !data.url) {
         throw new Error(data.error || 'Could not start checkout.');
       }
-      firePixel(data.meta);
+      firePixel(data.meta, {
+        content_id: `plan-${plan}`,
+        content_name: `${plan} subscription`,
+      });
       if (data.trialBlocked) {
         setTrialBlocked(true);
         setTimeout(() => { window.location.href = data.url; }, 1500);
