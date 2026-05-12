@@ -451,7 +451,6 @@ export default function Paywall({
               onSubscribe={startCheckout}
               isTrialing={isTrialing}
               featured
-              badge="Most popular"
               btnClass={styles.btnAccent}
               ctaPrefix={isTrialing ? 'Convert to Pro' : 'Subscribe'}
             />
@@ -462,6 +461,14 @@ export default function Paywall({
               period="year"
               feats={copy.yearlyFeats}
               bonusLine={copy.bonusLine}
+              bonusHighlight={
+                copy.creditsKind === 'video'
+                  ? {
+                      extra: PLAN_VIDEO_CAPS.yearly - PLAN_VIDEO_CAPS.monthly,
+                      sub: '5× the credits of Monthly — best annual value',
+                    }
+                  : null
+              }
               copy={copy}
               infoOpen={infoOpenYearly}
               setInfoOpen={setInfoOpenYearly}
