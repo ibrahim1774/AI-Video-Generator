@@ -305,9 +305,15 @@ export default function Paywall({
     }
     if (window.ttq && typeof window.ttq.track === 'function') {
       try {
+        // TikTok funnel: AddToCart precedes InitiateCheckout. Fire both
+        // here at click-time with the same eventId — TikTok dedupes
+        // per (event_name, event_id) so distinct names with the same
+        // id co-exist.
+        const params = { value: meta.value, currency: meta.currency || 'USD' };
+        window.ttq.track('AddToCart', params, { event_id: meta.eventId });
         window.ttq.track(
           meta.eventName || 'InitiateCheckout',
-          { value: meta.value, currency: meta.currency || 'USD' },
+          params,
           { event_id: meta.eventId }
         );
       } catch {}
