@@ -428,9 +428,10 @@ export default function UgcPage() {
     );
   }
 
-  // Anonymous gate: no upload zone, no script field, no demo carousel.
-  // Just a headline and a single "Sign up to get started" CTA. After
-  // signup, AuthModal redirects back to /ugc; the new auth state
+  // Anonymous gate: no upload zone, no script field. Just the headline,
+  // a single "Sign up to get started" CTA, and the existing Wistia demo
+  // carousel for social proof. Dark background inherited from styles.page.
+  // After signup, AuthModal redirects back to /ugc; the new auth state
   // re-renders and falls through to the authed-no-plan paywall branch
   // below.
   if (!authUser) {
@@ -459,6 +460,85 @@ export default function UgcPage() {
               Sign up to get started
             </button>
           </div>
+
+          <Script src="https://fast.wistia.com/player.js" strategy="afterInteractive" async />
+          {LANDING_VIDEOS.slice(0, 4).map((v) => (
+            <Script
+              key={v.id}
+              src={`https://fast.wistia.com/embed/${v.id}.js`}
+              strategy="afterInteractive"
+              type="module"
+              async
+            />
+          ))}
+
+          <div className="ugc-anon-carousel-wrap">
+            <div className="ugc-anon-carousel" role="region" aria-label="UGC examples">
+              {LANDING_VIDEOS.slice(0, 4).map((v) => (
+                <div key={v.id} className="ugc-anon-carousel-card">
+                  <wistia-player
+                    media-id={v.id}
+                    aspect={String(v.aspect)}
+                    autoplay="true"
+                    muted="true"
+                    silentautoplay="true"
+                    playsinline="true"
+                    controls-visible-on-load="false"
+                    playbar="false"
+                    playbutton="false"
+                    volume-control="false"
+                    fullscreen-button="false"
+                    settings-control="false"
+                    endvideobehavior="loop"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <style jsx global>{`
+            .ugc-anon-carousel-wrap {
+              max-width: 100%;
+              margin: 32px auto 16px;
+              padding: 0;
+            }
+            .ugc-anon-carousel {
+              display: flex;
+              gap: 10px;
+              overflow-x: auto;
+              overflow-y: hidden;
+              scroll-snap-type: x mandatory;
+              -webkit-overflow-scrolling: touch;
+              scroll-padding: 0 16px;
+              padding: 4px 16px 10px;
+              scrollbar-width: none;
+            }
+            .ugc-anon-carousel::-webkit-scrollbar { display: none; }
+            .ugc-anon-carousel-card {
+              flex: 0 0 auto;
+              width: clamp(160px, 60vw, 200px);
+              border-radius: 12px;
+              overflow: hidden;
+              border: 1px solid rgba(224, 196, 136, 0.18);
+              background: #0c0c0e;
+              box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+              scroll-snap-align: center;
+              min-width: 0;
+            }
+            .ugc-anon-carousel-card wistia-player {
+              display: block;
+              width: 100%;
+              max-width: 100%;
+            }
+            @media (min-width: 720px) {
+              .ugc-anon-carousel {
+                justify-content: center;
+                scroll-padding: 0;
+                padding: 4px 24px 10px;
+              }
+              .ugc-anon-carousel-card { width: 180px; }
+            }
+          `}</style>
         </main>
         <AuthModal
           open={authModalOpen}
