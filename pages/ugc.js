@@ -428,15 +428,72 @@ export default function UgcPage() {
     );
   }
 
-  // Anonymous landing: 4 vertical Wistia demos in a 2x2 grid + signup CTA.
-  // After signup, auth state changes and this branch falls through to
-  // the paywall gate (or creator if the user already has a plan).
+  // Anonymous gate: no upload zone, no script field, no demo carousel.
+  // Just a headline and a single "Sign up to get started" CTA. After
+  // signup, AuthModal redirects back to /ugc; the new auth state
+  // re-renders and falls through to the authed-no-plan paywall branch
+  // below.
+  if (!authUser) {
+    return (
+      <>
+        <Head><title>Get Started — Ariya Lab</title></Head>
+        <main className={styles.page} style={{ paddingTop: 8 }}>
+          <div className={styles.hero} style={{ marginBottom: 18 }}>
+            <h1 className={styles.headline}>
+              Turn Your Image Into a Talking, Moving Video
+            </h1>
+            <p
+              className={styles.subtitle}
+              style={{ margin: '12px auto 0', maxWidth: 540, lineHeight: 1.45 }}
+            >
+              Sign up to get started.
+            </p>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 28, padding: '0 16px' }}>
+            <button
+              type="button"
+              onClick={() => setAuthModalOpen(true)}
+              className={styles.submit}
+              style={{ maxWidth: 340, width: '100%' }}
+            >
+              Sign up to get started
+            </button>
+          </div>
+        </main>
+        <AuthModal
+          open={authModalOpen}
+          onClose={() => setAuthModalOpen(false)}
+          initialMode="signup"
+          redirectTo="/ugc"
+        />
+      </>
+    );
+  }
 
-  // No pre-creator paywall gate. Authed users without credits can
-  // still enter the creator, pick an image, write a script, and click
-  // Generate. The /api/ugc-image and /api/ugc-animate endpoints will
-  // return 402 paywall and the existing handlers will surface the
-  // Paywall step at that point — same flow as face-swap.
+  // Authed but no active plan: drop straight onto the paywall page so
+  // the user picks a plan before any creator UI is shown. `entitlement`
+  // may still be null on the first render after sign-up; in that case
+  // we let the existing flow render (and the 402 path in handleAnimate /
+  // handleGenerateImage covers anyone who races the entitlement load).
+  if (entitlement && entitlement.tier === 'none' && !entitlement.canSwap) {
+    return (
+      <>
+        <Head><title>Pick a Plan — Ariya Lab</title></Head>
+        <main className={styles.page}>
+          <div className={styles.hero}>
+            <span className={styles.eyebrow}>◆ Pick a plan</span>
+            <h1 className={styles.headline}>Start creating AI videos</h1>
+          </div>
+          <Paywall
+            entitlement={entitlement}
+            returnTo="/ugc"
+            onError={(msg) => setError(msg)}
+            onTrialStarted={() => { fetchEntitlement(); setStep('choose'); }}
+          />
+        </main>
+      </>
+    );
+  }
 
   if (step === 'gen-image' && imageJob) {
     return (
