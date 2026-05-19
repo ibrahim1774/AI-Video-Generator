@@ -445,17 +445,17 @@ export default function UgcPage() {
             </h1>
             <p
               className={styles.subtitle}
-              style={{ margin: '12px auto 0', maxWidth: 540, lineHeight: 1.45 }}
+              style={{ margin: '12px auto 0', maxWidth: 600, lineHeight: 1.45 }}
             >
-              Sign up to get started.
+              Roast your friends, make memes, drop a business promo — bring any photo to life.
             </p>
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: 28, padding: '0 16px' }}>
             <button
               type="button"
               onClick={() => setAuthModalOpen(true)}
-              className={styles.submit}
-              style={{ maxWidth: 340, width: '100%' }}
+              className={`${styles.submit} ${styles.submitReady}`}
+              style={{ maxWidth: 340, width: '100%', fontSize: 16, padding: '16px 28px' }}
             >
               Sign up to get started
             </button>
