@@ -525,7 +525,7 @@ export default function Ugc2Page() {
           <div className={styles.hero} style={{ marginBottom: 8 }}>
             <h1
               className={styles.headline}
-              style={{ fontSize: 'clamp(18px, 2.6vw, 26px)', margin: '4px 0', lineHeight: 1.2 }}
+              style={{ fontSize: 'clamp(30px, 7vw, 52px)', margin: '6px 0', lineHeight: 1.12 }}
             >
               Turn Your Image Into a Talking, Moving Video
             </h1>
@@ -549,13 +549,17 @@ export default function Ugc2Page() {
             </p>
           </div>
 
-          <Paywall
-            entitlement={entitlement}
-            returnTo="/ugc-2"
-            surface="video"
-            onError={(msg) => setError(msg)}
-            onTrialStarted={() => fetchEntitlement()}
-          />
+          {/* zoom shrinks the shared Paywall for /ugc-2 only — the
+              component itself (and every other surface) is untouched. */}
+          <div style={{ zoom: 0.8 }}>
+            <Paywall
+              entitlement={entitlement}
+              returnTo="/ugc-2"
+              surface="video"
+              onError={(msg) => setError(msg)}
+              onTrialStarted={() => fetchEntitlement()}
+            />
+          </div>
           {error && (
             <div className={styles.error} style={{ maxWidth: 560, margin: '12px auto' }}>
               {error}
