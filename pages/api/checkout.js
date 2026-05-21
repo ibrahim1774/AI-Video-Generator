@@ -207,9 +207,19 @@ export default async function handler(req, res) {
     // and-create-account flow on /sign-up. The user signs up with
     // the same email Stripe collected; backend then links the
     // Stripe customer to the new Supabase user.
-    const successPath = isAnon
-      ? `/sign-up?session_id={CHECKOUT_SESSION_ID}${returnQuery}`
-      : `/dashboard?paid=1&session_id={CHECKOUT_SESSION_ID}${returnQuery}`;
+    //
+    // Exception — anonymous /ugc-2 uses the leak-protected ticket
+    // flow: route to /ugc-2/claim, which moves the session_id into an
+    // httpOnly cookie and strips it from the URL before any pixel or
+    // referrer can see it, then lets the user sign up with ANY email.
+    // Every other anonymous subscription keeps the existing /sign-up
+    // email-match claim flow untouched.
+    const isUgc2Ticket = isAnon && safeReturnTo === '/ugc-2';
+    const successPath = isUgc2Ticket
+      ? `/ugc-2/claim?session_id={CHECKOUT_SESSION_ID}`
+      : isAnon
+        ? `/sign-up?session_id={CHECKOUT_SESSION_ID}${returnQuery}`
+        : `/dashboard?paid=1&session_id={CHECKOUT_SESSION_ID}${returnQuery}`;
 
     const subMetadata = isAnon
       ? { pending_supabase_link: 'true' }

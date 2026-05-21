@@ -42,6 +42,7 @@ export default function AuthModal({
   redirectTo = '/',
   lockedEmail = null,
   claimSessionId = null,
+  ticketClaim = false,
 }) {
   const [mode, setMode] = useState(initialMode);
   const [email, setEmail] = useState(lockedEmail || '');
@@ -52,7 +53,26 @@ export default function AuthModal({
   const googleBtnRef = useRef(null);
 
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  // Email-match claim flow (/sign-up?session_id=...) — locks the email
+  // to the address used at Stripe.
   const isClaimFlow = Boolean(claimSessionId && lockedEmail);
+  // Ticket claim flow (/ugc-2/welcome) — the session_id lives in an
+  // httpOnly cookie, NOT here. No email lock; any email/Google links.
+  const isTicketClaim = Boolean(ticketClaim);
+  const isAnyClaim = isClaimFlow || isTicketClaim;
+
+  // Bind the paid Stripe session to the just-authed user. Picks the
+  // right endpoint per flow: email-match claim reads the session_id
+  // from the query; ticket claim reads it from the httpOnly cookie.
+  const runClaim = async () => {
+    const url = isTicketClaim
+      ? '/api/checkout/claim-ticket'
+      : `/api/checkout/claim?session_id=${encodeURIComponent(claimSessionId)}`;
+    const r = await fetch(url, { method: 'POST' });
+    const claimData = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(claimData.error || 'Could not link your subscription.');
+    return claimData;
+  };
 
   // If the locked email arrives after first render (async fetch on
   // /sign-up), keep the email field in sync with it.
@@ -79,28 +99,25 @@ export default function AuthModal({
         });
         if (err) throw err;
 
-        // Claim-after-pay: Google returned an email — it MUST match
-        // the email on the Stripe session. Check before calling the
-        // server, so we can sign the user back out cleanly with a
-        // helpful message if they used the wrong Google account.
-        if (isClaimFlow) {
-          const googleEmail = (signInData?.user?.email || '').toLowerCase();
-          const expected = (lockedEmail || '').toLowerCase();
-          if (googleEmail && expected && googleEmail !== expected) {
-            await supabase.auth.signOut().catch(() => {});
-            setError(
-              `That Google account uses ${signInData.user.email}, but you paid with ${lockedEmail}. Sign in with the matching Google account, or use email + password below.`
-            );
-            setBusy(null);
-            return;
+        // Claim-after-pay. For the email-match flow, Google's email MUST
+        // match the Stripe email — check before calling the server so we
+        // can sign the user back out with a helpful message. The ticket
+        // flow has NO email match (any Google account links).
+        if (isAnyClaim) {
+          if (isClaimFlow) {
+            const googleEmail = (signInData?.user?.email || '').toLowerCase();
+            const expected = (lockedEmail || '').toLowerCase();
+            if (googleEmail && expected && googleEmail !== expected) {
+              await supabase.auth.signOut().catch(() => {});
+              setError(
+                `That Google account uses ${signInData.user.email}, but you paid with ${lockedEmail}. Sign in with the matching Google account, or use email + password below.`
+              );
+              setBusy(null);
+              return;
+            }
           }
           try {
-            const r = await fetch(
-              `/api/checkout/claim?session_id=${encodeURIComponent(claimSessionId)}`,
-              { method: 'POST' }
-            );
-            const claimData = await r.json().catch(() => ({}));
-            if (!r.ok) throw new Error(claimData.error || 'Could not link your subscription.');
+            const claimData = await runClaim();
             const m = claimData.meta;
             firePixels({
               eventName: m?.eventName || 'Purchase',
@@ -173,7 +190,7 @@ export default function AuthModal({
       cancelled = true;
       if (pollId) clearInterval(pollId);
     };
-  }, [open, mode, googleClientId, router, onClose, redirectTo, isClaimFlow, lockedEmail, claimSessionId]);
+  }, [open, mode, googleClientId, router, onClose, redirectTo, isClaimFlow, isTicketClaim, lockedEmail, claimSessionId]);
 
   if (!open) return null;
 
@@ -196,7 +213,7 @@ export default function AuthModal({
         // the email-confirmation deep link in that case — the email
         // is already verified by Stripe (it's the address they
         // received their receipt at).
-        const signupOpts = isClaimFlow ? {} : { emailRedirectTo: emailCallbackUrl };
+        const signupOpts = isAnyClaim ? {} : { emailRedirectTo: emailCallbackUrl };
         const { error: err } = await supabase.auth.signUp({
           email,
           password,
@@ -206,7 +223,7 @@ export default function AuthModal({
         // Make sure we have an active session before calling the
         // claim endpoint — Supabase signUp returns a session unless
         // email confirmation is required.
-        if (isClaimFlow) {
+        if (isAnyClaim) {
           await supabase.auth.signInWithPassword({ email, password }).catch(() => {});
         }
       } else {
@@ -216,14 +233,9 @@ export default function AuthModal({
 
       // Claim the Stripe session: links the customer to this new
       // Supabase user and grants credits.
-      if (isClaimFlow) {
+      if (isAnyClaim) {
         try {
-          const r = await fetch(
-            `/api/checkout/claim?session_id=${encodeURIComponent(claimSessionId)}`,
-            { method: 'POST' }
-          );
-          const claimData = await r.json().catch(() => ({}));
-          if (!r.ok) throw new Error(claimData.error || 'Could not link your subscription.');
+          const claimData = await runClaim();
           // Fire Purchase pixel with the same eventId as CAPI for dedup.
           const m = claimData.meta;
           firePixels({
@@ -281,23 +293,46 @@ export default function AuthModal({
         </button>
         <header className={styles.header}>
           <span className={styles.kicker}>
-            ◆ {isClaimFlow ? 'Finish setup' : mode === 'signup' ? 'Create account' : 'Welcome back'}
+            ◆ {isAnyClaim ? 'Finish setup' : mode === 'signup' ? 'Create account' : 'Welcome back'}
           </span>
           <h2 id="auth-modal-title" className={styles.title}>
-            {isClaimFlow
-              ? 'Set a password to finish'
-              : mode === 'signup'
-                ? 'Sign up to continue'
-                : 'Sign in to continue'}
+            {isTicketClaim
+              ? mode === 'signup' ? 'Create your account' : 'Sign in to finish'
+              : isClaimFlow
+                ? 'Set a password to finish'
+                : mode === 'signup'
+                  ? 'Sign up to continue'
+                  : 'Sign in to continue'}
           </h2>
           <p className={styles.subtitle}>
-            {isClaimFlow
-              ? 'Payment confirmed. Pick a password and your subscription will be linked to your account.'
-              : mode === 'signup'
-                ? 'Takes 15 seconds. Your uploaded files stay loaded on this page.'
-                : 'Welcome back. Sign in and pick up where you left off.'}
+            {isTicketClaim
+              ? 'Payment confirmed. Create an account (any email or Google) and your subscription links automatically.'
+              : isClaimFlow
+                ? 'Payment confirmed. Pick a password and your subscription will be linked to your account.'
+                : mode === 'signup'
+                  ? 'Takes 15 seconds. Your uploaded files stay loaded on this page.'
+                  : 'Welcome back. Sign in and pick up where you left off.'}
           </p>
         </header>
+
+        {isTicketClaim && (
+          <div
+            style={{
+              padding: '10px 14px',
+              borderRadius: 8,
+              border: '1px solid rgba(224, 196, 136, 0.25)',
+              background: 'rgba(224, 196, 136, 0.06)',
+              color: '#e6e6e6',
+              fontSize: 12,
+              lineHeight: 1.5,
+              textAlign: 'center',
+              marginBottom: 12,
+            }}
+          >
+            ✓ Payment confirmed. Sign up with <strong>any</strong> email or Google
+            account — we&rsquo;ll link your subscription for you.
+          </div>
+        )}
 
         {isClaimFlow && lockedEmail && (
           <div
