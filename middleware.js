@@ -1,6 +1,24 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'ibrahim3709@gmail.com')
+  .split(',')
+  .map((s) => s.trim().toLowerCase())
+  .filter(Boolean);
+
+// Gated "feature tab" page routes — hidden + blocked for non-admins when
+// the feature-tabs flag is off. NOTE: /ugc-2 and /ugc-3 are deliberately
+// excluded — they are direct ad-funnel landing pages and must stay
+// reachable regardless of the toggle.
+const GATED_PAGE_PREFIXES = [
+  '/face-swap',
+  '/ugc',
+  '/glow-up',
+  '/interior-design',
+  '/video/editing',
+  '/history',
+];
+
 /*
  * Middleware that:
  *   1. Refreshes the Supabase session cookie on every request.
@@ -76,6 +94,36 @@ export async function middleware(req) {
     return NextResponse.redirect(redirect);
   }
 
+  // Feature-tabs gate: when the flag is off, non-admins can't reach the
+  // gated tab routes (they get redirected home). Admins always pass.
+  // Exact-or-subpath match so '/ugc' does NOT catch '/ugc-2' or '/ugc-3'.
+  const isGated = GATED_PAGE_PREFIXES.some(
+    (p) => pathname === p || pathname.startsWith(p + '/')
+  );
+  if (isGated) {
+    const email = (user?.email || '').toLowerCase();
+    const isAdmin = ADMIN_EMAILS.includes(email);
+    if (!isAdmin) {
+      let enabled = true;
+      try {
+        const { data } = await supabase
+          .from('app_settings')
+          .select('feature_tabs_enabled')
+          .eq('id', 'global')
+          .single();
+        enabled = Boolean(data?.feature_tabs_enabled);
+      } catch {
+        enabled = false; // fail closed
+      }
+      if (!enabled) {
+        const redirect = req.nextUrl.clone();
+        redirect.pathname = '/';
+        redirect.search = '';
+        return NextResponse.redirect(redirect);
+      }
+    }
+  }
+
   return res;
 }
 
@@ -84,6 +132,10 @@ export const config = {
     '/dashboard/:path*',
     '/image-to-video/:path*',
     '/video/editing/:path*',
+    '/face-swap/:path*',
+    '/ugc',
+    '/glow-up/:path*',
+    '/interior-design/:path*',
     '/api/character-frame/:path*',
     '/api/swap/:path*',
     '/api/status/:path*',

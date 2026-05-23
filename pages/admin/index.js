@@ -35,6 +35,33 @@ export default function AdminPage() {
   const [healReport, setHealReport] = useState(null);
   const [healError, setHealError] = useState('');
 
+  // Feature-tabs visibility toggle.
+  const [tabsEnabled, setTabsEnabled] = useState(null); // null = loading
+
+  useEffect(() => {
+    fetch('/api/admin/feature-tabs')
+      .then((r) => (r.ok ? r.json() : Promise.reject(r)))
+      .then((d) => setTabsEnabled(Boolean(d.enabled)))
+      .catch(() => setTabsEnabled(false));
+  }, []);
+
+  const toggleTabs = async (next) => {
+    setTabsEnabled(next); // optimistic
+    try {
+      const r = await fetch('/api/admin/feature-tabs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: next }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || 'Failed to update.');
+      setTabsEnabled(Boolean(d.enabled));
+    } catch (e) {
+      setTabsEnabled(!next); // revert
+      setError(e.message);
+    }
+  };
+
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     const supabase = getBrowserSupabase();
@@ -145,6 +172,44 @@ export default function AdminPage() {
             admin allowlist regardless of what this UI shows.
           </p>
         </div>
+
+        <section
+          style={{
+            margin: '0 0 20px',
+            padding: 20,
+            borderRadius: 14,
+            border: '1px solid rgba(224, 196, 136, 0.25)',
+            background: 'rgba(224, 196, 136, 0.05)',
+          }}
+        >
+          <h3 style={{ margin: '0 0 6px', fontSize: 16 }}>Feature tabs visibility</h3>
+          <p style={{ margin: '0 0 14px', fontSize: 13, color: 'var(--text-dim)', lineHeight: 1.5 }}>
+            When <strong>ON</strong>, all users see every tab. When <strong>OFF</strong>,
+            non-admins only see the homepage (Image to Video) + Support. You always
+            see everything.
+          </p>
+          <button
+            type="button"
+            disabled={tabsEnabled === null}
+            onClick={() => toggleTabs(!tabsEnabled)}
+            style={{
+              padding: '10px 18px',
+              borderRadius: 8,
+              border: '1px solid rgba(255,255,255,0.18)',
+              background: tabsEnabled ? 'rgba(120, 220, 150, 0.14)' : 'rgba(255,255,255,0.04)',
+              color: '#ededed',
+              fontSize: 14,
+              fontFamily: 'inherit',
+              cursor: tabsEnabled === null ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {tabsEnabled === null
+              ? 'Loading…'
+              : tabsEnabled
+                ? 'Tabs are ON — click to turn OFF'
+                : 'Tabs are OFF — click to turn ON'}
+          </button>
+        </section>
 
         {!callerIsAdmin && (
           <div

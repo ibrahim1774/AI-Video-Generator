@@ -6,14 +6,20 @@ import styles from './Navbar.module.css';
 import { getBrowserSupabase } from '../lib/supabase';
 import { subscribeEntitlement } from '../lib/entitlementBus';
 
-const FEATURE_TABS = [
-  { href: '/', label: 'Face Swap' },
+// Always visible to everyone.
+const ALWAYS_TABS = [
+  { href: '/', label: 'Image to Video' },
+  { href: '/support', label: 'Support' },
+];
+
+// Gated: hidden for non-admins unless the feature-tabs flag is on.
+const GATED_TABS = [
+  { href: '/face-swap', label: 'Face Swap' },
   { href: '/ugc', label: 'UGC Creator' },
   { href: '/glow-up', label: 'Glow Up' },
   { href: '/interior-design', label: 'Interior Design' },
   { href: '/video/editing', label: 'Video Editor' },
   { href: '/history', label: 'History' },
-  { href: '/support', label: 'Support' },
 ];
 
 export default function Navbar() {
@@ -21,7 +27,15 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [entitlement, setEntitlement] = useState(null);
+  const [tabsEnabled, setTabsEnabled] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    fetch('/api/feature-tabs')
+      .then((r) => r.json().catch(() => ({})))
+      .then((d) => setTabsEnabled(Boolean(d?.enabled)))
+      .catch(() => {});
+  }, []);
 
   const fetchEntitlement = useCallback(async () => {
     try {
@@ -82,6 +96,14 @@ export default function Navbar() {
   const showTabs = Boolean(user);
   const activePath = router.pathname;
 
+  // Gated tabs appear only when an admin toggled them on, or for admins
+  // themselves. Home + Support are always present. (Order: Home first,
+  // then the gated feature tabs, then Support.)
+  const showGated = tabsEnabled || Boolean(entitlement?.isAdmin);
+  const visibleTabs = showGated
+    ? [ALWAYS_TABS[0], ...GATED_TABS, ALWAYS_TABS[1]]
+    : ALWAYS_TABS;
+
   return (
     <nav className={styles.nav}>
       <div className={styles.inner}>
@@ -105,7 +127,7 @@ export default function Navbar() {
 
         {showTabs && (
           <div className={styles.tabs} role="tablist">
-            {FEATURE_TABS.map((tab) => (
+            {visibleTabs.map((tab) => (
               <Link
                 key={tab.href}
                 href={tab.href}
@@ -246,7 +268,7 @@ export default function Navbar() {
               ◆ {creditLabel}
             </div>
           )}
-          {FEATURE_TABS.map((tab) => (
+          {visibleTabs.map((tab) => (
             <Link
               key={tab.href}
               href={tab.href}
