@@ -1002,7 +1002,7 @@ export default function LocalBusinessPage() {
             className={styles.headline}
             style={{ fontSize: 'clamp(20px, 3vw, 30px)', margin: '4px 0', lineHeight: 1.2 }}
           >
-            Local Businesses: Stay Active on Social Media — Without Much Work
+            Keep your local business visible — without the time, the camera, or big budget
           </h1>
           <p
             style={{
@@ -1014,8 +1014,8 @@ export default function LocalBusinessPage() {
               textAlign: 'center',
             }}
           >
-            Generate ready-to-post videos in minutes and keep your page alive all
-            week. No camera, no agency, no big budget.
+            Type what you want or upload a photo, and Ariya Lab builds a
+            ready-to-post video in minutes.
           </p>
         </div>
 
