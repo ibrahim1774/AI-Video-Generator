@@ -1000,23 +1000,22 @@ export default function LocalBusinessPage() {
         <div className={styles.hero} style={{ marginBottom: 6 }}>
           <h1
             className={styles.headline}
-            style={{ fontSize: 'clamp(18px, 2.6vw, 26px)', margin: '4px 0', lineHeight: 1.2 }}
+            style={{ fontSize: 'clamp(20px, 3vw, 30px)', margin: '4px 0', lineHeight: 1.2 }}
           >
-            Turn Your Image Into a Talking, Moving Video
+            Local Businesses: Stay Active on Social Media — Without Much Work
           </h1>
           <p
             style={{
-              margin: '6px auto 0',
-              maxWidth: 540,
+              margin: '8px auto 0',
+              maxWidth: 560,
               fontSize: 14,
               lineHeight: 1.5,
               color: '#cfcfcf',
               textAlign: 'center',
             }}
           >
-            <strong style={{ color: '#f0e6cc' }}>Content creation for local businesses.</strong>{' '}
-            Generate scroll-stopping videos and content to promote your shop,
-            restaurant, or service — no camera, crew, or editing needed.
+            Generate ready-to-post videos in minutes and keep your page alive all
+            week. No camera, no agency, no big budget.
           </p>
         </div>
 
