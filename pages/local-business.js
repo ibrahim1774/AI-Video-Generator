@@ -75,6 +75,37 @@ export default function LocalBusinessPage() {
   const [resolution, setResolution] = useState('480p');
   const [audio, setAudio] = useState(false);
 
+  // 'photo' = upload + prompt + length (default; current behavior).
+  // 'text'  = prompt + length only; sent without imageUrl so the model
+  //           runs text-to-video (Seedance + Kling both support this).
+  // Persisted to localStorage along with the script so the choice (and
+  // typed prompt) survives the signup-popup detour on the funnel.
+  const [mode, setMode] = useState('photo');
+  const MODE_KEY = 'ariyalab:local-business:mode';
+  const SCRIPT_KEY = 'ariyalab:local-business:script';
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const m = window.localStorage.getItem(MODE_KEY);
+      if (m === 'photo' || m === 'text') setMode(m);
+      const s = window.localStorage.getItem(SCRIPT_KEY);
+      if (typeof s === 'string') setScript(s);
+    } catch {}
+    // mount-only; intentionally no deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try { window.localStorage.setItem(MODE_KEY, mode); } catch {}
+  }, [mode]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try { window.localStorage.setItem(SCRIPT_KEY, script); } catch {}
+  }, [script]);
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [job, setJob] = useState(null);
@@ -235,7 +266,10 @@ export default function LocalBusinessPage() {
 
   const handleAnimate = async (e) => {
     e.preventDefault();
-    if (!effectiveStartImage || submitting) return;
+    if (submitting) return;
+    // Per-mode gate: photo needs an image; text needs a prompt.
+    if (mode === 'photo' && !effectiveStartImage) return;
+    if (mode === 'text' && !script.trim()) return;
     if (!authUser) {
       setAuthModalOpen(true);
       return;
@@ -243,17 +277,15 @@ export default function LocalBusinessPage() {
     setSubmitting(true);
     setError('');
     try {
+      // Text mode omits imageUrl entirely → backend routes to the
+      // text-to-video path on Seedance/Kling.
+      const body = mode === 'text'
+        ? { script, duration, model, resolution, audio }
+        : { imageUrl: effectiveStartImage, script, duration, model, resolution, audio };
       const r = await fetch('/api/ugc-animate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          imageUrl: effectiveStartImage,
-          script,
-          duration,
-          model,
-          resolution,
-          audio,
-        }),
+        body: JSON.stringify(body),
       });
       const data = await r.json().catch(() => ({}));
       if (r.status === 402) {
@@ -1017,10 +1049,81 @@ export default function LocalBusinessPage() {
             Type what you want or upload a photo, and Ariya Lab builds a
             ready-to-post video in minutes.
           </p>
+
+          {/* Mode toggle — centered pill, pairs visually with ModelPicker.
+              Switching to 'text' clears any uploaded image so a stale
+              upload can't leak into the next generate. */}
+          <div
+            role="tablist"
+            aria-label="Generation mode"
+            style={{
+              display: 'inline-flex',
+              margin: '14px auto 0',
+              padding: 4,
+              borderRadius: 999,
+              border: '1px solid rgba(255,255,255,0.14)',
+              background: 'rgba(255,255,255,0.04)',
+            }}
+          >
+            {[
+              { key: 'photo', label: '🖼  With photo' },
+              { key: 'text', label: '✍  Text only' },
+            ].map((opt) => {
+              const active = mode === opt.key;
+              return (
+                <button
+                  key={opt.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => {
+                    if (opt.key === mode) return;
+                    if (opt.key === 'text') {
+                      // Drop any pending photo so it can't slip into the
+                      // text-mode generate payload.
+                      setUploadFile(null);
+                      setImageUrl(null);
+                      setPendingStartImage(null);
+                    }
+                    setMode(opt.key);
+                  }}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 999,
+                    border: 'none',
+                    background: active ? '#ededed' : 'transparent',
+                    color: active ? '#0b0b0c' : '#cfcfcf',
+                    fontFamily: 'inherit',
+                    fontSize: 13,
+                    fontWeight: active ? 600 : 500,
+                    cursor: 'pointer',
+                    transition: 'background 120ms ease, color 120ms ease',
+                  }}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+          <p
+            style={{
+              margin: '6px auto 0',
+              maxWidth: 480,
+              fontSize: 12,
+              lineHeight: 1.45,
+              color: '#9a9a9a',
+              textAlign: 'center',
+            }}
+          >
+            {mode === 'photo'
+              ? 'With photo: animates your actual storefront, product, or person.'
+              : 'Text only: AI invents the scene from your description — best for moods, b-roll, lifestyle.'}
+          </p>
         </div>
 
         <form onSubmit={handleAnimate} className={styles.ugcCard}>
-          {/* 1. Add your character */}
+          {/* 1. Add your character — hidden entirely in text-only mode */}
+          {mode === 'photo' && (
           <section className={styles.ugcSection}>
             <h3 className={styles.ugcSectionTitle}>1. Add your character</h3>
             <UploadZone
@@ -1077,10 +1180,13 @@ export default function LocalBusinessPage() {
               </>
             )}
           </section>
+          )}
 
           {/* 2. Script */}
           <section className={styles.ugcSection}>
-            <h3 className={styles.ugcSectionTitle}>2. What should they say &amp; do?</h3>
+            <h3 className={styles.ugcSectionTitle}>
+              {mode === 'photo' ? '2. ' : '1. '}What should they say &amp; do?
+            </h3>
             <div className={styles.ugcTextareaWrap}>
               <textarea
                 value={script}
@@ -1096,7 +1202,9 @@ export default function LocalBusinessPage() {
 
           {/* 3. Video length */}
           <section className={styles.ugcSection}>
-            <h3 className={styles.ugcSectionTitle}>3. Video length</h3>
+            <h3 className={styles.ugcSectionTitle}>
+              {mode === 'photo' ? '3. ' : '2. '}Video length
+            </h3>
             {model === 'standard' ? (
               <div
                 role="radiogroup"
@@ -1184,24 +1292,30 @@ export default function LocalBusinessPage() {
 
           {error && <div className={styles.error}>{error}</div>}
 
-          <button
-            type="submit"
-            className={`${styles.ugcCta} ${(!effectiveStartImage || submitting) ? styles.ugcCtaDisabled : ''}`}
-            disabled={!effectiveStartImage || submitting}
-          >
-            {submitting && <span className={styles.spinner} aria-hidden="true" />}
-            <span className={styles.ugcCtaIcon} aria-hidden="true">✦</span>
-            <span className={styles.ugcCtaContent}>
-              <span className={styles.ugcCtaTitle}>
-                {submitting
-                  ? 'Starting…'
-                  : effectiveStartImage
-                    ? 'Generate video'
-                    : 'Upload an image to continue'}
-              </span>
-              {/* UGC-3: per-generation credit cost intentionally hidden */}
-            </span>
-          </button>
+          {(() => {
+            const canGenerate = mode === 'text'
+              ? Boolean(script.trim())
+              : Boolean(effectiveStartImage);
+            const ctaIdleLabel = mode === 'text'
+              ? (canGenerate ? 'Generate video' : 'Type a prompt to continue')
+              : (canGenerate ? 'Generate video' : 'Upload an image to continue');
+            return (
+              <button
+                type="submit"
+                className={`${styles.ugcCta} ${(!canGenerate || submitting) ? styles.ugcCtaDisabled : ''}`}
+                disabled={!canGenerate || submitting}
+              >
+                {submitting && <span className={styles.spinner} aria-hidden="true" />}
+                <span className={styles.ugcCtaIcon} aria-hidden="true">✦</span>
+                <span className={styles.ugcCtaContent}>
+                  <span className={styles.ugcCtaTitle}>
+                    {submitting ? 'Starting…' : ctaIdleLabel}
+                  </span>
+                  {/* Per-generation credit cost intentionally hidden */}
+                </span>
+              </button>
+            );
+          })()}
 
           {nextSceneType === 'new' && storyScenes.length > 0 && (
             <div style={{ textAlign: 'center', marginTop: 12 }}>

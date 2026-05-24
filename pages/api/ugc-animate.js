@@ -50,8 +50,17 @@ export default async function handler(req, res) {
     model: modelRaw,
     resolution: resolutionRaw,
   } = req.body || {};
-  if (!isHttpUrl(imageUrl)) {
-    return res.status(400).json({ error: 'imageUrl is required (http/https URL).' });
+  // imageUrl is OPTIONAL. Two modes:
+  //   - image-to-video: pass an http/https URL; Seedance + Kling both
+  //     read it as the reference frame.
+  //   - text-to-video: omit it entirely. Both models support pure
+  //     text-to-video (Seedance returns text-to-video when input_urls
+  //     is empty; Kling returns text-to-video when image_urls is []).
+  // If a value is sent, it MUST be a valid http(s) URL — we don't want
+  // a stray non-URL string slipping through and confusing the upstream.
+  const hasImage = imageUrl !== undefined && imageUrl !== null && imageUrl !== '';
+  if (hasImage && !isHttpUrl(imageUrl)) {
+    return res.status(400).json({ error: 'imageUrl must be an http/https URL when provided.' });
   }
 
   const model = MODELS.includes(modelRaw) ? modelRaw : 'standard';
@@ -87,7 +96,9 @@ export default async function handler(req, res) {
       ...(normalizedScenes ? normalizedScenes.map((s) => s.prompt) : []),
     ];
     await screenText(textsToScreen);
-    await screenImage(imageUrl);
+    // Text-to-video calls (no imageUrl) have no image to screen — the
+    // generation-time text filter above is the only check that applies.
+    if (hasImage) await screenImage(imageUrl);
   } catch (err) {
     if (err instanceof ModerationError) return moderationErrorResponse(res, err);
     console.error('[ugc-animate] moderation threw', err);
