@@ -208,15 +208,32 @@ export default async function handler(req, res) {
     // the same email Stripe collected; backend then links the
     // Stripe customer to the new Supabase user.
     //
-    // Exception — anonymous /ugc-2 uses the leak-protected ticket
-    // flow: route to /ugc-2/claim, which moves the session_id into an
+    // Exception — anonymous subscriptions originating from one of the
+    // ticket-flow surfaces below use the leak-protected ticket flow:
+    // route to /ugc-2/claim, which moves the session_id into an
     // httpOnly cookie and strips it from the URL before any pixel or
     // referrer can see it, then lets the user sign up with ANY email.
     // Every other anonymous subscription keeps the existing /sign-up
     // email-match claim flow untouched.
-    const isUgc2Ticket = isAnon && safeReturnTo === '/ugc-2';
-    const successPath = isUgc2Ticket
-      ? `/ugc-2/claim?session_id={CHECKOUT_SESSION_ID}`
+    //
+    // `r` (URL-encoded, validated same-origin) tells the welcome page
+    // where to redirect the user after signup so the funnel they came
+    // from is honored (e.g. /local-business/pricing-plan -> back to
+    // /local-business once subscribed).
+    const TICKET_FLOW_RETURNS = new Set([
+      '/ugc-2',
+      '/local-business',
+      '/local-business/pricing-plan',
+    ]);
+    const isTicketFlow = isAnon && TICKET_FLOW_RETURNS.has(safeReturnTo);
+    // For ticket flows we always send the user back to a canonical
+    // post-subscribe destination (not the pricing page they paid on).
+    const ticketReturnDest = safeReturnTo.startsWith('/local-business')
+      ? '/local-business'
+      : '/ugc-2';
+    const ticketReturnQuery = `&r=${encodeURIComponent(ticketReturnDest)}`;
+    const successPath = isTicketFlow
+      ? `/ugc-2/claim?session_id={CHECKOUT_SESSION_ID}${ticketReturnQuery}`
       : isAnon
         ? `/sign-up?session_id={CHECKOUT_SESSION_ID}${returnQuery}`
         : `/dashboard?paid=1&session_id={CHECKOUT_SESSION_ID}${returnQuery}`;

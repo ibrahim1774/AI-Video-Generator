@@ -19,25 +19,43 @@ import { stripe } from '../../lib/stripe';
 const CLAIM_COOKIE = 'ugc2_claim_sid';
 const TTL_SECONDS = 1800; // 30 minutes
 
+// Same-origin, same-app path? Used to validate ?r=… before we trust it
+// as a redirect target. Always falsy for absolute / protocol / //-prefix.
+function safePath(p) {
+  return typeof p === 'string' && p.startsWith('/') && !p.startsWith('//') ? p : null;
+}
+
 export async function getServerSideProps({ query, res }) {
   const sid = typeof query.session_id === 'string' ? query.session_id : null;
-  const bail = (destination) => ({ redirect: { destination, permanent: false } });
+  const ret = safePath(query.r);
+  // Where to bail to if anything fails. Honor `r` so a Local Business
+  // payer who errors out lands on /local-business, not /ugc-2.
+  const bailTarget = ret || '/ugc-2';
+  const bail = (qs = '') => ({
+    redirect: { destination: `${bailTarget}${qs}`, permanent: false },
+  });
 
-  if (!sid || !sid.startsWith('cs_')) return bail('/ugc-2');
+  if (!sid || !sid.startsWith('cs_')) return bail();
 
   try {
     const cs = await stripe().checkout.sessions.retrieve(sid);
     const paid =
       cs.payment_status === 'paid' || cs.payment_status === 'no_payment_required';
-    if (!paid) return bail('/ugc-2?status=unpaid');
+    if (!paid) return bail('?status=unpaid');
 
     res.setHeader(
       'Set-Cookie',
       `${CLAIM_COOKIE}=${sid}; Path=/; Max-Age=${TTL_SECONDS}; HttpOnly; Secure; SameSite=Lax`
     );
-    return { redirect: { destination: '/ugc-2/welcome', permanent: false } };
+    // `r` rides as a query param to /ugc-2/welcome. It is NOT the
+    // session ticket (which stays in the httpOnly cookie) — just the
+    // post-signup destination, which is not secret.
+    const welcomeQs = ret ? `?r=${encodeURIComponent(ret)}` : '';
+    return {
+      redirect: { destination: `/ugc-2/welcome${welcomeQs}`, permanent: false },
+    };
   } catch {
-    return bail('/ugc-2?status=error');
+    return bail('?status=error');
   }
 }
 
