@@ -1045,7 +1045,7 @@ export default function RealEstatePage() {
               maxWidth: '94%',
             }}
           >
-            Real Estate Agents: Showcase listings like a pro — without a camera crew
+            Real estate agents: keep your social media active — without getting on camera
           </h1>
           <p
             style={{
@@ -1057,9 +1057,9 @@ export default function RealEstatePage() {
               textAlign: 'center',
             }}
           >
-            Upload a listing photo or describe the property, and Ariya Lab
-            builds a scroll-stopping reel in minutes — perfect for new
-            listings, open houses, and agent reels.
+            Type what you want to announce — a new listing, an open house, a
+            market update — and Ariya Lab builds the video in minutes. Your
+            social presence, handled.
           </p>
 
           {/* Mode toggle — centered pill, pairs visually with ModelPicker.
