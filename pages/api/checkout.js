@@ -224,13 +224,17 @@ export default async function handler(req, res) {
       '/ugc-2',
       '/local-business',
       '/local-business/pricing-plan',
+      '/real-estate',
+      '/real-estate/pricing-plan',
     ]);
     const isTicketFlow = isAnon && TICKET_FLOW_RETURNS.has(safeReturnTo);
     // For ticket flows we always send the user back to a canonical
     // post-subscribe destination (not the pricing page they paid on).
     const ticketReturnDest = safeReturnTo.startsWith('/local-business')
       ? '/local-business'
-      : '/ugc-2';
+      : safeReturnTo.startsWith('/real-estate')
+        ? '/real-estate'
+        : '/ugc-2';
     const ticketReturnQuery = `&r=${encodeURIComponent(ticketReturnDest)}`;
     const successPath = isTicketFlow
       ? `/ugc-2/claim?session_id={CHECKOUT_SESSION_ID}${ticketReturnQuery}`
