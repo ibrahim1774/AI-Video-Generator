@@ -137,23 +137,23 @@ export default function LocalBusinessPricingPlanPage() {
         )}
 
         <style jsx global>{`
-          .lb-pricing-carousel-wrap { max-width: 100%; margin: 10px auto 6px; padding: 0; }
+          .lb-pricing-carousel-wrap { max-width: 100%; margin: 6px auto 4px; padding: 0; }
           .lb-pricing-carousel {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             overflow-x: auto;
             overflow-y: hidden;
             scroll-snap-type: x mandatory;
             -webkit-overflow-scrolling: touch;
-            scroll-padding: 0 16px;
-            padding: 4px 16px 10px;
+            scroll-padding: 0 12px;
+            padding: 2px 12px 6px;
             scrollbar-width: none;
           }
           .lb-pricing-carousel::-webkit-scrollbar { display: none; }
           .lb-pricing-carousel-card {
             flex: 0 0 auto;
-            width: clamp(100px, 30vw, 130px);
-            border-radius: 10px;
+            width: clamp(78px, 22vw, 100px);
+            border-radius: 8px;
             overflow: hidden;
             border: 1px solid rgba(224, 196, 136, 0.18);
             background: #0c0c0e;
@@ -163,8 +163,8 @@ export default function LocalBusinessPricingPlanPage() {
           }
           .lb-pricing-carousel-card wistia-player { display: block; width: 100%; max-width: 100%; }
           @media (min-width: 720px) {
-            .lb-pricing-carousel { justify-content: center; scroll-padding: 0; padding: 4px 24px 10px; }
-            .lb-pricing-carousel-card { width: 120px; }
+            .lb-pricing-carousel { justify-content: center; scroll-padding: 0; padding: 2px 20px 6px; }
+            .lb-pricing-carousel-card { width: 92px; }
           }
         `}</style>
       </main>
