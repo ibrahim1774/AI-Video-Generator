@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import Head from 'next/head';
-import Script from 'next/script';
 import { useRouter } from 'next/router';
 
 import styles from '../styles/Home.module.css';
@@ -30,17 +29,6 @@ import { maybeCompressImage } from '../lib/imageCompress';
 
 const FEATURE = 'real-estate';
 const MAX_SCENES = 5;
-
-// Wistia media IDs and aspect ratios for the four marketing demos
-// shown to anonymous visitors on /ugc. All are vertical (9:16-ish).
-const LANDING_VIDEOS = [
-  { id: '85rijpwaq2', aspect: 0.5625 },
-  { id: 'lnndmek1c5', aspect: 0.5598755832037325 },
-  { id: 'lsno8w6lt4', aspect: 0.5598755832037325 },
-  { id: 'nx8bxwnoiw', aspect: 0.5581395348837209 },
-  { id: 'clq4ug7ln2', aspect: 0.5642633228840125 },
-  { id: 'p68dfq0341', aspect: 0.5642633228840125 },
-];
 
 function triggerDownload(url, filename) {
   try {
@@ -1350,85 +1338,6 @@ export default function RealEstatePage() {
 
           {/* UGC-3: credits-remaining badge intentionally hidden */}
         </form>
-
-        <Script src="https://fast.wistia.com/player.js" strategy="afterInteractive" async />
-        {LANDING_VIDEOS.slice(0, 4).map((v) => (
-          <Script
-            key={v.id}
-            src={`https://fast.wistia.com/embed/${v.id}.js`}
-            strategy="afterInteractive"
-            type="module"
-            async
-          />
-        ))}
-
-        <div className="ugc-creator-carousel-wrap">
-          <div className="ugc-creator-carousel" role="region" aria-label="UGC examples">
-            {LANDING_VIDEOS.slice(0, 4).map((v) => (
-              <div key={v.id} className="ugc-creator-carousel-card">
-                <wistia-player
-                  media-id={v.id}
-                  aspect={String(v.aspect)}
-                  autoplay="true"
-                  muted="true"
-                  silentautoplay="true"
-                  playsinline="true"
-                  controls-visible-on-load="false"
-                  playbar="false"
-                  playbutton="false"
-                  volume-control="false"
-                  fullscreen-button="false"
-                  settings-control="false"
-                  endvideobehavior="loop"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <style jsx global>{`
-          .ugc-creator-carousel-wrap {
-            max-width: 100%;
-            margin: 28px auto 8px;
-            padding: 0;
-          }
-          .ugc-creator-carousel {
-            display: flex;
-            gap: 10px;
-            overflow-x: auto;
-            overflow-y: hidden;
-            scroll-snap-type: x mandatory;
-            -webkit-overflow-scrolling: touch;
-            scroll-padding: 0 16px;
-            padding: 4px 16px 10px;
-            scrollbar-width: none;
-          }
-          .ugc-creator-carousel::-webkit-scrollbar { display: none; }
-          .ugc-creator-carousel-card {
-            flex: 0 0 auto;
-            width: clamp(160px, 60vw, 200px);
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid rgba(224, 196, 136, 0.18);
-            background: #0c0c0e;
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
-            scroll-snap-align: center;
-            min-width: 0;
-          }
-          .ugc-creator-carousel-card wistia-player {
-            display: block;
-            width: 100%;
-            max-width: 100%;
-          }
-          @media (min-width: 720px) {
-            .ugc-creator-carousel {
-              justify-content: center;
-              scroll-padding: 0;
-              padding: 4px 24px 10px;
-            }
-            .ugc-creator-carousel-card { width: 180px; }
-          }
-        `}</style>
       </main>
 
       <AuthModal
