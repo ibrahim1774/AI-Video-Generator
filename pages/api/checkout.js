@@ -231,7 +231,13 @@ export default async function handler(req, res) {
     // Surface picks the per-surface Product variant so the checkout
     // page header shows the right name ("Glow Up Yearly Plan",
     // "AI Interior Yearly Plan", etc). Same price, same entitlement.
-    const ALLOWED_SURFACES = new Set(['default', 'glow-up', 'interior-design']);
+    const ALLOWED_SURFACES = new Set([
+      'default',
+      'glow-up',
+      'interior-design',
+      'local-business',
+      'real-estate',
+    ]);
     const safeSurface = ALLOWED_SURFACES.has(surface) ? surface : 'default';
     const price = await getOrCreatePrice(plan, safeSurface);
 

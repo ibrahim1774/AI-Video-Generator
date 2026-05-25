@@ -481,6 +481,7 @@ export default function LocalBusinessPage() {
           <Paywall
             entitlement={entitlement}
             returnTo="/local-business"
+            surface="local-business"
             onError={(msg) => setError(msg)}
             onTrialStarted={() => { fetchEntitlement(); setStep('choose'); }}
           />
@@ -842,6 +843,7 @@ export default function LocalBusinessPage() {
         <Paywall
           entitlement={entitlement}
           returnTo="/local-business"
+          surface="local-business"
           onError={(msg) => setError(msg)}
           onTrialStarted={() => { fetchEntitlement(); setStep(storyScenes.length > 0 ? 'result' : 'choose'); }}
         />

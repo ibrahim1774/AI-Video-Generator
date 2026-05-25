@@ -481,6 +481,7 @@ export default function RealEstatePage() {
           <Paywall
             entitlement={entitlement}
             returnTo="/real-estate"
+            surface="real-estate"
             onError={(msg) => setError(msg)}
             onTrialStarted={() => { fetchEntitlement(); setStep('choose'); }}
           />
@@ -842,6 +843,7 @@ export default function RealEstatePage() {
         <Paywall
           entitlement={entitlement}
           returnTo="/real-estate"
+          surface="real-estate"
           onError={(msg) => setError(msg)}
           onTrialStarted={() => { fetchEntitlement(); setStep(storyScenes.length > 0 ? 'result' : 'choose'); }}
         />
