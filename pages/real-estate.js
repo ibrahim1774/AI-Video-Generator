@@ -1033,16 +1033,16 @@ export default function RealEstatePage() {
           <h1
             className={styles.headline}
             style={{
-              fontSize: 'clamp(24px, 3.6vw, 36px)',
-              margin: '8px auto',
-              lineHeight: 1.18,
+              fontSize: 'clamp(18px, 2.6vw, 26px)',
+              margin: '4px auto',
+              lineHeight: 1.2,
               display: 'inline-block',
-              padding: '12px 22px',
-              borderRadius: 14,
-              border: '1px solid rgba(224, 196, 136, 0.45)',
-              background: 'rgba(224, 196, 136, 0.10)',
+              padding: '6px 14px',
+              borderRadius: 10,
+              border: '1px solid rgba(224, 196, 136, 0.4)',
+              background: 'rgba(224, 196, 136, 0.08)',
               color: '#f5ebd0',
-              maxWidth: '92%',
+              maxWidth: '94%',
             }}
           >
             Real Estate Agents: Showcase listings like a pro — without a camera crew
