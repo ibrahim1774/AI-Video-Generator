@@ -87,21 +87,9 @@ export default function RealEstatePricingPlanPage() {
           </p>
         </div>
 
-        <Paywall
-          entitlement={entitlement}
-          returnTo="/real-estate/pricing-plan"
-          surface="real-estate"
-          onError={(msg) => setError(msg)}
-        />
-        {error && (
-          <div className={styles.error} style={{ maxWidth: 560, margin: '12px auto' }}>
-            {error}
-          </div>
-        )}
-
-        {/* Demo reel — same as /real-estate so the funnel feels
-            continuous after a visitor clicks through from the creator
-            page or from an ad. */}
+        {/* Demo reel — placed under the subheadline so the visitor
+            sees the product first, then the pricing cards. Compact
+            sizing per UX intent. */}
         <Script src="https://fast.wistia.com/player.js" strategy="afterInteractive" async />
         {LANDING_VIDEOS.map((v) => (
           <Script
@@ -136,8 +124,20 @@ export default function RealEstatePricingPlanPage() {
           </div>
         </div>
 
+        <Paywall
+          entitlement={entitlement}
+          returnTo="/real-estate/pricing-plan"
+          surface="real-estate"
+          onError={(msg) => setError(msg)}
+        />
+        {error && (
+          <div className={styles.error} style={{ maxWidth: 560, margin: '12px auto' }}>
+            {error}
+          </div>
+        )}
+
         <style jsx global>{`
-          .re-pricing-carousel-wrap { max-width: 100%; margin: 18px auto 8px; padding: 0; }
+          .re-pricing-carousel-wrap { max-width: 100%; margin: 10px auto 6px; padding: 0; }
           .re-pricing-carousel {
             display: flex;
             gap: 10px;
@@ -152,8 +152,8 @@ export default function RealEstatePricingPlanPage() {
           .re-pricing-carousel::-webkit-scrollbar { display: none; }
           .re-pricing-carousel-card {
             flex: 0 0 auto;
-            width: clamp(140px, 42vw, 170px);
-            border-radius: 12px;
+            width: clamp(100px, 30vw, 130px);
+            border-radius: 10px;
             overflow: hidden;
             border: 1px solid rgba(224, 196, 136, 0.18);
             background: #0c0c0e;
@@ -164,7 +164,7 @@ export default function RealEstatePricingPlanPage() {
           .re-pricing-carousel-card wistia-player { display: block; width: 100%; max-width: 100%; }
           @media (min-width: 720px) {
             .re-pricing-carousel { justify-content: center; scroll-padding: 0; padding: 4px 24px 10px; }
-            .re-pricing-carousel-card { width: 160px; }
+            .re-pricing-carousel-card { width: 120px; }
           }
         `}</style>
       </main>
