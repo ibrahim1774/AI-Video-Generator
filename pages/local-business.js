@@ -1029,10 +1029,21 @@ export default function LocalBusinessPage() {
     <>
       <Head><title>Content for Local Businesses — Ariya Lab</title></Head>
       <main className={styles.page} style={{ paddingTop: 8 }}>
-        <div className={styles.hero} style={{ marginBottom: 6 }}>
+        <div className={styles.hero} style={{ marginBottom: 6, textAlign: 'center' }}>
           <h1
             className={styles.headline}
-            style={{ fontSize: 'clamp(20px, 3vw, 30px)', margin: '4px 0', lineHeight: 1.2 }}
+            style={{
+              fontSize: 'clamp(24px, 3.6vw, 36px)',
+              margin: '8px auto',
+              lineHeight: 1.18,
+              display: 'inline-block',
+              padding: '12px 22px',
+              borderRadius: 14,
+              border: '1px solid rgba(224, 196, 136, 0.45)',
+              background: 'rgba(224, 196, 136, 0.10)',
+              color: '#f5ebd0',
+              maxWidth: '92%',
+            }}
           >
             Keep your local business visible — without the time, the camera, or big budget
           </h1>
