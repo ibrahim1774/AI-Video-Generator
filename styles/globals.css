@@ -185,3 +185,27 @@ h4 {
 .fade-up {
   animation: fadeUp 0.5s var(--ease) both;
 }
+
+/* Keep the page stationary on tap.
+   - text-size-adjust pins the rendered text size so orientation changes
+     don't reflow.
+   - touch-action: manipulation removes the 300ms tap delay and the
+     double-tap-to-zoom gesture, which also blocks iOS auto-zoom on
+     input focus.
+   - Forcing inputs/textareas/selects to at least 16px on small screens
+     is the belt-and-suspenders fix: iOS Safari only auto-zooms when an
+     input's font-size is BELOW 16px. Combined with the viewport meta
+     (maximum-scale=1, user-scalable=no in components/AppHead.js), this
+     keeps the page from jumping around when the user taps any field. */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  touch-action: manipulation;
+}
+@media (max-width: 768px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
