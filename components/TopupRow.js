@@ -123,34 +123,37 @@ export default function TopupRow({
 
   const renderRow = (heading, packs, creditLabel, inflate, subNoun) => (
     <>
-      <div className={paywallStyles.topupGroupHead}>
-        <span className={paywallStyles.topupGroupTitle}>{heading}</span>
+      <div className={paywallStyles.topupGroupHead} style={groupHeadStyle}>
+        <span style={groupTitleStyle}>{heading}</span>
       </div>
       <div className={paywallStyles.topupRow}>
-        {packs.map((t) => {
+        {packs.map((t, i) => {
           const display = inflate ? t.credits * IMAGE_DISPLAY_MULTIPLIER : t.credits;
+          const isBusy = busy === t.pack;
+          const isMiddle = i === 1;
           return (
             <button
               key={t.pack}
               type="button"
-              className={paywallStyles.topupBtn}
+              style={isMiddle ? bestValueBtnStyle : topupBtnStyle}
               onClick={() => startTopup(t.pack)}
               disabled={busy !== null}
             >
-              <span className={paywallStyles.topupPrice}>{t.label}</span>
-              <span className={paywallStyles.topupCredits}>
-                {busy === t.pack
+              {isMiddle && (
+                <span style={bestValueBadgeStyle}>Best value</span>
+              )}
+              <span style={priceStyle}>{t.label}</span>
+              <span style={creditsStyle}>
+                {isBusy
                   ? 'Redirecting…'
                   : `${display.toLocaleString()} ${creditLabel}`}
               </span>
               {inflate && (
-                <span
-                  className={paywallStyles.topupCredits}
-                  style={{ opacity: 0.7, marginTop: 2 }}
-                >
+                <span style={{ ...creditsStyle, opacity: 0.6, marginTop: 2 }}>
                   = {t.credits} {subNoun}
                 </span>
               )}
+              <span style={buyLabelStyle}>{isBusy ? '…' : 'Buy'}</span>
             </button>
           );
         })}
@@ -170,3 +173,93 @@ export default function TopupRow({
     </>
   );
 }
+
+/* ── Premium "Obsidian & Platinum" styles for TopupRow ── */
+
+const groupHeadStyle = {
+  marginBottom: 10,
+};
+
+const groupTitleStyle = {
+  fontFamily: 'var(--font-mono, ui-monospace, monospace)',
+  fontSize: 11,
+  letterSpacing: '0.16em',
+  textTransform: 'uppercase',
+  color: 'var(--text-dim, #a6a6ad)',
+};
+
+const topupBtnStyle = {
+  position: 'relative',
+  background:
+    'linear-gradient(180deg, rgba(255,255,255,0.045) 0%, rgba(255,255,255,0.018) 100%)',
+  border: '1px solid rgba(255,255,255,0.1)',
+  borderRadius: 'var(--radius-lg, 18px)',
+  padding: '18px 14px 14px',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: 4,
+  cursor: 'pointer',
+  transition: 'transform 0.18s ease, box-shadow 0.2s ease, border-color 0.2s ease',
+  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.09)',
+  color: 'var(--text, #f6f6f7)',
+};
+
+const bestValueBtnStyle = {
+  ...topupBtnStyle,
+  background:
+    'radial-gradient(130% 100% at 50% -10%, rgba(255,255,255,0.1), transparent 60%), ' +
+    'linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 100%)',
+  border: '1px solid rgba(255,255,255,0.22)',
+  boxShadow:
+    'inset 0 1px 0 rgba(255,255,255,0.16), 0 8px 28px -10px rgba(255,255,255,0.18)',
+  transform: 'translateY(-2px)',
+};
+
+const bestValueBadgeStyle = {
+  position: 'absolute',
+  top: -10,
+  left: '50%',
+  transform: 'translateX(-50%)',
+  background: 'linear-gradient(180deg, #ffffff 0%, #d6d6db 100%)',
+  color: '#0a0a0b',
+  fontSize: 9,
+  fontWeight: 700,
+  letterSpacing: '0.14em',
+  textTransform: 'uppercase',
+  padding: '3px 10px',
+  borderRadius: 999,
+  whiteSpace: 'nowrap',
+  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85)',
+};
+
+const priceStyle = {
+  fontFamily: 'var(--font-display, Georgia, serif)',
+  fontSize: 26,
+  fontWeight: 600,
+  color: 'var(--text, #f6f6f7)',
+  letterSpacing: '-0.01em',
+};
+
+const creditsStyle = {
+  fontFamily: 'var(--font-mono, ui-monospace, monospace)',
+  fontSize: 10,
+  letterSpacing: '0.1em',
+  textTransform: 'uppercase',
+  color: 'var(--text-dim, #a6a6ad)',
+};
+
+const buyLabelStyle = {
+  marginTop: 8,
+  padding: '6px 18px',
+  borderRadius: 'var(--radius-sm, 8px)',
+  background: 'linear-gradient(180deg, #ffffff 0%, #d6d6db 100%)',
+  color: '#0a0a0b',
+  fontSize: 11,
+  fontWeight: 700,
+  letterSpacing: '0.08em',
+  textTransform: 'uppercase',
+  boxShadow:
+    'inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -1px 0 rgba(0,0,0,0.12), ' +
+    '0 4px 14px -6px rgba(255,255,255,0.28)',
+};

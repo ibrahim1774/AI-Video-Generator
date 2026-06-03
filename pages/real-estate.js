@@ -463,8 +463,10 @@ export default function RealEstatePage() {
         <Head><title>Pick a Plan — Ariya Lab</title></Head>
         <main className={styles.page}>
           <div className={styles.hero}>
-            <span className={styles.eyebrow}>◆ Pick a plan</span>
-            <h1 className={styles.headline}>Start creating AI videos</h1>
+            <span className={styles.eyebrow} style={{ marginBottom: 16, display: 'inline-flex' }}>◆ Pick a Plan</span>
+            <h1 className={styles.headline}>
+              Start creating <span className={styles.accent}>AI videos</span>
+            </h1>
           </div>
           <Paywall
             entitlement={entitlement}
@@ -529,7 +531,7 @@ export default function RealEstatePage() {
     return (
       <main className={styles.page}>
         <div className={styles.hero}>
-          <span className={styles.eyebrow}>◆ Extending</span>
+          <span className={styles.eyebrow} style={{ marginBottom: 16, display: 'inline-flex' }}>◆ Extending</span>
           <h1 className={styles.headline}>
             Reading the <span className={styles.accent}>last frame</span>
           </h1>
@@ -546,7 +548,7 @@ export default function RealEstatePage() {
     return (
       <main className={styles.page}>
         <div className={styles.hero}>
-          <span className={styles.eyebrow}>◆ Combining</span>
+          <span className={styles.eyebrow} style={{ marginBottom: 16, display: 'inline-flex' }}>◆ Combining</span>
           <h1 className={styles.headline}>
             Stitching your <span className={styles.accent}>scenes together</span>
           </h1>
@@ -563,7 +565,7 @@ export default function RealEstatePage() {
     return (
       <main className={styles.page}>
         <div className={styles.hero}>
-          <span className={styles.eyebrow}>◆ Done</span>
+          <span className={styles.eyebrow} style={{ marginBottom: 16, display: 'inline-flex' }}>◆ Done</span>
           <h1 className={styles.headline}>
             Your story is <span className={styles.accent}>ready</span>
           </h1>
@@ -572,11 +574,20 @@ export default function RealEstatePage() {
           </p>
         </div>
         <div style={{ maxWidth: 720, margin: '0 auto', padding: '0 16px' }}>
-          <video
-            src={story.combinedUrl}
-            controls
-            style={{ width: '100%', borderRadius: 12, background: '#000' }}
-          />
+          <div style={{
+            position: 'relative',
+            borderRadius: 'var(--radius-lg)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), var(--shadow-xl)',
+            overflow: 'hidden',
+            background: 'var(--surface-0)',
+          }}>
+            <video
+              src={story.combinedUrl}
+              controls
+              style={{ width: '100%', display: 'block', background: '#000' }}
+            />
+          </div>
           <div style={{ display: 'flex', gap: 12, marginTop: 20, flexWrap: 'wrap' }}>
             <button
               type="button"
@@ -589,34 +600,16 @@ export default function RealEstatePage() {
             <button
               type="button"
               onClick={() => setStep('result')}
-              style={{
-                flex: 1, minWidth: 160,
-                background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.15)',
-                color: '#ddd',
-                padding: '10px 16px',
-                borderRadius: 6,
-                cursor: 'pointer',
-                fontSize: 13,
-                fontFamily: 'inherit',
-              }}
+              className="btn-ghost"
+              style={{ flex: 1, minWidth: 160, justifyContent: 'center' }}
             >
               ← Back to scenes
             </button>
             <button
               type="button"
               onClick={resetStory}
-              style={{
-                flex: 1, minWidth: 160,
-                background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.15)',
-                color: '#ddd',
-                padding: '10px 16px',
-                borderRadius: 6,
-                cursor: 'pointer',
-                fontSize: 13,
-                fontFamily: 'inherit',
-              }}
+              className="btn-ghost"
+              style={{ flex: 1, minWidth: 160, justifyContent: 'center' }}
             >
               + New story
             </button>
@@ -631,7 +624,7 @@ export default function RealEstatePage() {
     return (
       <main className={styles.page}>
         <div className={styles.hero}>
-          <span className={styles.eyebrow}>
+          <span className={styles.eyebrow} style={{ marginBottom: 16, display: 'inline-flex' }}>
             ◆ Scene {storyScenes.length} of {MAX_SCENES} &middot; saved
           </span>
           <h1 className={styles.headline}>
@@ -640,13 +633,22 @@ export default function RealEstatePage() {
         </div>
 
         <div style={{ maxWidth: 720, margin: '0 auto', padding: '0 16px' }}>
-          {/* Latest scene video */}
-          <video
-            key={featured?.id}
-            src={featured?.videoUrl}
-            controls
-            style={{ width: '100%', borderRadius: 12, background: '#000' }}
-          />
+          {/* Latest scene video — glass frame */}
+          <div style={{
+            position: 'relative',
+            borderRadius: 'var(--radius-lg)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), var(--shadow-xl)',
+            overflow: 'hidden',
+            background: 'var(--surface-0)',
+          }}>
+            <video
+              key={featured?.id}
+              src={featured?.videoUrl}
+              controls
+              style={{ width: '100%', display: 'block', background: '#000' }}
+            />
+          </div>
 
           {/* Story rail */}
           {storyScenes.length > 1 && (
@@ -654,7 +656,7 @@ export default function RealEstatePage() {
               style={{
                 display: 'flex',
                 gap: 8,
-                marginTop: 16,
+                marginTop: 12,
                 overflowX: 'auto',
                 padding: '4px 0',
               }}
@@ -665,10 +667,12 @@ export default function RealEstatePage() {
                   style={{
                     flex: '0 0 auto',
                     width: 120,
-                    border: `1px solid ${s.id === featured.id ? 'rgba(255, 255, 255,0.6)' : 'rgba(255,255,255,0.12)'}`,
-                    borderRadius: 8,
+                    border: `1px solid ${s.id === featured.id ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.08)'}`,
+                    borderRadius: 'var(--radius-sm)',
                     overflow: 'hidden',
-                    background: '#0f0f11',
+                    background: 'var(--surface-1)',
+                    boxShadow: s.id === featured.id ? 'inset 0 1px 0 rgba(255,255,255,0.1), var(--shadow-md)' : 'none',
+                    transition: 'border-color 0.2s var(--ease)',
                   }}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -677,8 +681,14 @@ export default function RealEstatePage() {
                     alt={`Scene ${i + 1}`}
                     style={{ width: '100%', height: 80, objectFit: 'cover', display: 'block' }}
                   />
-                  <div style={{ padding: '6px 8px', fontSize: 11, color: '#bbb' }}>
-                    Scene {i + 1} · {s.duration}s {s.type === 'extend' ? '↪' : s.type === 'new' ? '+' : ''}
+                  <div style={{
+                    padding: '5px 8px',
+                    fontSize: 10,
+                    color: 'var(--text-dim)',
+                    fontFamily: 'var(--font-mono)',
+                    letterSpacing: '0.06em',
+                  }}>
+                    SCENE {i + 1} · {s.duration}S {s.type === 'extend' ? '↪' : s.type === 'new' ? '+' : ''}
                   </div>
                 </div>
               ))}
@@ -689,18 +699,20 @@ export default function RealEstatePage() {
 
           <div
             style={{
-              marginTop: 10,
-              padding: '10px 14px',
-              background: 'rgba(255, 255, 255, 0.06)',
-              border: '1px solid rgba(255, 255, 255, 0.25)',
-              borderRadius: 8,
-              fontSize: 12,
-              color: '#e6e6e6',
-              lineHeight: 1.5,
+              marginTop: 12,
+              padding: '10px 16px',
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 'var(--radius-md)',
+              fontSize: 11,
+              color: 'var(--text-faint)',
+              lineHeight: 1.55,
+              fontFamily: 'var(--font-mono)',
+              letterSpacing: '0.04em',
             }}
           >
-            Each scene generates its own audio track. Voice and ambient sound
-            will change at the scene seam.
+            EACH SCENE GENERATES ITS OWN AUDIO TRACK. VOICE AND AMBIENT SOUND
+            WILL CHANGE AT THE SCENE SEAM.
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 16 }}>
@@ -717,26 +729,16 @@ export default function RealEstatePage() {
               type="button"
               onClick={handleNewScene}
               disabled={atSceneCap}
-              style={{
-                background: 'transparent',
-                border: '1px solid rgba(255, 255, 255, 0.4)',
-                color: '#ededed',
-                padding: '12px 16px',
-                borderRadius: 6,
-                cursor: atSceneCap ? 'not-allowed' : 'pointer',
-                opacity: atSceneCap ? 0.4 : 1,
-                fontSize: 14,
-                fontFamily: 'inherit',
-                fontWeight: 500,
-              }}
+              className="btn-ghost"
+              style={atSceneCap ? { opacity: 0.4, cursor: 'not-allowed', width: '100%', justifyContent: 'center' } : { width: '100%', justifyContent: 'center' }}
             >
               + New scene
             </button>
           </div>
 
           {atSceneCap && (
-            <div style={{ marginTop: 8, fontSize: 11, color: '#888', textAlign: 'center' }}>
-              5-scene cap reached. Combine or start a new story.
+            <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-faint)', textAlign: 'center', fontFamily: 'var(--font-mono)', letterSpacing: '0.06em' }}>
+              5-SCENE CAP REACHED — COMBINE OR START A NEW STORY
             </div>
           )}
 
@@ -745,17 +747,8 @@ export default function RealEstatePage() {
               <button
                 type="button"
                 onClick={handleCombine}
-                style={{
-                  flex: 1, minWidth: 180,
-                  background: 'transparent',
-                  border: '1px solid rgba(255,255,255,0.18)',
-                  color: '#ddd',
-                  padding: '10px 14px',
-                  borderRadius: 6,
-                  cursor: 'pointer',
-                  fontSize: 13,
-                  fontFamily: 'inherit',
-                }}
+                className="btn-ghost"
+                style={{ flex: 1, minWidth: 180, justifyContent: 'center' }}
               >
                 ↓ Combine &amp; download ({storyScenes.length} scenes)
               </button>
@@ -763,17 +756,8 @@ export default function RealEstatePage() {
             <button
               type="button"
               onClick={() => triggerDownload(featured.videoUrl, `scene-${storyScenes.length}.mp4`)}
-              style={{
-                flex: 1, minWidth: 140,
-                background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.15)',
-                color: '#ddd',
-                padding: '10px 14px',
-                borderRadius: 6,
-                cursor: 'pointer',
-                fontSize: 13,
-                fontFamily: 'inherit',
-              }}
+              className="btn-ghost"
+              style={{ flex: 1, minWidth: 140, justifyContent: 'center' }}
             >
               ↓ Scene {storyScenes.length}
             </button>
@@ -781,17 +765,8 @@ export default function RealEstatePage() {
               <button
                 type="button"
                 onClick={handleUndo}
-                style={{
-                  flex: 1, minWidth: 120,
-                  background: 'transparent',
-                  border: '1px solid rgba(255,255,255,0.15)',
-                  color: '#bbb',
-                  padding: '10px 14px',
-                  borderRadius: 6,
-                  cursor: 'pointer',
-                  fontSize: 13,
-                  fontFamily: 'inherit',
-                }}
+                className="btn-ghost"
+                style={{ flex: 1, minWidth: 120, justifyContent: 'center' }}
               >
                 ⌫ Undo last
               </button>
@@ -799,17 +774,8 @@ export default function RealEstatePage() {
             <button
               type="button"
               onClick={resetStory}
-              style={{
-                flex: 1, minWidth: 120,
-                background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.15)',
-                color: '#bbb',
-                padding: '10px 14px',
-                borderRadius: 6,
-                cursor: 'pointer',
-                fontSize: 13,
-                fontFamily: 'inherit',
-              }}
+              className="btn-ghost"
+              style={{ flex: 1, minWidth: 120, justifyContent: 'center' }}
             >
               + New story
             </button>
@@ -825,8 +791,10 @@ export default function RealEstatePage() {
     return (
       <main className={styles.page}>
         <div className={styles.hero}>
-          <span className={styles.eyebrow}>◆ Out of credits</span>
-          <h1 className={styles.headline}>Pick a plan to keep going</h1>
+          <span className={styles.eyebrow} style={{ marginBottom: 16, display: 'inline-flex' }}>◆ Out of Credits</span>
+          <h1 className={styles.headline}>
+            Pick a plan to <span className={styles.accent}>keep going</span>
+          </h1>
         </div>
         <Paywall
           entitlement={entitlement}
@@ -839,16 +807,7 @@ export default function RealEstatePage() {
           <button
             type="button"
             onClick={() => setStep(storyScenes.length > 0 ? 'result' : (imageUrl ? 'animate' : 'choose'))}
-            style={{
-              background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.15)',
-              color: '#ddd',
-              padding: '8px 16px',
-              borderRadius: 6,
-              cursor: 'pointer',
-              fontSize: 13,
-              fontFamily: 'inherit',
-            }}
+            className="btn-ghost"
           >
             ← Back
           </button>
@@ -860,13 +819,9 @@ export default function RealEstatePage() {
   const calloutStyle = {
     maxWidth: 720,
     margin: '12px auto 20px',
-    padding: '12px 16px',
-    border: '1px solid rgba(255, 255, 255, 0.35)',
-    borderRadius: 10,
-    background: 'rgba(255, 255, 255, 0.06)',
-    color: '#e6e6e6',
-    fontSize: 13,
-    lineHeight: 1.5,
+    padding: '12px 20px',
+    borderRadius: 'var(--radius-lg)',
+    lineHeight: 1.55,
     textAlign: 'center',
   };
 
@@ -883,16 +838,28 @@ export default function RealEstatePage() {
         <Head><title>UGC Creator — Ariya Lab</title></Head>
         <main className={styles.page}>
           <div className={styles.hero}>
-            <span className={styles.eyebrow}>{eyebrow}</span>
+            <span className={styles.eyebrow} style={{ marginBottom: 16, display: 'inline-flex' }}>{eyebrow}</span>
             <h1 className={styles.headline}>
               Tell your character what to <span className={styles.accent}>do and say</span>
             </h1>
           </div>
 
-          <div style={calloutStyle}>
-            ◆ Powered by Kling 3.0 — <strong>3&ndash;15 seconds</strong> per scene with
-            optional native audio. <strong>1 credit per second</strong> of video.
-            Generation takes 2&ndash;4 minutes.
+          <div style={{
+            ...calloutStyle,
+            background: 'radial-gradient(130% 70% at 50% -10%, rgba(255,255,255,0.05), transparent 56%), linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))',
+            backdropFilter: 'blur(12px) saturate(130%)',
+            WebkitBackdropFilter: 'blur(12px) saturate(130%)',
+            border: '1px solid rgba(255,255,255,0.09)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), var(--shadow-sm)',
+            borderRadius: 'var(--radius-lg)',
+            fontFamily: 'var(--font-mono)',
+            fontSize: 11,
+            letterSpacing: '0.08em',
+            color: 'var(--text-dim)',
+          }}>
+            ◆ POWERED BY KLING 3.0 — <strong style={{ color: 'var(--text)', fontWeight: 600 }}>3–15 SECONDS</strong> PER SCENE WITH
+            OPTIONAL NATIVE AUDIO. <strong style={{ color: 'var(--text)', fontWeight: 600 }}>1 CREDIT PER SECOND</strong> OF VIDEO.
+            GENERATION TAKES 2–4 MINUTES.
           </div>
 
           <form className={styles.shell} onSubmit={handleAnimate}>
@@ -901,12 +868,30 @@ export default function RealEstatePage() {
               <img
                 src={effectiveStartImage}
                 alt="Starting frame"
-                style={{ maxWidth: 320, maxHeight: 320, borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)' }}
+                style={{
+                  maxWidth: 320,
+                  maxHeight: 320,
+                  borderRadius: 'var(--radius-lg)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), var(--shadow-xl)',
+                }}
               />
             </div>
 
             <label className={styles.field} style={{ display: 'block' }}>
-              <span className={styles.swapModeLabel}>Script / direction</span>
+              <span
+                style={{
+                  display: 'block',
+                  marginBottom: 8,
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 10,
+                  letterSpacing: '0.18em',
+                  textTransform: 'uppercase',
+                  color: 'var(--text-dim)',
+                }}
+              >
+                Script / Direction
+              </span>
               <textarea
                 value={script}
                 onChange={(e) => setScript(e.target.value)}
@@ -914,18 +899,21 @@ export default function RealEstatePage() {
                 placeholder='e.g. Smiles and waves at the camera, then says: "Hey everyone, today I am reviewing my favorite coffee."'
                 style={{
                   width: '100%',
-                  padding: 12,
-                  borderRadius: 8,
-                  background: '#0f0f11',
-                  color: '#eee',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  fontFamily: 'inherit',
+                  padding: '14px 16px',
+                  borderRadius: 'var(--radius-md)',
+                  background: 'rgba(0,0,0,0.35)',
+                  color: 'var(--text)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.4)',
+                  fontFamily: 'var(--font-body)',
                   fontSize: 14,
+                  lineHeight: 1.6,
                   resize: 'vertical',
+                  transition: 'border-color 0.2s var(--ease), box-shadow 0.2s var(--ease)',
                 }}
               />
-              <div style={{ marginTop: 6, fontSize: 11, color: '#888' }}>
-                Tip: put dialogue in &ldquo;quotes&rdquo; so the model lip-syncs it.
+              <div style={{ marginTop: 6, fontSize: 11, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)', letterSpacing: '0.04em' }}>
+                TIP: PUT DIALOGUE IN &ldquo;QUOTES&rdquo; SO THE MODEL LIP-SYNCS IT
               </div>
             </label>
 
@@ -977,18 +965,8 @@ export default function RealEstatePage() {
                   setStep('choose');
                 }
               }}
-              style={{
-                marginTop: 12,
-                background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.15)',
-                color: '#ddd',
-                padding: '8px 16px',
-                borderRadius: 6,
-                cursor: 'pointer',
-                fontSize: 13,
-                fontFamily: 'inherit',
-                width: '100%',
-              }}
+              className="btn-ghost"
+              style={{ marginTop: 4, width: '100%', justifyContent: 'center' }}
             >
               ← {storyScenes.length > 0 ? 'Back to scenes' : 'Use a different image'}
             </button>
@@ -1019,37 +997,36 @@ export default function RealEstatePage() {
     <>
       <Head><title>Real Estate Listing Videos — Ariya Lab</title></Head>
       <main className={styles.page} style={{ paddingTop: 8 }}>
-        <div className={styles.hero} style={{ marginBottom: 6, textAlign: 'center' }}>
+        <div className={styles.hero} style={{ marginBottom: 16, textAlign: 'center' }}>
+          <span className={styles.eyebrow} style={{ marginBottom: 16, display: 'inline-flex' }}>
+            ◆ Real Estate Video Studio
+          </span>
           <h1
             className={styles.headline}
             style={{
-              fontSize: 'clamp(18px, 2.6vw, 26px)',
-              margin: '4px auto',
-              lineHeight: 1.2,
-              display: 'inline-block',
-              padding: '6px 14px',
-              borderRadius: 10,
-              border: '1px solid rgba(255, 255, 255, 0.4)',
-              background: 'rgba(255, 255, 255, 0.08)',
-              color: '#f5ebd0',
-              maxWidth: '94%',
+              fontSize: 'clamp(32px, 5vw, 60px)',
+              margin: '0 auto 18px',
+              lineHeight: 1.08,
+              letterSpacing: '-0.025em',
+              maxWidth: 760,
+              color: 'var(--text)',
             }}
           >
-            Real estate agents: keep your social media active — without getting on camera
+            Keep your social media{' '}
+            <span className={styles.accent}>active</span>
+            {' '}—{' '}
+            without getting on camera
           </h1>
           <p
+            className={styles.subtitle}
             style={{
-              margin: '8px auto 0',
-              maxWidth: 560,
-              fontSize: 14,
-              lineHeight: 1.5,
-              color: '#cfcfcf',
-              textAlign: 'center',
+              margin: '0 auto 20px',
+              maxWidth: 520,
+              fontSize: 15,
             }}
           >
             Type what you want to announce — a new listing, an open house, a
-            market update — and Ariya Lab builds the video in minutes. Your
-            social presence, handled.
+            market update — and Ariya Lab builds the video in minutes.
           </p>
 
           {/* Mode toggle — centered pill, pairs visually with ModelPicker.
@@ -1060,16 +1037,17 @@ export default function RealEstatePage() {
             aria-label="Generation mode"
             style={{
               display: 'inline-flex',
-              margin: '14px auto 0',
+              margin: '0 auto',
               padding: 4,
               borderRadius: 999,
-              border: '1px solid rgba(255,255,255,0.14)',
-              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), var(--shadow-sm)',
             }}
           >
             {[
-              { key: 'photo', label: '🖼  With photo' },
-              { key: 'text', label: '✍  Text only' },
+              { key: 'photo', label: 'With photo' },
+              { key: 'text', label: 'Text only' },
             ].map((opt) => {
               const active = mode === opt.key;
               return (
@@ -1090,16 +1068,18 @@ export default function RealEstatePage() {
                     setMode(opt.key);
                   }}
                   style={{
-                    padding: '8px 16px',
+                    padding: '9px 20px',
                     borderRadius: 999,
-                    border: 'none',
-                    background: active ? '#ededed' : 'transparent',
-                    color: active ? '#0b0b0c' : '#cfcfcf',
-                    fontFamily: 'inherit',
+                    border: active ? '1px solid rgba(255,255,255,0.2)' : '1px solid transparent',
+                    background: active ? 'linear-gradient(180deg,#ffffff,#d4d4da)' : 'transparent',
+                    color: active ? '#0a0a0b' : 'var(--text-dim)',
+                    fontFamily: 'var(--font-body)',
                     fontSize: 13,
                     fontWeight: active ? 600 : 500,
                     cursor: 'pointer',
-                    transition: 'background 120ms ease, color 120ms ease',
+                    letterSpacing: '0.01em',
+                    transition: 'background 180ms var(--ease), color 180ms var(--ease), border-color 180ms var(--ease)',
+                    boxShadow: active ? 'inset 0 1px 0 rgba(255,255,255,0.85), 0 4px 12px rgba(255,255,255,0.15)' : 'none',
                   }}
                 >
                   {opt.label}
@@ -1109,17 +1089,19 @@ export default function RealEstatePage() {
           </div>
           <p
             style={{
-              margin: '6px auto 0',
+              margin: '10px auto 0',
               maxWidth: 480,
               fontSize: 12,
-              lineHeight: 1.45,
-              color: '#9a9a9a',
+              lineHeight: 1.5,
+              color: 'var(--text-faint)',
               textAlign: 'center',
+              fontFamily: 'var(--font-mono)',
+              letterSpacing: '0.04em',
             }}
           >
             {mode === 'photo'
-              ? 'With photo: animates your actual listing, property shot, or agent headshot.'
-              : 'Text only: AI invents the scene from your description — best for neighborhoods, lifestyle, b-roll.'}
+              ? 'ANIMATES YOUR LISTING, PROPERTY SHOT, OR HEADSHOT'
+              : 'AI INVENTS THE SCENE — BEST FOR NEIGHBORHOODS, LIFESTYLE, B-ROLL'}
           </p>
         </div>
 

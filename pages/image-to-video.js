@@ -143,7 +143,7 @@ export default function ImageToVideoPage() {
     return (
       <main className={styles.page}>
         <div className={styles.hero}>
-          <p className={styles.subtitle}>Loading…</p>
+          <p className={`${styles.subtitle} shimmer-text`} style={{ fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '0.18em', textTransform: 'uppercase' }}>Loading…</p>
         </div>
       </main>
     );
@@ -184,9 +184,9 @@ export default function ImageToVideoPage() {
   if (step === 'paywall') {
     return (
       <main className={styles.page}>
-        <div className={styles.hero}>
+        <div className={`${styles.hero} fade-up`}>
           <span className={styles.eyebrow}>◆ Out of credits</span>
-          <h1 className={styles.headline}>Pick a plan to keep going</h1>
+          <h1 className={styles.headline}>Pick a plan to <em className={styles.accent}>keep going</em></h1>
         </div>
         <Paywall
           entitlement={entitlement}
@@ -197,20 +197,12 @@ export default function ImageToVideoPage() {
             setStep('upload');
           }}
         />
-        <div style={{ textAlign: 'center', marginTop: 16 }}>
+        <div style={{ textAlign: 'center', marginTop: 24 }}>
           <button
             type="button"
             onClick={() => setStep('upload')}
-            style={{
-              background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.15)',
-              color: '#ddd',
-              padding: '8px 16px',
-              borderRadius: 6,
-              cursor: 'pointer',
-              fontSize: 13,
-              fontFamily: 'inherit',
-            }}
+            className="btn-ghost"
+            style={{ fontSize: 13 }}
           >
             ← Back
           </button>
@@ -225,117 +217,255 @@ export default function ImageToVideoPage() {
         <title>Image to Video — Ariya Lab</title>
       </Head>
       <main className={styles.page}>
-        <div className={styles.hero}>
+        {/* ── Hero ── */}
+        <div className={`${styles.hero} fade-up`}>
           <span className={styles.eyebrow}>◆ Image to Video</span>
           <h1 className={styles.headline}>
-            Turn a photo into a <span className={styles.accent}>moving clip</span>
+            Turn a photo into a{' '}
+            <em className={styles.accent}>moving clip</em>
           </h1>
           <p className={styles.subtitle}>
-            Upload one image and tell us the motion you want. Our top-rated
-            video model paints it to life &mdash; <strong>1 credit per generation</strong>.
+            Upload one image and describe the motion you want. Our top-rated
+            video model paints it to life &mdash;{' '}
+            <strong style={{ color: 'var(--text)', fontWeight: 600 }}>1 credit per generation</strong>.
           </p>
         </div>
 
+        {/* ── Info banner ── */}
         <div
+          className={styles.banner}
           style={{
             maxWidth: 720,
-            margin: '12px auto 20px',
-            padding: '12px 16px',
-            border: '1px solid rgba(255, 255, 255, 0.35)',
-            borderRadius: 10,
-            background: 'rgba(255, 255, 255, 0.06)',
-            color: '#e6e6e6',
-            fontSize: 13,
-            lineHeight: 1.5,
-            textAlign: 'center',
+            fontFamily: 'var(--font-mono)',
+            fontSize: 12,
+            letterSpacing: '0.07em',
+            lineHeight: 1.6,
+            color: 'var(--text-dim)',
           }}
         >
-          ◆ Powered by Kling 3.0 — pick any length from <strong>3 to 15 seconds</strong>.
-          Optional native audio (dialogue, lip-sync, sound effects). 1 credit per
-          3 seconds of video. Generation takes <strong>2&ndash;4 minutes</strong>.
+          ◆&nbsp; Powered by Kling 3.0 — pick any length from{' '}
+          <strong style={{ color: 'var(--text)', fontWeight: 600 }}>3 to 15 seconds</strong>.
+          &nbsp;Optional native audio (dialogue, lip-sync, sound effects).
+          &nbsp;1 credit per 3 s of video.
+          &nbsp;Generation takes{' '}
+          <strong style={{ color: 'var(--text)', fontWeight: 600 }}>2–4 minutes</strong>.
         </div>
 
-        <form className={styles.shell} onSubmit={handleSubmit}>
-          <div className={styles.uploads} style={{ gridTemplateColumns: '1fr' }}>
-            <UploadZone
-              label="Starting image"
-              sublabel="JPG or PNG · clear subject, good lighting"
-              icon="🖼️"
-              accept="image/jpeg,image/png"
-              file={imageFile}
-              onFileSelected={setImageFile}
-              onRemove={() => setImageFile(null)}
-              maxSizeMB={1024}
-            />
-          </div>
+        {/* ── Main form card ── */}
+        <form
+          className={styles.shell}
+          onSubmit={handleSubmit}
+          style={{
+            position: 'relative',
+            background: [
+              'radial-gradient(130% 70% at 50% -10%, rgba(255,255,255,0.06), transparent 56%)',
+              'linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.012))',
+              'rgba(10,10,12,0.50)',
+            ].join(', '),
+            backdropFilter: 'blur(16px) saturate(130%)',
+            WebkitBackdropFilter: 'blur(16px) saturate(130%)',
+            border: '1px solid rgba(255,255,255,0.10)',
+            borderRadius: 'var(--radius-2xl)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.10), var(--shadow-xl)',
+            padding: '36px 36px 32px',
+            gap: 24,
+          }}
+        >
+          {/* specular top sheen */}
+          <span
+            aria-hidden="true"
+            style={{
+              pointerEvents: 'none',
+              position: 'absolute',
+              inset: 0,
+              borderRadius: 'inherit',
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.055) 0%, transparent 40%)',
+              zIndex: 0,
+            }}
+          />
 
-          <label className={styles.field} style={{ display: 'block', marginTop: 16 }}>
-            <span className={styles.swapModeLabel}>Describe the motion</span>
-            <textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              rows={3}
-              placeholder='e.g. The woman smiles and turns to the camera. She says: "Hi, welcome back to my channel."'
-              style={{
-                width: '100%',
-                padding: 12,
-                borderRadius: 8,
-                background: '#0f0f11',
-                color: '#eee',
-                border: '1px solid rgba(255,255,255,0.12)',
-                fontFamily: 'inherit',
-                fontSize: 14,
-                resize: 'vertical',
+          <div style={{ position: 'relative', zIndex: 1, display: 'contents' }}>
+            {/* Upload zone */}
+            <div className={styles.uploads} style={{ gridTemplateColumns: '1fr' }}>
+              <UploadZone
+                label="Starting image"
+                sublabel="JPG or PNG · clear subject, good lighting"
+                icon="🖼️"
+                accept="image/jpeg,image/png"
+                file={imageFile}
+                onFileSelected={setImageFile}
+                onRemove={() => setImageFile(null)}
+                maxSizeMB={1024}
+              />
+            </div>
+
+            {/* Motion prompt */}
+            <label style={{ display: 'block' }}>
+              <span
+                className={styles.swapModeLabel}
+                style={{
+                  display: 'block',
+                  marginBottom: 8,
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 11,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  color: 'var(--text-dim)',
+                }}
+              >
+                Describe the motion
+              </span>
+              <textarea
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                rows={3}
+                placeholder='e.g. The woman smiles and turns to the camera. She says: "Hi, welcome back to my channel."'
+                style={{
+                  width: '100%',
+                  padding: '12px 14px',
+                  borderRadius: 'var(--radius-md)',
+                  background: 'rgba(4,4,6,0.7)',
+                  color: 'var(--text)',
+                  border: '1px solid var(--border)',
+                  fontFamily: 'var(--font-body)',
+                  fontSize: 14,
+                  lineHeight: 1.55,
+                  resize: 'vertical',
+                  outline: 'none',
+                  boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.45)',
+                  transition: 'border-color 0.2s var(--ease), box-shadow 0.2s var(--ease)',
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.28)';
+                  e.currentTarget.style.boxShadow = 'inset 0 2px 8px rgba(0,0,0,0.45), 0 0 0 3px rgba(255,255,255,0.06)';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--border)';
+                  e.currentTarget.style.boxShadow = 'inset 0 2px 8px rgba(0,0,0,0.45)';
+                }}
+              />
+            </label>
+
+            <ModelPicker
+              value={model}
+              onChange={(next) => {
+                setModel(next);
+                if (next === 'standard') setDuration((d) => snapToStandardPreset(d));
               }}
             />
-          </label>
+            <ResolutionPicker
+              model={model}
+              resolution={resolution}
+              audio={audio}
+              onChange={(next) => {
+                setResolution(next.resolution);
+                setAudio(next.audio);
+              }}
+            />
+            <DurationSlider
+              value={duration}
+              onChange={setDuration}
+              model={model}
+              resolution={resolution}
+              audio={audio}
+            />
 
-          <ModelPicker
-            value={model}
-            onChange={(next) => {
-              setModel(next);
-              if (next === 'standard') setDuration((d) => snapToStandardPreset(d));
-            }}
-          />
-          <ResolutionPicker
-            model={model}
-            resolution={resolution}
-            audio={audio}
-            onChange={(next) => {
-              setResolution(next.resolution);
-              setAudio(next.audio);
-            }}
-          />
-          <DurationSlider
-            value={duration}
-            onChange={setDuration}
-            model={model}
-            resolution={resolution}
-            audio={audio}
-          />
+            {error && <div className={styles.error}>{error}</div>}
 
-          {error && <div className={styles.error}>{error}</div>}
+            {/* CTA */}
+            <button
+              type="submit"
+              disabled={!canSubmit}
+              className={submitting ? styles.submitLoading : ''}
+              style={canSubmit && !submitting ? {
+                width: '100%',
+                padding: '17px 24px',
+                borderRadius: 'var(--radius-lg)',
+                fontFamily: 'var(--font-body)',
+                fontSize: 15,
+                fontWeight: 600,
+                letterSpacing: '0.03em',
+                background: 'linear-gradient(180deg, #ffffff 0%, #d4d4da 100%)',
+                color: '#0a0a0b',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 10,
+                boxShadow: [
+                  'inset 0 1px 0 rgba(255,255,255,0.9)',
+                  'inset 0 -1px 0 rgba(0,0,0,0.15)',
+                  'var(--accent-glow)',
+                  'var(--shadow-md)',
+                ].join(', '),
+                transition: 'transform 0.18s var(--ease-out-quint), box-shadow 0.25s var(--ease)',
+              } : {
+                width: '100%',
+                padding: '17px 24px',
+                borderRadius: 'var(--radius-lg)',
+                fontFamily: 'var(--font-body)',
+                fontSize: 15,
+                fontWeight: 600,
+                letterSpacing: '0.03em',
+                background: submitting ? 'var(--surface-2)' : 'rgba(255,255,255,0.04)',
+                color: submitting ? 'var(--text-dim)' : 'var(--text-faint)',
+                border: '1px solid var(--border)',
+                cursor: submitting ? 'progress' : 'not-allowed',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 10,
+                transition: 'transform 0.18s var(--ease-out-quint), box-shadow 0.25s var(--ease)',
+              }}
+              onMouseEnter={(e) => {
+                if (canSubmit && !submitting) {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = [
+                    'inset 0 1px 0 rgba(255,255,255,0.9)',
+                    'inset 0 -1px 0 rgba(0,0,0,0.15)',
+                    'var(--accent-glow-strong)',
+                    'var(--shadow-lg)',
+                  ].join(', ');
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (canSubmit && !submitting) {
+                  e.currentTarget.style.transform = '';
+                  e.currentTarget.style.boxShadow = [
+                    'inset 0 1px 0 rgba(255,255,255,0.9)',
+                    'inset 0 -1px 0 rgba(0,0,0,0.15)',
+                    'var(--accent-glow)',
+                    'var(--shadow-md)',
+                  ].join(', ');
+                }
+              }}
+            >
+              {submitting && <span className={styles.spinner} aria-hidden="true" />}
+              {submitting
+                ? 'Starting…'
+                : (() => {
+                  const c = costForDuration(duration, model, resolution, audio);
+                  return `Generate (${c} credit${c === 1 ? '' : 's'})`;
+                })()}
+            </button>
 
-          <button
-            type="submit"
-            className={`${styles.submit} ${canSubmit ? styles.submitReady : ''} ${submitting ? styles.submitLoading : ''}`}
-            disabled={!canSubmit}
-          >
-            {submitting && <span className={styles.spinner} aria-hidden="true" />}
-            {submitting
-              ? 'Starting…'
-              : (() => {
-                const c = costForDuration(duration, model, resolution, audio);
-                return `Generate (${c} credit${c === 1 ? '' : 's'})`;
-              })()}
-          </button>
-
-          {entitlement && entitlement.canSwap && (
-            <div className={styles.usage}>
-              {entitlement.creditsRemaining} credit
-              {entitlement.creditsRemaining === 1 ? '' : 's'} remaining
-            </div>
-          )}
+            {entitlement && entitlement.canSwap && (
+              <div
+                className={styles.usage}
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 11,
+                  letterSpacing: '0.12em',
+                  color: 'var(--text-faint)',
+                  textTransform: 'uppercase',
+                }}
+              >
+                {entitlement.creditsRemaining} credit
+                {entitlement.creditsRemaining === 1 ? '' : 's'} remaining
+              </div>
+            )}
+          </div>
         </form>
       </main>
     </>

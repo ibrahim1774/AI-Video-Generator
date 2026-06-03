@@ -996,14 +996,20 @@ export default function HomePage() {
   return (
     <>
       <Head><title>From a Single Image to a Full Video — Ariya Lab</title></Head>
-      <main className={styles.page} style={{ paddingTop: 8 }}>
-        <div className={styles.hero} style={{ marginBottom: 6 }}>
+      <main className={styles.page} style={{ paddingTop: 20 }}>
+        <div className={styles.hero} style={{ marginBottom: 18 }}>
           <h1
             className={styles.headline}
-            style={{ fontSize: 'clamp(18px, 2.6vw, 26px)', margin: '4px 0', lineHeight: 1.2 }}
+            style={{ fontSize: 'clamp(40px, 7vw, 76px)', margin: '0 0 12px', lineHeight: 1.02 }}
           >
-            Turn Your Image Into a Talking, Moving Video
+            AI Video <span className={styles.accent}>Generator</span>
           </h1>
+          <p
+            className={styles.subtitle}
+            style={{ fontSize: 'clamp(15px, 2.2vw, 19px)', maxWidth: 540 }}
+          >
+            Turn your image into a talking, moving video.
+          </p>
         </div>
 
         <form onSubmit={handleAnimate} className={styles.ugcCard}>

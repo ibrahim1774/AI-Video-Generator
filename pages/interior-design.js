@@ -707,7 +707,7 @@ export default function InteriorDesignPage() {
                     className={styles.dropZoneInput}
                     onChange={onPick}
                   />
-                  <div className={styles.dropZoneIcon} aria-hidden="true">📷 / 🎬</div>
+                  <div className={styles.dropZoneIcon} aria-hidden="true">⬆</div>
                   <div className={styles.dropZoneLabel}>
                     Drag a photo or video here, or click to upload
                   </div>

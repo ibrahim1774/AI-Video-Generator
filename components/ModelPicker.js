@@ -98,10 +98,11 @@ const infoBtnStyle = {
 };
 const tipStyle = {
   margin: '4px 0 8px',
-  padding: '8px 10px',
-  borderRadius: 8,
-  background: 'rgba(28,23,15,0.85)',
-  color: '#ffe7a3',
+  padding: '10px 12px',
+  borderRadius: 10,
+  background: 'rgba(14,14,17,0.92)',
+  border: '1px solid rgba(255,255,255,0.1)',
+  color: '#cfcfd4',
   fontSize: 12,
   lineHeight: 1.5,
 };

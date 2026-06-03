@@ -54,6 +54,7 @@ export default function Ugc2WelcomePage() {
           alignItems: 'center',
           justifyContent: 'center',
           padding: '24px 16px',
+          background: 'var(--bg)',
         }}
       >
         <AuthModal

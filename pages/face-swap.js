@@ -468,13 +468,13 @@ export default function Home() {
   if (step === 'paywall') {
     return (
       <main className={styles.page}>
-        <div className={styles.hero}>
+        <div className={`${styles.hero} fade-up`}>
           <span className={styles.eyebrow}>◆ Pick a plan</span>
           <h1 className={styles.headline}>
             One step to <span className={styles.accent}>finish your swap</span>
           </h1>
           <p className={styles.subtitle}>
-            Your files are ready. Choose a plan and we’ll run the swap right after.
+            Your files are ready. Choose a plan and we'll run the swap right after.
           </p>
         </div>
         {error && <div className={styles.error}>{error}</div>}
@@ -484,20 +484,12 @@ export default function Home() {
           onError={(msg) => setError(msg)}
           onTrialStarted={handleTrialStarted}
         />
-        <div style={{ textAlign: 'center', marginTop: 16 }}>
+        <div style={{ textAlign: 'center', marginTop: 20 }}>
           <button
             type="button"
             onClick={() => setStep('upload')}
-            style={{
-              background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.15)',
-              color: '#ddd',
-              padding: '8px 16px',
-              borderRadius: 6,
-              cursor: 'pointer',
-              fontSize: 13,
-              fontFamily: 'inherit',
-            }}
+            className="btn-ghost"
+            style={{ fontSize: 13 }}
           >
             ← Back to upload
           </button>
@@ -525,12 +517,12 @@ export default function Home() {
 
   return (
     <main className={styles.page} style={{ paddingTop: 24 }}>
-      <div className={styles.hero} style={{ marginBottom: 12 }}>
+      <div className={`${styles.hero} fade-up`} style={{ marginBottom: 16 }}>
         <span className={styles.eyebrow}>◆ AI Face Swap</span>
-        <h1 className={styles.headline} style={{ fontSize: 'clamp(32px, 5vw, 52px)', margin: '12px 0 8px' }}>
+        <h1 className={styles.headline} style={{ fontSize: 'clamp(36px, 5.5vw, 58px)', margin: '14px 0 10px' }}>
           Swap any face into <span className={styles.accent}>any video</span>
         </h1>
-        <p className={styles.subtitle} style={{ fontSize: 14 }}>
+        <p className={styles.subtitle} style={{ fontSize: 15 }}>
           Upload a 3&ndash;10 second video and a clear front-facing photo. Each swap takes
           2&ndash;4 minutes and downloads automatically.
         </p>
@@ -552,7 +544,20 @@ export default function Home() {
           />
         )}
 
-      <form className={styles.shell} onSubmit={handleSubmit}>
+      <form
+        className={`${styles.shell} glass specular`}
+        onSubmit={handleSubmit}
+        style={{
+          padding: '28px 24px 24px',
+          borderRadius: 'var(--radius-2xl)',
+          background:
+            'radial-gradient(130% 70% at 50% -10%, rgba(255,255,255,0.06), transparent 56%), linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.012)), rgba(10,10,12,0.5)',
+          backdropFilter: 'blur(16px) saturate(130%)',
+          WebkitBackdropFilter: 'blur(16px) saturate(130%)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), var(--shadow-xl)',
+        }}
+      >
         <div className={styles.uploads} style={{ gap: 10, marginBottom: 12 }}>
           <UploadZone
             label="Source video"
@@ -578,6 +583,18 @@ export default function Home() {
           />
         </div>
 
+        <div
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 10,
+            letterSpacing: '0.18em',
+            textTransform: 'uppercase',
+            color: 'var(--text-dim)',
+            marginTop: 4,
+          }}
+        >
+          Output quality
+        </div>
         <div className={styles.modeRow} role="radiogroup" aria-label="Output quality">
           <button
             type="button"
@@ -601,7 +618,16 @@ export default function Home() {
           </button>
         </div>
 
-        <div className={styles.swapModeLabel}>
+        <div
+          className={styles.swapModeLabel}
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 10,
+            letterSpacing: '0.18em',
+            textTransform: 'uppercase',
+            color: 'var(--text-dim)',
+          }}
+        >
           Swap mode <span className={styles.required}>(required)</span>
         </div>
         <div className={styles.modeRow} role="radiogroup" aria-label="Swap mode">
@@ -656,13 +682,32 @@ export default function Home() {
             submitting ? styles.submitLoading : ''
           }`}
           disabled={!canSubmit}
+          style={
+            canSubmit && !submitting
+              ? {
+                  background: 'linear-gradient(180deg,#ffffff 0%,#d4d4da 100%)',
+                  color: '#0a0a0b',
+                  borderColor: 'transparent',
+                  boxShadow:
+                    'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(0,0,0,0.12), 0 14px 38px -12px rgba(255,255,255,0.36)',
+                }
+              : undefined
+          }
         >
           {submitting && <span className={styles.spinner} aria-hidden="true" />}
           {submitting ? 'Generating preview…' : 'Create face swap'}
         </button>
 
         {entitlement && entitlement.canSwap && (
-          <div className={styles.usage}>
+          <div
+            className={styles.usage}
+            style={{
+              color: 'var(--text-faint)',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 10,
+              letterSpacing: '0.14em',
+            }}
+          >
             {entitlement.status === 'trialing'
               ? `Free trial — ${entitlement.creditsRemaining} credit${entitlement.creditsRemaining === 1 ? '' : 's'} remaining`
               : `${entitlement.tier === 'monthly' ? 'Monthly' : 'Yearly'} plan — ${entitlement.creditsRemaining} credits remaining`}
@@ -686,6 +731,7 @@ export default function Home() {
       ))}
 
       <div className="home-creator-carousel-wrap">
+        <p className="home-creator-carousel-label">Sample swaps</p>
         <div className="home-creator-carousel" role="region" aria-label="Demo swaps">
           {HOME_CAROUSEL_VIDEOS.map((v) => (
             <div key={v.id} className="home-creator-carousel-card">
@@ -712,18 +758,27 @@ export default function Home() {
       <style jsx global>{`
         .home-creator-carousel-wrap {
           max-width: 100%;
-          margin: 28px auto 8px;
+          margin: 32px auto 8px;
           padding: 0;
+        }
+        .home-creator-carousel-label {
+          text-align: center;
+          font-family: var(--font-mono);
+          font-size: 10px;
+          letter-spacing: 0.2em;
+          text-transform: uppercase;
+          color: var(--text-faint);
+          margin-bottom: 14px;
         }
         .home-creator-carousel {
           display: flex;
-          gap: 10px;
+          gap: 12px;
           overflow-x: auto;
           overflow-y: hidden;
           scroll-snap-type: x mandatory;
           -webkit-overflow-scrolling: touch;
           scroll-padding: 0 16px;
-          padding: 4px 16px 10px;
+          padding: 4px 16px 14px;
           scrollbar-width: none;
         }
         .home-creator-carousel::-webkit-scrollbar {
@@ -732,13 +787,25 @@ export default function Home() {
         .home-creator-carousel-card {
           flex: 0 0 auto;
           width: clamp(160px, 60vw, 200px);
-          border-radius: 12px;
+          border-radius: var(--radius-lg, 18px);
           overflow: hidden;
-          border: 1px solid rgba(255, 255, 255, 0.18);
-          background: #0c0c0e;
-          box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          background:
+            linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%),
+            rgba(10, 10, 12, 0.6);
+          box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.07),
+            0 8px 24px rgba(0, 0, 0, 0.5);
           scroll-snap-align: center;
           min-width: 0;
+          transition: transform 0.25s var(--ease-out-quint, cubic-bezier(0.22,1,0.36,1)),
+                      box-shadow 0.25s var(--ease, cubic-bezier(0.22,0.61,0.36,1));
+        }
+        .home-creator-carousel-card:hover {
+          transform: translateY(-3px);
+          box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.1),
+            0 14px 36px rgba(0, 0, 0, 0.6);
         }
         .home-creator-carousel-card wistia-player {
           display: block;
@@ -749,7 +816,7 @@ export default function Home() {
           .home-creator-carousel {
             justify-content: center;
             scroll-padding: 0;
-            padding: 4px 24px 10px;
+            padding: 4px 24px 14px;
           }
           .home-creator-carousel-card {
             width: 180px;
@@ -763,6 +830,7 @@ export default function Home() {
         initialMode="signup"
         redirectTo="/dashboard"
       />
+
     </main>
   );
 }

@@ -57,27 +57,27 @@ export default function LocalBusinessPricingPlanPage() {
           <h1
             className={styles.headline}
             style={{
-              fontSize: 'clamp(18px, 2.6vw, 26px)',
-              margin: '4px auto',
-              lineHeight: 1.2,
-              display: 'inline-block',
-              padding: '6px 14px',
-              borderRadius: 10,
-              border: '1px solid rgba(255, 255, 255, 0.4)',
-              background: 'rgba(255, 255, 255, 0.08)',
-              color: '#f5ebd0',
-              maxWidth: '94%',
+              fontFamily: 'var(--font-display)',
+              fontSize: 'clamp(26px, 4vw, 44px)',
+              fontWeight: 400,
+              letterSpacing: '-0.02em',
+              lineHeight: 1.15,
+              color: 'var(--text)',
+              margin: '0 auto 0',
+              maxWidth: '88%',
             }}
           >
-            Keep your local business visible — without the time, the camera, or big budget
+            Keep your local business{' '}
+            <em className="shimmer-text" style={{ fontStyle: 'italic' }}>visible</em>
+            {' '}— without the time, the camera, or big budget
           </h1>
           <p
             style={{
-              margin: '8px auto 0',
-              maxWidth: 560,
+              margin: '10px auto 0',
+              maxWidth: 520,
               fontSize: 14,
-              lineHeight: 1.5,
-              color: '#cfcfcf',
+              lineHeight: 1.6,
+              color: 'var(--text-dim)',
               textAlign: 'center',
             }}
           >
@@ -137,33 +137,41 @@ export default function LocalBusinessPricingPlanPage() {
         )}
 
         <style jsx global>{`
-          .lb-pricing-carousel-wrap { max-width: 100%; margin: 6px auto 4px; padding: 0; }
+          .lb-pricing-carousel-wrap { max-width: 100%; margin: 10px auto 4px; padding: 0; }
           .lb-pricing-carousel {
             display: flex;
-            gap: 8px;
+            gap: 10px;
             overflow-x: auto;
             overflow-y: hidden;
             scroll-snap-type: x mandatory;
             -webkit-overflow-scrolling: touch;
             scroll-padding: 0 12px;
-            padding: 2px 12px 6px;
+            padding: 4px 12px 10px;
             scrollbar-width: none;
           }
           .lb-pricing-carousel::-webkit-scrollbar { display: none; }
           .lb-pricing-carousel-card {
             flex: 0 0 auto;
             width: clamp(78px, 22vw, 100px);
-            border-radius: 8px;
+            border-radius: 14px;
             overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            background: #0c0c0e;
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: radial-gradient(130% 70% at 50% -10%, rgba(255,255,255,0.06), transparent 56%), rgba(10,10,12,0.5);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.09), 0 16px 48px -16px rgba(0,0,0,0.8), 0 4px 18px rgba(0,0,0,0.45);
+            backdrop-filter: blur(12px) saturate(130%);
+            -webkit-backdrop-filter: blur(12px) saturate(130%);
             scroll-snap-align: center;
             min-width: 0;
+            transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease;
+          }
+          .lb-pricing-carousel-card:hover {
+            transform: translateY(-2px);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.13), 0 24px 60px -20px rgba(0,0,0,0.9), 0 8px 24px rgba(0,0,0,0.5);
           }
           .lb-pricing-carousel-card wistia-player { display: block; width: 100%; max-width: 100%; }
           @media (min-width: 720px) {
-            .lb-pricing-carousel { justify-content: center; scroll-padding: 0; padding: 2px 20px 6px; }
+            .lb-pricing-carousel { justify-content: center; scroll-padding: 0; padding: 4px 20px 10px; }
             .lb-pricing-carousel-card { width: 92px; }
           }
         `}</style>

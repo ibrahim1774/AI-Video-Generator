@@ -177,9 +177,12 @@ export default function AdminPage() {
           style={{
             margin: '0 0 20px',
             padding: 20,
-            borderRadius: 14,
-            border: '1px solid rgba(255, 255, 255, 0.25)',
-            background: 'rgba(255, 255, 255, 0.05)',
+            borderRadius: 18,
+            border: '1px solid rgba(255,255,255,0.1)',
+            background: 'radial-gradient(130% 70% at 50% -10%, rgba(255,255,255,0.06), transparent 56%), linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.012)), rgba(10,10,12,0.5)',
+            backdropFilter: 'blur(16px) saturate(130%)',
+            WebkitBackdropFilter: 'blur(16px) saturate(130%)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), 0 12px 32px -12px rgba(0,0,0,0.6)',
           }}
         >
           <h3 style={{ margin: '0 0 6px', fontSize: 16 }}>Feature tabs visibility</h3>
@@ -194,13 +197,15 @@ export default function AdminPage() {
             onClick={() => toggleTabs(!tabsEnabled)}
             style={{
               padding: '10px 18px',
-              borderRadius: 8,
-              border: '1px solid rgba(255,255,255,0.18)',
-              background: tabsEnabled ? 'rgba(120, 220, 150, 0.14)' : 'rgba(255,255,255,0.04)',
-              color: '#ededed',
-              fontSize: 14,
-              fontFamily: 'inherit',
+              borderRadius: 9999,
+              border: '1px solid rgba(255,255,255,0.15)',
+              background: tabsEnabled ? 'rgba(207,233,214,0.08)' : 'rgba(255,255,255,0.04)',
+              color: tabsEnabled ? 'var(--success)' : 'var(--text-dim)',
+              fontSize: 13,
+              fontFamily: 'var(--font-mono)',
+              letterSpacing: '0.04em',
               cursor: tabsEnabled === null ? 'not-allowed' : 'pointer',
+              transition: 'background 0.2s, color 0.2s',
             }}
           >
             {tabsEnabled === null
@@ -235,9 +240,12 @@ export default function AdminPage() {
             flexDirection: 'column',
             gap: 14,
             padding: 24,
-            borderRadius: 14,
-            border: '1px solid rgba(255,255,255,0.08)',
-            background: 'rgba(255,255,255,0.02)',
+            borderRadius: 18,
+            border: '1px solid rgba(255,255,255,0.1)',
+            background: 'radial-gradient(130% 70% at 50% -10%, rgba(255,255,255,0.05), transparent 56%), linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)), rgba(10,10,12,0.5)',
+            backdropFilter: 'blur(16px) saturate(130%)',
+            WebkitBackdropFilter: 'blur(16px) saturate(130%)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.09), 0 12px 32px -12px rgba(0,0,0,0.6)',
           }}
         >
           <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -291,16 +299,18 @@ export default function AdminPage() {
             disabled={busy || !email.trim()}
             style={{
               alignSelf: 'flex-start',
-              background: 'var(--gold)',
-              color: '#000',
+              background: 'linear-gradient(180deg, #ffffff 0%, #d4d4da 100%)',
+              color: '#0a0a0b',
               border: 'none',
               borderRadius: 9999,
               padding: '10px 24px',
               fontSize: 14,
               fontWeight: 700,
               cursor: busy ? 'not-allowed' : 'pointer',
-              opacity: busy ? 0.5 : 1,
+              opacity: busy ? 0.45 : 1,
               fontFamily: 'inherit',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -1px 0 rgba(0,0,0,0.12), 0 8px 24px -8px rgba(255,255,255,0.28)',
+              transition: 'transform 0.18s, box-shadow 0.2s',
             }}
           >
             {busy ? 'Granting…' : `Grant ${credits} credit${Number(credits) === 1 ? '' : 's'}`}
@@ -328,12 +338,13 @@ export default function AdminPage() {
             style={{
               marginTop: 16,
               padding: 16,
-              borderRadius: 10,
-              border: '1px solid rgba(216,216,216,0.3)',
-              background: 'rgba(255,255,255,0.04)',
+              borderRadius: 12,
+              border: '1px solid rgba(207,233,214,0.15)',
+              background: 'rgba(207,233,214,0.04)',
               fontSize: 13,
               lineHeight: 1.6,
               fontFamily: 'var(--font-mono)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)',
             }}
           >
             <div>✓ Granted <strong>{result.added}</strong> credits to <strong>{result.email}</strong></div>
@@ -363,9 +374,12 @@ export default function AdminPage() {
               flexDirection: 'column',
               gap: 14,
               padding: 24,
-              borderRadius: 14,
-              border: '1px solid rgba(255,255,255,0.08)',
-              background: 'rgba(255,255,255,0.02)',
+              borderRadius: 18,
+              border: '1px solid rgba(255,255,255,0.1)',
+              background: 'radial-gradient(130% 70% at 50% -10%, rgba(255,255,255,0.05), transparent 56%), linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)), rgba(10,10,12,0.5)',
+              backdropFilter: 'blur(16px) saturate(130%)',
+              WebkitBackdropFilter: 'blur(16px) saturate(130%)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.09), 0 12px 32px -12px rgba(0,0,0,0.6)',
             }}
           >
             <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -432,17 +446,18 @@ export default function AdminPage() {
               style={{
                 marginTop: 16,
                 padding: 16,
-                borderRadius: 10,
-                border: '1px solid rgba(216,216,216,0.3)',
-                background: 'rgba(255,255,255,0.04)',
+                borderRadius: 12,
+                border: '1px solid rgba(255,255,255,0.1)',
+                background: 'rgba(10,10,12,0.5)',
                 fontSize: 13,
                 lineHeight: 1.6,
                 fontFamily: 'var(--font-mono)',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.07)',
               }}
             >
               {/* Already linked correctly */}
               {healReport.ok && !healReport.dryRun && healReport.message?.includes('already linked') && (
-                <div style={{ color: '#a8d8a8' }}>
+                <div style={{ color: 'var(--success)' }}>
                   ✓ Already linked correctly. No action needed.
                   <div style={{ opacity: 0.6, marginTop: 6 }}>customer: {healReport.targetCustomerId}</div>
                   <div style={{ opacity: 0.6 }}>credits available: {healReport.targetCustomer?.creditsRemaining ?? '—'}</div>
@@ -451,7 +466,7 @@ export default function AdminPage() {
 
               {/* Successfully relinked */}
               {healReport.ok && healReport.dryRun === false && healReport.previouslyLinked !== undefined && (
-                <div style={{ color: '#a8d8a8' }}>
+                <div style={{ color: 'var(--success)' }}>
                   ✓ Relinked. Customer should now see <strong>{healReport.creditsVisibleToUser}</strong> credit{healReport.creditsVisibleToUser === 1 ? '' : 's'}.
                   <div style={{ opacity: 0.6, marginTop: 6 }}>was: {healReport.previouslyLinked || '(none)'}</div>
                   <div style={{ opacity: 0.6 }}>now: {healReport.nowLinked}</div>
@@ -480,16 +495,17 @@ export default function AdminPage() {
                     disabled={healBusy}
                     style={{
                       marginTop: 12,
-                      background: 'var(--gold)',
-                      color: '#000',
+                      background: 'linear-gradient(180deg, #ffffff 0%, #d4d4da 100%)',
+                      color: '#0a0a0b',
                       border: 'none',
                       borderRadius: 9999,
                       padding: '10px 24px',
                       fontSize: 14,
                       fontWeight: 700,
                       cursor: healBusy ? 'not-allowed' : 'pointer',
-                      opacity: healBusy ? 0.5 : 1,
+                      opacity: healBusy ? 0.45 : 1,
                       fontFamily: 'inherit',
+                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85), 0 8px 24px -8px rgba(255,255,255,0.28)',
                     }}
                   >
                     {healBusy ? 'Relinking…' : 'Relink customer'}
@@ -500,7 +516,7 @@ export default function AdminPage() {
               {/* Ambiguous: multiple customers, must pick one */}
               {healReport.ambiguous && (
                 <>
-                  <div style={{ color: '#e8c879' }}>
+                  <div style={{ color: 'var(--warning)' }}>
                     ⚠ {healReport.message}
                   </div>
                   <div style={{ marginTop: 6 }}>Currently linked: <strong>{healReport.currentlyLinked || '(none)'}</strong></div>
@@ -525,16 +541,17 @@ export default function AdminPage() {
                           onClick={() => handleHealApply(c.id)}
                           disabled={healBusy}
                           style={{
-                            background: c.id === healReport.suggestion ? 'var(--gold)' : 'rgba(255,255,255,0.08)',
-                            color: c.id === healReport.suggestion ? '#000' : 'var(--text)',
-                            border: c.id === healReport.suggestion ? 'none' : '1px solid rgba(255,255,255,0.18)',
+                            background: c.id === healReport.suggestion ? 'linear-gradient(180deg, #ffffff 0%, #d4d4da 100%)' : 'rgba(255,255,255,0.05)',
+                            color: c.id === healReport.suggestion ? '#0a0a0b' : 'var(--text-dim)',
+                            border: c.id === healReport.suggestion ? 'none' : '1px solid rgba(255,255,255,0.12)',
                             borderRadius: 9999,
                             padding: '6px 14px',
                             fontSize: 12,
                             fontWeight: 600,
                             cursor: healBusy ? 'not-allowed' : 'pointer',
-                            opacity: healBusy ? 0.5 : 1,
+                            opacity: healBusy ? 0.45 : 1,
                             fontFamily: 'inherit',
+                            boxShadow: c.id === healReport.suggestion ? 'inset 0 1px 0 rgba(255,255,255,0.85), 0 4px 12px -4px rgba(255,255,255,0.22)' : 'none',
                           }}
                         >
                           Link this one

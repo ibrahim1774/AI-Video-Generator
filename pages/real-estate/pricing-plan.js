@@ -41,38 +41,36 @@ export default function RealEstatePricingPlanPage() {
       <Head>
         <title>Real Estate Plans — Ariya Lab</title>
       </Head>
-      <main className={styles.page} style={{ paddingTop: 8 }}>
-        <div className={styles.hero} style={{ marginBottom: 6, textAlign: 'center' }}>
+      <main className={styles.page} style={{ paddingTop: 24 }}>
+        <div className={styles.hero} style={{ marginBottom: 12, textAlign: 'center' }}>
+          <span className={styles.eyebrow} style={{ marginBottom: 20, display: 'inline-flex' }}>
+            ◆ Real Estate Video Studio
+          </span>
           <h1
             className={styles.headline}
             style={{
-              fontSize: 'clamp(18px, 2.6vw, 26px)',
-              margin: '4px auto',
-              lineHeight: 1.2,
-              display: 'inline-block',
-              padding: '6px 14px',
-              borderRadius: 10,
-              border: '1px solid rgba(255, 255, 255, 0.4)',
-              background: 'rgba(255, 255, 255, 0.08)',
-              color: '#f5ebd0',
-              maxWidth: '94%',
+              fontSize: 'clamp(32px, 5vw, 60px)',
+              margin: '0 auto 18px',
+              lineHeight: 1.08,
+              letterSpacing: '-0.025em',
+              maxWidth: 720,
+              color: 'var(--text)',
             }}
           >
-            Real estate agents: keep your social media active — without getting on camera
+            Keep your social{' '}
+            <span className={styles.accent}>active</span>
+            {' '}— without the camera
           </h1>
           <p
+            className={styles.subtitle}
             style={{
-              margin: '8px auto 0',
-              maxWidth: 560,
-              fontSize: 14,
-              lineHeight: 1.5,
-              color: '#cfcfcf',
-              textAlign: 'center',
+              margin: '0 auto 0',
+              maxWidth: 500,
+              fontSize: 15,
             }}
           >
             Type what you want to announce — a new listing, an open house, a
-            market update — and Ariya Lab builds the video in minutes. Your
-            social presence, handled.
+            market update — and Ariya Lab builds the video in minutes.
           </p>
         </div>
 

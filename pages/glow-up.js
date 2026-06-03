@@ -282,10 +282,10 @@ export default function GlowUpPage() {
     <>
       <Head><title>Glow Up — Premium AI Portraits</title></Head>
       <main className={styles.page}>
-        <div className={styles.hero}>
+        <div className={`${styles.hero} fade-up`}>
           <span className={styles.eyebrow}>◆ Glow Up</span>
           <h1 className={styles.title}>
-            Your most polished <span className={styles.titleAccent}>self</span>
+            Your most polished <span className={`${styles.titleAccent} shimmer-text`}>self</span>
           </h1>
           <p className={styles.subtitle}>
             Upload 1–4 photos · pick a style · keeps your real face.
@@ -423,7 +423,13 @@ export default function GlowUpPage() {
                       e.target.value = '';
                     }}
                   />
-                  <div className={styles.dropZoneIcon} aria-hidden="true">📤</div>
+                  <div className={styles.dropZoneIcon} aria-hidden="true">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="16 16 12 12 8 16" />
+                      <line x1="12" y1="12" x2="12" y2="21" />
+                      <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" />
+                    </svg>
+                  </div>
                   <div className={styles.dropZoneLabel}>
                     Drag photos here or click to upload
                   </div>

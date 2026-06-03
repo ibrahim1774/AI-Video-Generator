@@ -71,30 +71,27 @@ export default function SignUpPage() {
         style={{
           minHeight: '80vh',
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           padding: '24px 16px',
+          gap: 20,
         }}
       >
+        {isClaimFlow && !loading && !error && (
+          <div style={claimEyebrowStyle}>
+            ◆ Completing your purchase
+          </div>
+        )}
         {isClaimFlow && loading && (
-          <div style={{ color: '#bbb', fontFamily: 'inherit', fontSize: 14 }}>
+          <div style={loadingStyle}>
+            <span style={loadingSpinnerStyle} />
             Verifying your payment…
           </div>
         )}
         {isClaimFlow && error && !loading && (
-          <div
-            style={{
-              maxWidth: 420,
-              padding: '20px 24px',
-              borderRadius: 12,
-              border: '1px solid rgba(255, 90, 90, 0.35)',
-              background: 'rgba(255, 90, 90, 0.06)',
-              color: '#ff8a8a',
-              fontFamily: 'inherit',
-              fontSize: 14,
-              textAlign: 'center',
-            }}
-          >
+          <div style={errorCardStyle}>
+            <div style={errorIconStyle}>⚠</div>
             {error}
           </div>
         )}
@@ -111,4 +108,59 @@ export default function SignUpPage() {
       </main>
     </>
   );
+}
+
+/* ── Premium "Obsidian & Platinum" styles for sign-up page ── */
+
+const claimEyebrowStyle = {
+  fontFamily: 'var(--font-mono, ui-monospace, monospace)',
+  fontSize: 11,
+  letterSpacing: '0.2em',
+  textTransform: 'uppercase',
+  color: 'var(--text-dim, #a6a6ad)',
+};
+
+const loadingStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 10,
+  fontFamily: 'var(--font-body, sans-serif)',
+  fontSize: 14,
+  color: 'var(--text-dim, #a6a6ad)',
+  letterSpacing: '0.02em',
+};
+
+const loadingSpinnerStyle = {
+  display: 'inline-block',
+  width: 14,
+  height: 14,
+  borderRadius: '50%',
+  border: '2px solid rgba(255,255,255,0.15)',
+  borderTopColor: 'rgba(255,255,255,0.7)',
+  animation: 'spin 0.9s linear infinite',
+  flexShrink: 0,
+};
+
+const errorCardStyle = {
+  position: 'relative',
+  maxWidth: 420,
+  padding: '22px 24px',
+  borderRadius: 'var(--radius-xl, 24px)',
+  border: '1px solid rgba(232,164,164,0.25)',
+  background:
+    'linear-gradient(180deg, rgba(232,164,164,0.06) 0%, rgba(232,164,164,0.02) 100%)',
+  backdropFilter: 'blur(12px)',
+  WebkitBackdropFilter: 'blur(12px)',
+  boxShadow: 'inset 0 1px 0 rgba(232,164,164,0.12)',
+  color: 'var(--error, #e8a4a4)',
+  fontFamily: 'var(--font-body, sans-serif)',
+  fontSize: 14,
+  textAlign: 'center',
+  lineHeight: 1.55,
+};
+
+const errorIconStyle = {
+  fontSize: 20,
+  marginBottom: 10,
+  opacity: 0.75,
 }

@@ -133,7 +133,7 @@ const switchKnobStyle = {
   width: 14,
   height: 14,
   borderRadius: '50%',
-  background: '#fffaf1',
+  background: '#ffffff',
   boxShadow: '0 1px 2px rgba(0,0,0,0.3)',
   transition: 'transform 120ms ease',
 };

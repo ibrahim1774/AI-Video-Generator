@@ -702,12 +702,15 @@ export default function LocalBusinessPage() {
           <div
             style={{
               marginTop: 10,
-              padding: '10px 14px',
-              background: 'rgba(255, 255, 255, 0.06)',
-              border: '1px solid rgba(255, 255, 255, 0.25)',
-              borderRadius: 8,
+              padding: '10px 16px',
+              background: 'radial-gradient(130% 70% at 50% -10%, rgba(255,255,255,0.04), transparent 56%), linear-gradient(180deg, rgba(255,255,255,0.028), rgba(255,255,255,0.01)), rgba(10,10,12,0.5)',
+              backdropFilter: 'blur(14px) saturate(130%)',
+              WebkitBackdropFilter: 'blur(14px) saturate(130%)',
+              border: '1px solid var(--glass-border)',
+              borderRadius: 'var(--radius-sm)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.09)',
               fontSize: 12,
-              color: '#e6e6e6',
+              color: 'var(--text-dim)',
               lineHeight: 1.5,
             }}
           >
@@ -872,14 +875,19 @@ export default function LocalBusinessPage() {
   const calloutStyle = {
     maxWidth: 720,
     margin: '12px auto 20px',
-    padding: '12px 16px',
-    border: '1px solid rgba(255, 255, 255, 0.35)',
-    borderRadius: 10,
-    background: 'rgba(255, 255, 255, 0.06)',
-    color: '#e6e6e6',
+    padding: '12px 18px',
+    border: '1px solid var(--glass-border)',
+    borderRadius: 'var(--radius-md)',
+    background: 'radial-gradient(130% 70% at 50% -10%, rgba(255,255,255,0.05), transparent 56%), linear-gradient(180deg, rgba(255,255,255,0.032), rgba(255,255,255,0.01)), rgba(10,10,12,0.5)',
+    backdropFilter: 'blur(16px) saturate(130%)',
+    WebkitBackdropFilter: 'blur(16px) saturate(130%)',
+    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), var(--shadow-xl)',
+    color: 'var(--text-dim)',
     fontSize: 13,
-    lineHeight: 1.5,
+    lineHeight: 1.55,
     textAlign: 'center',
+    fontFamily: 'var(--font-mono)',
+    letterSpacing: '0.01em',
   };
 
   if (step === 'animate' && effectiveStartImage) {
@@ -1035,27 +1043,27 @@ export default function LocalBusinessPage() {
           <h1
             className={styles.headline}
             style={{
-              fontSize: 'clamp(18px, 2.6vw, 26px)',
-              margin: '4px auto',
-              lineHeight: 1.2,
-              display: 'inline-block',
-              padding: '6px 14px',
-              borderRadius: 10,
-              border: '1px solid rgba(255, 255, 255, 0.4)',
-              background: 'rgba(255, 255, 255, 0.08)',
-              color: '#f5ebd0',
-              maxWidth: '94%',
+              fontFamily: 'var(--font-display)',
+              fontSize: 'clamp(26px, 4vw, 44px)',
+              fontWeight: 400,
+              letterSpacing: '-0.02em',
+              lineHeight: 1.15,
+              color: 'var(--text)',
+              margin: '0 auto 0',
+              maxWidth: '88%',
             }}
           >
-            Keep your local business visible — without the time, the camera, or big budget
+            Keep your local business{' '}
+            <em className="shimmer-text" style={{ fontStyle: 'italic' }}>visible</em>
+            {' '}— without the time, the camera, or big budget
           </h1>
           <p
             style={{
-              margin: '8px auto 0',
-              maxWidth: 560,
+              margin: '10px auto 0',
+              maxWidth: 520,
               fontSize: 14,
-              lineHeight: 1.5,
-              color: '#cfcfcf',
+              lineHeight: 1.6,
+              color: 'var(--text-dim)',
               textAlign: 'center',
             }}
           >
@@ -1071,11 +1079,14 @@ export default function LocalBusinessPage() {
             aria-label="Generation mode"
             style={{
               display: 'inline-flex',
-              margin: '14px auto 0',
+              margin: '16px auto 0',
               padding: 4,
               borderRadius: 999,
-              border: '1px solid rgba(255,255,255,0.14)',
-              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid var(--glass-border)',
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015))',
+              backdropFilter: 'blur(12px) saturate(130%)',
+              WebkitBackdropFilter: 'blur(12px) saturate(130%)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
             }}
           >
             {[
@@ -1388,31 +1399,39 @@ export default function LocalBusinessPage() {
         <style jsx global>{`
           .ugc-creator-carousel-wrap {
             max-width: 100%;
-            margin: 28px auto 8px;
+            margin: 32px auto 8px;
             padding: 0;
           }
           .ugc-creator-carousel {
             display: flex;
-            gap: 10px;
+            gap: 12px;
             overflow-x: auto;
             overflow-y: hidden;
             scroll-snap-type: x mandatory;
             -webkit-overflow-scrolling: touch;
             scroll-padding: 0 16px;
-            padding: 4px 16px 10px;
+            padding: 6px 16px 14px;
             scrollbar-width: none;
           }
           .ugc-creator-carousel::-webkit-scrollbar { display: none; }
           .ugc-creator-carousel-card {
             flex: 0 0 auto;
             width: clamp(160px, 60vw, 200px);
-            border-radius: 12px;
+            border-radius: 16px;
             overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            background: #0c0c0e;
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: radial-gradient(130% 70% at 50% -10%, rgba(255,255,255,0.06), transparent 56%), rgba(10,10,12,0.5);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 20px 60px -20px rgba(0,0,0,0.8), 0 6px 24px rgba(0,0,0,0.5);
+            backdrop-filter: blur(12px) saturate(130%);
+            -webkit-backdrop-filter: blur(12px) saturate(130%);
             scroll-snap-align: center;
             min-width: 0;
+            transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease;
+          }
+          .ugc-creator-carousel-card:hover {
+            transform: translateY(-3px);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 28px 72px -24px rgba(0,0,0,0.9), 0 10px 32px rgba(0,0,0,0.55);
           }
           .ugc-creator-carousel-card wistia-player {
             display: block;
@@ -1423,7 +1442,7 @@ export default function LocalBusinessPage() {
             .ugc-creator-carousel {
               justify-content: center;
               scroll-padding: 0;
-              padding: 4px 24px 10px;
+              padding: 6px 24px 14px;
             }
             .ugc-creator-carousel-card { width: 180px; }
           }

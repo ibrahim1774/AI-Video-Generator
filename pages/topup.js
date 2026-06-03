@@ -202,7 +202,7 @@ const eyebrowStyle = {
   fontSize: 11,
   letterSpacing: '0.18em',
   textTransform: 'uppercase',
-  color: 'var(--text-dim, #b8b6b1)',
+  color: 'var(--text-dim, #a6a6ad)',
 };
 
 const titleStyle = {
@@ -217,14 +217,23 @@ const titleStyle = {
 const subtitleStyle = {
   margin: '0 auto',
   maxWidth: 600,
-  color: 'var(--text-dim, #b8b6b1)',
+  color: 'var(--text-dim, #a6a6ad)',
   fontSize: 14,
   lineHeight: 1.5,
 };
 
 const cardOverride = {
-  background: '#f7f1e8',
-  color: '#2a241b',
+  position: 'relative',
+  background:
+    'radial-gradient(130% 70% at 50% -10%, rgba(255,255,255,0.06), transparent 56%), ' +
+    'linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.012)), ' +
+    'rgba(10,10,12,0.5)',
+  backdropFilter: 'blur(16px) saturate(130%)',
+  WebkitBackdropFilter: 'blur(16px) saturate(130%)',
+  border: '1px solid rgba(255,255,255,0.1)',
+  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), var(--shadow-xl)',
+  color: 'var(--text, #f6f6f7)',
+  borderRadius: 'var(--radius-2xl, 32px)',
 };
 
 const balancesStyle = {
@@ -235,13 +244,16 @@ const balancesStyle = {
 };
 
 const balanceItemStyle = {
-  background: '#fffaf1',
-  border: '1px solid rgba(139, 115, 64, 0.22)',
-  borderRadius: 10,
+  position: 'relative',
+  background:
+    'linear-gradient(180deg, rgba(255,255,255,0.045) 0%, rgba(255,255,255,0.018) 100%)',
+  border: '1px solid rgba(255,255,255,0.1)',
+  borderRadius: 'var(--radius-lg, 18px)',
   padding: '14px 16px',
   display: 'flex',
   flexDirection: 'column',
   gap: 4,
+  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.09)',
 };
 
 const balanceLabelStyle = {
@@ -249,29 +261,29 @@ const balanceLabelStyle = {
   fontSize: 11,
   letterSpacing: '0.14em',
   textTransform: 'uppercase',
-  color: '#6b6052',
+  color: 'var(--text-dim, #a6a6ad)',
 };
 
 const balanceValueStyle = {
   fontFamily: 'var(--font-display, Georgia, serif)',
   fontSize: 28,
-  fontWeight: 700,
-  color: '#1c170f',
+  fontWeight: 600,
+  color: 'var(--text, #f6f6f7)',
   letterSpacing: '-0.01em',
 };
 
 const balanceSubStyle = {
   fontSize: 12,
-  color: '#5e554a',
+  color: 'var(--text-faint, #5e5e66)',
 };
 
 const subscribeNoticeStyle = {
   padding: '12px 14px',
   marginBottom: 16,
-  borderRadius: 10,
-  border: '1px solid rgba(139, 115, 64, 0.32)',
-  background: 'rgba(255, 255, 255, 0.18)',
-  color: '#3a2c0f',
+  borderRadius: 'var(--radius-md, 12px)',
+  border: '1px solid rgba(255,255,255,0.12)',
+  background: 'rgba(255,255,255,0.04)',
+  color: 'var(--text-dim, #a6a6ad)',
   fontSize: 13,
   lineHeight: 1.5,
   textAlign: 'center',
@@ -284,20 +296,25 @@ const footerStyle = {
 
 const smallLinkStyle = {
   fontSize: 13,
-  color: '#5e554a',
+  color: 'var(--text-dim, #a6a6ad)',
   textDecoration: 'none',
-  borderBottom: '1px solid rgba(94, 85, 74, 0.4)',
+  borderBottom: '1px solid rgba(255,255,255,0.18)',
+  transition: 'color 0.2s ease, border-color 0.2s ease',
 };
 
 const linkBtnStyle = {
   display: 'inline-block',
   marginTop: 14,
-  padding: '10px 18px',
-  background: 'var(--gold-grad, linear-gradient(180deg, #d4b87a, #cfcfd4))',
-  color: '#111116',
-  borderRadius: 8,
-  fontFamily: 'var(--font-display, Georgia, serif)',
+  padding: '11px 22px',
+  background: 'linear-gradient(180deg, #ffffff 0%, #d6d6db 100%)',
+  color: '#0a0a0b',
+  borderRadius: 'var(--radius-md, 12px)',
+  fontFamily: 'var(--font-body, sans-serif)',
   fontWeight: 600,
   fontSize: 14,
   textDecoration: 'none',
+  boxShadow:
+    'inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -1px 0 rgba(0,0,0,0.12), ' +
+    '0 10px 28px -10px rgba(255,255,255,0.32)',
+  transition: 'transform 0.18s ease, box-shadow 0.25s ease',
 };

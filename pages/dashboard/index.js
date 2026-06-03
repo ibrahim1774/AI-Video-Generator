@@ -212,10 +212,13 @@ export default function DashboardPage() {
                   style={{
                     maxWidth: 720,
                     margin: '40px auto 0',
-                    padding: '24px 28px',
-                    borderRadius: 14,
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    background: 'rgba(255,255,255,0.02)',
+                    padding: '28px 32px',
+                    borderRadius: 18,
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    background: 'radial-gradient(130% 70% at 50% -10%, rgba(255,255,255,0.06), transparent 56%), linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.012)), rgba(10,10,12,0.5)',
+                    backdropFilter: 'blur(16px) saturate(130%)',
+                    WebkitBackdropFilter: 'blur(16px) saturate(130%)',
+                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), 0 30px 70px -32px rgba(0,0,0,0.75)',
                     textAlign: 'center',
                   }}
                 >
@@ -225,7 +228,7 @@ export default function DashboardPage() {
                       fontSize: 11,
                       letterSpacing: '0.22em',
                       textTransform: 'uppercase',
-                      color: 'var(--gold)',
+                      color: 'var(--text-dim)',
                       marginBottom: 8,
                     }}
                   >
@@ -234,7 +237,7 @@ export default function DashboardPage() {
                   <div
                     style={{
                       fontSize: 13,
-                      color: 'var(--text-dim, #9b978f)',
+                      color: 'var(--text-dim)',
                       marginBottom: 18,
                       lineHeight: 1.5,
                     }}

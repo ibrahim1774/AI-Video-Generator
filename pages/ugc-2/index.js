@@ -123,11 +123,12 @@ function DemoCarousel() {
         .ugc-creator-carousel-card {
           flex: 0 0 auto;
           width: clamp(140px, 42vw, 170px);
-          border-radius: 12px;
+          border-radius: 16px;
           overflow: hidden;
-          border: 1px solid rgba(255, 255, 255, 0.18);
-          background: #0c0c0e;
-          box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          background: radial-gradient(130% 70% at 50% -10%, rgba(255,255,255,0.06), transparent 56%), rgba(10,10,12,0.7);
+          backdrop-filter: blur(16px) saturate(130%);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.09), 0 8px 32px rgba(0,0,0,0.55), 0 2px 6px rgba(0,0,0,0.35);
           scroll-snap-align: center;
           min-width: 0;
         }
@@ -522,26 +523,35 @@ export default function Ugc2Page() {
       <>
         <Head><title>AI UGC Videos — Ariya Lab</title></Head>
         <main className={styles.page} style={{ paddingTop: 8 }}>
-          <div className={styles.hero} style={{ marginBottom: 8 }}>
+          <div className={`${styles.hero} fade-up`} style={{ marginBottom: 8 }}>
             <h1
               className={styles.headline}
-              style={{ fontSize: 'clamp(30px, 7vw, 52px)', margin: '6px 0', lineHeight: 1.12 }}
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: 'clamp(30px, 7vw, 52px)',
+                margin: '6px 0',
+                lineHeight: 1.12,
+                letterSpacing: '-0.02em',
+              }}
             >
-              Turn Your Image Into a Talking, Moving Video
+              Turn Your Image Into a{' '}
+              <span className="shimmer-text">Talking, Moving Video</span>
             </h1>
             <p
               style={{
-                margin: '8px auto 0',
+                margin: '12px auto 0',
                 maxWidth: 560,
-                padding: '8px 14px',
-                borderRadius: 10,
-                border: '1px solid rgba(255, 255, 255, 0.45)',
-                background: 'rgba(255, 255, 255, 0.10)',
-                color: '#f0e6cc',
+                padding: '10px 16px',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--glass-border)',
+                background: 'radial-gradient(130% 70% at 50% -10%, rgba(255,255,255,0.06), transparent 56%), rgba(10,10,12,0.5)',
+                backdropFilter: 'blur(12px) saturate(130%)',
+                color: 'var(--text-dim)',
                 fontSize: 14,
-                fontWeight: 600,
-                lineHeight: 1.45,
+                fontWeight: 500,
+                lineHeight: 1.5,
                 textAlign: 'center',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
               }}
             >
               AI video models are expensive 😔 Sorry, that&rsquo;s why we have to charge
@@ -656,9 +666,9 @@ export default function Ugc2Page() {
   if (step === 'final' && story?.combinedUrl) {
     return (
       <main className={styles.page}>
-        <div className={styles.hero}>
+        <div className={`${styles.hero} fade-up`}>
           <span className={styles.eyebrow}>◆ Done</span>
-          <h1 className={styles.headline}>
+          <h1 className={styles.headline} style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}>
             Your story is <span className={styles.accent}>ready</span>
           </h1>
           <p className={styles.subtitle}>
@@ -669,7 +679,7 @@ export default function Ugc2Page() {
           <video
             src={story.combinedUrl}
             controls
-            style={{ width: '100%', borderRadius: 12, background: '#000' }}
+            style={{ width: '100%', borderRadius: 'var(--radius-md)', background: '#000', boxShadow: 'var(--shadow-lg)' }}
           />
           <div style={{ display: 'flex', gap: 12, marginTop: 20, flexWrap: 'wrap' }}>
             <button
@@ -685,14 +695,15 @@ export default function Ugc2Page() {
               onClick={() => setStep('result')}
               style={{
                 flex: 1, minWidth: 160,
-                background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.15)',
-                color: '#ddd',
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-dim)',
                 padding: '10px 16px',
-                borderRadius: 6,
+                borderRadius: 'var(--radius-sm)',
                 cursor: 'pointer',
                 fontSize: 13,
                 fontFamily: 'inherit',
+                transition: 'border-color 0.2s var(--ease)',
               }}
             >
               ← Back to scenes
@@ -702,14 +713,15 @@ export default function Ugc2Page() {
               onClick={resetStory}
               style={{
                 flex: 1, minWidth: 160,
-                background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.15)',
-                color: '#ddd',
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-dim)',
                 padding: '10px 16px',
-                borderRadius: 6,
+                borderRadius: 'var(--radius-sm)',
                 cursor: 'pointer',
                 fontSize: 13,
                 fontFamily: 'inherit',
+                transition: 'border-color 0.2s var(--ease)',
               }}
             >
               + New story
@@ -724,11 +736,11 @@ export default function Ugc2Page() {
     const featured = latestScene;
     return (
       <main className={styles.page}>
-        <div className={styles.hero}>
+        <div className={`${styles.hero} fade-up`}>
           <span className={styles.eyebrow}>
             ◆ Scene {storyScenes.length} of {MAX_SCENES} &middot; saved
           </span>
-          <h1 className={styles.headline}>
+          <h1 className={styles.headline} style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}>
             Your scene is <span className={styles.accent}>ready</span>
           </h1>
         </div>
@@ -738,7 +750,7 @@ export default function Ugc2Page() {
             key={featured?.id}
             src={featured?.videoUrl}
             controls
-            style={{ width: '100%', borderRadius: 12, background: '#000' }}
+            style={{ width: '100%', borderRadius: 'var(--radius-md)', background: '#000', boxShadow: 'var(--shadow-lg)' }}
           />
 
           {storyScenes.length > 1 && (
@@ -757,10 +769,11 @@ export default function Ugc2Page() {
                   style={{
                     flex: '0 0 auto',
                     width: 120,
-                    border: `1px solid ${s.id === featured.id ? 'rgba(255, 255, 255,0.6)' : 'rgba(255,255,255,0.12)'}`,
-                    borderRadius: 8,
+                    border: `1px solid ${s.id === featured.id ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.09)'}`,
+                    borderRadius: 'var(--radius-sm)',
                     overflow: 'hidden',
-                    background: '#0f0f11',
+                    background: 'var(--surface-1)',
+                    boxShadow: s.id === featured.id ? 'inset 0 1px 0 rgba(255,255,255,0.1)' : 'none',
                   }}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -769,7 +782,7 @@ export default function Ugc2Page() {
                     alt={`Scene ${i + 1}`}
                     style={{ width: '100%', height: 80, objectFit: 'cover', display: 'block' }}
                   />
-                  <div style={{ padding: '6px 8px', fontSize: 11, color: '#bbb' }}>
+                  <div style={{ padding: '6px 8px', fontSize: 11, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)', letterSpacing: '0.02em' }}>
                     Scene {i + 1} · {s.duration}s {s.type === 'extend' ? '↪' : s.type === 'new' ? '+' : ''}
                   </div>
                 </div>
@@ -782,12 +795,14 @@ export default function Ugc2Page() {
           <div
             style={{
               marginTop: 10,
-              padding: '10px 14px',
-              background: 'rgba(255, 255, 255, 0.06)',
-              border: '1px solid rgba(255, 255, 255, 0.25)',
-              borderRadius: 8,
+              padding: '10px 16px',
+              background: 'radial-gradient(130% 70% at 50% -10%, rgba(255,255,255,0.05), transparent 56%), rgba(10,10,12,0.45)',
+              border: '1px solid var(--glass-border)',
+              borderRadius: 'var(--radius-sm)',
+              backdropFilter: 'blur(10px)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.07)',
               fontSize: 12,
-              color: '#e6e6e6',
+              color: 'var(--text-dim)',
               lineHeight: 1.5,
             }}
           >
@@ -810,16 +825,17 @@ export default function Ugc2Page() {
               onClick={handleNewScene}
               disabled={atSceneCap}
               style={{
-                background: 'transparent',
-                border: '1px solid rgba(255, 255, 255, 0.4)',
-                color: '#ededed',
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid var(--border-strong)',
+                color: 'var(--text)',
                 padding: '12px 16px',
-                borderRadius: 6,
+                borderRadius: 'var(--radius-sm)',
                 cursor: atSceneCap ? 'not-allowed' : 'pointer',
                 opacity: atSceneCap ? 0.4 : 1,
                 fontSize: 14,
                 fontFamily: 'inherit',
                 fontWeight: 500,
+                transition: 'border-color 0.2s var(--ease), background 0.2s var(--ease)',
               }}
             >
               + New scene
@@ -827,7 +843,7 @@ export default function Ugc2Page() {
           </div>
 
           {atSceneCap && (
-            <div style={{ marginTop: 8, fontSize: 11, color: '#888', textAlign: 'center' }}>
+            <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-faint)', textAlign: 'center' }}>
               5-scene cap reached. Combine or start a new story.
             </div>
           )}
@@ -839,14 +855,15 @@ export default function Ugc2Page() {
                 onClick={handleCombine}
                 style={{
                   flex: 1, minWidth: 180,
-                  background: 'transparent',
-                  border: '1px solid rgba(255,255,255,0.18)',
-                  color: '#ddd',
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-dim)',
                   padding: '10px 14px',
-                  borderRadius: 6,
+                  borderRadius: 'var(--radius-sm)',
                   cursor: 'pointer',
                   fontSize: 13,
                   fontFamily: 'inherit',
+                  transition: 'border-color 0.2s var(--ease)',
                 }}
               >
                 ↓ Combine &amp; download ({storyScenes.length} scenes)
@@ -857,14 +874,15 @@ export default function Ugc2Page() {
               onClick={() => triggerDownload(featured.videoUrl, `scene-${storyScenes.length}.mp4`)}
               style={{
                 flex: 1, minWidth: 140,
-                background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.15)',
-                color: '#ddd',
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-dim)',
                 padding: '10px 14px',
-                borderRadius: 6,
+                borderRadius: 'var(--radius-sm)',
                 cursor: 'pointer',
                 fontSize: 13,
                 fontFamily: 'inherit',
+                transition: 'border-color 0.2s var(--ease)',
               }}
             >
               ↓ Scene {storyScenes.length}
@@ -875,14 +893,15 @@ export default function Ugc2Page() {
                 onClick={handleUndo}
                 style={{
                   flex: 1, minWidth: 120,
-                  background: 'transparent',
-                  border: '1px solid rgba(255,255,255,0.15)',
-                  color: '#bbb',
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-faint)',
                   padding: '10px 14px',
-                  borderRadius: 6,
+                  borderRadius: 'var(--radius-sm)',
                   cursor: 'pointer',
                   fontSize: 13,
                   fontFamily: 'inherit',
+                  transition: 'border-color 0.2s var(--ease)',
                 }}
               >
                 ⌫ Undo last
@@ -893,14 +912,15 @@ export default function Ugc2Page() {
               onClick={resetStory}
               style={{
                 flex: 1, minWidth: 120,
-                background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.15)',
-                color: '#bbb',
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-faint)',
                 padding: '10px 14px',
-                borderRadius: 6,
+                borderRadius: 'var(--radius-sm)',
                 cursor: 'pointer',
                 fontSize: 13,
                 fontFamily: 'inherit',
+                transition: 'border-color 0.2s var(--ease)',
               }}
             >
               + New story
@@ -945,14 +965,15 @@ export default function Ugc2Page() {
               setStep(storyScenes.length > 0 ? 'result' : effectiveStartImage ? 'animate' : 'choose')
             }
             style={{
-              background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.15)',
-              color: '#ddd',
-              padding: '8px 16px',
-              borderRadius: 6,
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid var(--border)',
+              color: 'var(--text-dim)',
+              padding: '8px 20px',
+              borderRadius: 'var(--radius-sm)',
               cursor: 'pointer',
               fontSize: 13,
               fontFamily: 'inherit',
+              transition: 'border-color 0.2s var(--ease)',
             }}
           >
             ← Back
@@ -965,11 +986,13 @@ export default function Ugc2Page() {
   const calloutStyle = {
     maxWidth: 720,
     margin: '12px auto 20px',
-    padding: '12px 16px',
-    border: '1px solid rgba(255, 255, 255, 0.35)',
-    borderRadius: 10,
-    background: 'rgba(255, 255, 255, 0.06)',
-    color: '#e6e6e6',
+    padding: '12px 18px',
+    border: '1px solid var(--glass-border)',
+    borderRadius: 'var(--radius-md)',
+    background: 'radial-gradient(130% 70% at 50% -10%, rgba(255,255,255,0.06), transparent 56%), rgba(10,10,12,0.5)',
+    backdropFilter: 'blur(12px) saturate(130%)',
+    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
+    color: 'var(--text-dim)',
     fontSize: 13,
     lineHeight: 1.5,
     textAlign: 'center',
@@ -1006,7 +1029,12 @@ export default function Ugc2Page() {
               <img
                 src={effectiveStartImage}
                 alt="Starting frame"
-                style={{ maxWidth: 320, maxHeight: 320, borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)' }}
+                style={{
+                  maxWidth: 320, maxHeight: 320,
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--glass-border)',
+                  boxShadow: 'var(--shadow-md)',
+                }}
               />
             </div>
 
@@ -1020,16 +1048,19 @@ export default function Ugc2Page() {
                 style={{
                   width: '100%',
                   padding: 12,
-                  borderRadius: 8,
-                  background: '#0f0f11',
-                  color: '#eee',
-                  border: '1px solid rgba(255,255,255,0.12)',
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'var(--surface-1)',
+                  color: 'var(--text)',
+                  border: '1px solid var(--border)',
                   fontFamily: 'inherit',
                   fontSize: 14,
                   resize: 'vertical',
+                  boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.3)',
+                  outline: 'none',
+                  transition: 'border-color 0.2s var(--ease)',
                 }}
               />
-              <div style={{ marginTop: 6, fontSize: 11, color: '#888' }}>
+              <div style={{ marginTop: 6, fontSize: 11, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>
                 Tip: put dialogue in &ldquo;quotes&rdquo; so the model lip-syncs it.
               </div>
             </label>
@@ -1083,15 +1114,16 @@ export default function Ugc2Page() {
               }}
               style={{
                 marginTop: 12,
-                background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.15)',
-                color: '#ddd',
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-dim)',
                 padding: '8px 16px',
-                borderRadius: 6,
+                borderRadius: 'var(--radius-sm)',
                 cursor: 'pointer',
                 fontSize: 13,
                 fontFamily: 'inherit',
                 width: '100%',
+                transition: 'border-color 0.2s var(--ease)',
               }}
             >
               ← {storyScenes.length > 0 ? 'Back to scenes' : 'Use a different image'}
@@ -1123,11 +1155,17 @@ export default function Ugc2Page() {
     <>
       <Head><title>From a Single Image to a Full Video — Ariya Lab</title></Head>
       <main className={styles.page} style={{ paddingTop: 12 }}>
-        <div className={styles.hero} style={{ marginBottom: 8 }}>
+        <div className={`${styles.hero} fade-up`} style={{ marginBottom: 8 }}>
           <span className={styles.eyebrow}>{chooseEyebrow}</span>
           <h1
             className={styles.headline}
-            style={{ fontSize: 'clamp(22px, 3.6vw, 36px)', margin: '8px 0 6px', lineHeight: 1.15 }}
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: 'clamp(22px, 3.6vw, 38px)',
+              margin: '8px 0 6px',
+              lineHeight: 1.12,
+              letterSpacing: '-0.02em',
+            }}
           >
             Turn Your Image Into a Talking, Moving Video &mdash;{' '}
             <span className={styles.accent}>Just Type What They Say &amp; Do</span>
@@ -1410,11 +1448,12 @@ export default function Ugc2Page() {
           .ugc-creator-carousel-card {
             flex: 0 0 auto;
             width: clamp(160px, 60vw, 200px);
-            border-radius: 12px;
+            border-radius: 16px;
             overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            background: #0c0c0e;
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: radial-gradient(130% 70% at 50% -10%, rgba(255,255,255,0.06), transparent 56%), rgba(10,10,12,0.7);
+            backdrop-filter: blur(16px) saturate(130%);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.09), 0 8px 32px rgba(0,0,0,0.55), 0 2px 6px rgba(0,0,0,0.35);
             scroll-snap-align: center;
             min-width: 0;
           }

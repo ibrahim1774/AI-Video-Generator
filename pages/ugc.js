@@ -431,7 +431,9 @@ export default function UgcPage() {
   if (!authLoaded) {
     return (
       <main className={styles.page}>
-        <div className={styles.hero}><p className={styles.subtitle}>Loading…</p></div>
+        <div className={styles.hero}>
+          <p className={styles.subtitle} style={{ color: 'var(--text-faint)', fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '0.14em', textTransform: 'uppercase' }}>Loading…</p>
+        </div>
       </main>
     );
   }
@@ -514,7 +516,7 @@ export default function UgcPage() {
         <div className={styles.hero}>
           <span className={styles.eyebrow}>◆ Extending</span>
           <h1 className={styles.headline}>
-            Reading the <span className={styles.accent}>last frame</span>
+            Reading the <em className={styles.accent}>last frame</em>
           </h1>
           <p className={styles.subtitle}>
             Grabbing the final frame from your last scene so the next one starts
@@ -531,7 +533,7 @@ export default function UgcPage() {
         <div className={styles.hero}>
           <span className={styles.eyebrow}>◆ Combining</span>
           <h1 className={styles.headline}>
-            Stitching your <span className={styles.accent}>scenes together</span>
+            Stitching your <em className={styles.accent}>scenes together</em>
           </h1>
           <p className={styles.subtitle}>
             Concatenating {storyScenes.length} clips into one MP4. Usually under
@@ -548,58 +550,50 @@ export default function UgcPage() {
         <div className={styles.hero}>
           <span className={styles.eyebrow}>◆ Done</span>
           <h1 className={styles.headline}>
-            Your story is <span className={styles.accent}>ready</span>
+            Your story is <em className={styles.accent}>ready</em>
           </h1>
           <p className={styles.subtitle}>
             {storyScenes.length} scenes combined into one video.
           </p>
         </div>
-        <div style={{ maxWidth: 720, margin: '0 auto', padding: '0 16px' }}>
-          <video
-            src={story.combinedUrl}
-            controls
-            style={{ width: '100%', borderRadius: 12, background: '#000' }}
-          />
-          <div style={{ display: 'flex', gap: 12, marginTop: 20, flexWrap: 'wrap' }}>
+        <div style={{ maxWidth: 680, margin: '0 auto', padding: '0 16px', width: '100%' }}>
+          {/* Video in a glass frame */}
+          <div style={{
+            position: 'relative',
+            borderRadius: 'var(--radius-2xl)',
+            overflow: 'hidden',
+            border: '1px solid rgba(255,255,255,0.1)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.09), var(--shadow-xl)',
+            background: '#000',
+          }}>
+            <video
+              src={story.combinedUrl}
+              controls
+              style={{ width: '100%', display: 'block' }}
+            />
+          </div>
+          <div style={{ display: 'flex', gap: 10, marginTop: 16, flexWrap: 'wrap' }}>
             <button
               type="button"
               onClick={() => triggerDownload(story.combinedUrl, 'ariyalab-story.mp4')}
-              className={`${styles.submit} ${styles.submitReady}`}
-              style={{ flex: 1, minWidth: 200 }}
+              className="btn-primary"
+              style={{ flex: 2, minWidth: 200, justifyContent: 'center' }}
             >
               ↓ Download combined
             </button>
             <button
               type="button"
               onClick={() => setStep('result')}
-              style={{
-                flex: 1, minWidth: 160,
-                background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.15)',
-                color: '#ddd',
-                padding: '10px 16px',
-                borderRadius: 6,
-                cursor: 'pointer',
-                fontSize: 13,
-                fontFamily: 'inherit',
-              }}
+              className="btn-ghost"
+              style={{ flex: 1, minWidth: 140, justifyContent: 'center' }}
             >
               ← Back to scenes
             </button>
             <button
               type="button"
               onClick={resetStory}
-              style={{
-                flex: 1, minWidth: 160,
-                background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.15)',
-                color: '#ddd',
-                padding: '10px 16px',
-                borderRadius: 6,
-                cursor: 'pointer',
-                fontSize: 13,
-                fontFamily: 'inherit',
-              }}
+              className="btn-ghost"
+              style={{ flex: 1, minWidth: 140, justifyContent: 'center' }}
             >
               + New story
             </button>
@@ -618,18 +612,27 @@ export default function UgcPage() {
             ◆ Scene {storyScenes.length} of {MAX_SCENES} &middot; saved
           </span>
           <h1 className={styles.headline}>
-            Your scene is <span className={styles.accent}>ready</span>
+            Your scene is <em className={styles.accent}>ready</em>
           </h1>
         </div>
 
-        <div style={{ maxWidth: 720, margin: '0 auto', padding: '0 16px' }}>
-          {/* Latest scene video */}
-          <video
-            key={featured?.id}
-            src={featured?.videoUrl}
-            controls
-            style={{ width: '100%', borderRadius: 12, background: '#000' }}
-          />
+        <div style={{ maxWidth: 680, margin: '0 auto', padding: '0 16px', width: '100%' }}>
+          {/* Latest scene video — glass frame */}
+          <div style={{
+            position: 'relative',
+            borderRadius: 'var(--radius-2xl)',
+            overflow: 'hidden',
+            border: '1px solid rgba(255,255,255,0.1)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.09), var(--shadow-xl)',
+            background: '#000',
+          }}>
+            <video
+              key={featured?.id}
+              src={featured?.videoUrl}
+              controls
+              style={{ width: '100%', display: 'block' }}
+            />
+          </div>
 
           {/* Story rail */}
           {storyScenes.length > 1 && (
@@ -637,9 +640,10 @@ export default function UgcPage() {
               style={{
                 display: 'flex',
                 gap: 8,
-                marginTop: 16,
+                marginTop: 14,
                 overflowX: 'auto',
-                padding: '4px 0',
+                padding: '4px 0 4px',
+                scrollbarWidth: 'none',
               }}
             >
               {storyScenes.map((s, i) => (
@@ -647,52 +651,65 @@ export default function UgcPage() {
                   key={s.id}
                   style={{
                     flex: '0 0 auto',
-                    width: 120,
-                    border: `1px solid ${s.id === featured.id ? 'rgba(255, 255, 255,0.6)' : 'rgba(255,255,255,0.12)'}`,
-                    borderRadius: 8,
+                    width: 116,
+                    position: 'relative',
+                    border: `1px solid ${s.id === featured.id ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.09)'}`,
+                    borderRadius: 'var(--radius-md)',
                     overflow: 'hidden',
-                    background: '#0f0f11',
+                    background: 'var(--surface-1)',
+                    boxShadow: s.id === featured.id
+                      ? 'inset 0 1px 0 rgba(255,255,255,0.12), var(--shadow-md)'
+                      : 'var(--shadow-sm)',
                   }}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={s.startImageUrl}
                     alt={`Scene ${i + 1}`}
-                    style={{ width: '100%', height: 80, objectFit: 'cover', display: 'block' }}
+                    style={{ width: '100%', height: 78, objectFit: 'cover', display: 'block' }}
                   />
-                  <div style={{ padding: '6px 8px', fontSize: 11, color: '#bbb' }}>
-                    Scene {i + 1} · {s.duration}s {s.type === 'extend' ? '↪' : s.type === 'new' ? '+' : ''}
+                  <div style={{
+                    padding: '5px 8px',
+                    fontSize: 10,
+                    color: s.id === featured.id ? 'var(--text-dim)' : 'var(--text-faint)',
+                    fontFamily: 'var(--font-mono)',
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                  }}>
+                    S{i + 1} · {s.duration}s {s.type === 'extend' ? '↪' : s.type === 'new' ? '+' : ''}
                   </div>
                 </div>
               ))}
             </div>
           )}
 
-          {error && <div className={styles.error} style={{ marginTop: 16 }}>{error}</div>}
+          {error && <div className={styles.error} style={{ marginTop: 14 }}>{error}</div>}
 
-          <div
-            style={{
-              marginTop: 10,
-              padding: '10px 14px',
-              background: 'rgba(255, 255, 255, 0.06)',
-              border: '1px solid rgba(255, 255, 255, 0.25)',
-              borderRadius: 8,
-              fontSize: 12,
-              color: '#e6e6e6',
-              lineHeight: 1.5,
-            }}
-          >
-            Each scene generates its own audio track. Voice and ambient sound
-            will change at the scene seam.
+          {/* Audio notice */}
+          <div style={{
+            marginTop: 12,
+            padding: '10px 14px',
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015))',
+            border: '1px solid rgba(255,255,255,0.09)',
+            borderRadius: 'var(--radius-md)',
+            fontSize: 11,
+            color: 'var(--text-faint)',
+            lineHeight: 1.55,
+            fontFamily: 'var(--font-mono)',
+            letterSpacing: '0.04em',
+            textTransform: 'uppercase',
+          }}>
+            Each scene generates its own audio track — voice &amp; ambient sound change at seams.
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 16 }}>
+          {/* Primary actions */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 14 }}>
             <button
               type="button"
               onClick={handleExtend}
               disabled={atSceneCap}
-              className={`${styles.submit} ${styles.submitReady}`}
-              style={atSceneCap ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}
+              className="btn-primary"
+              style={atSceneCap ? { opacity: 0.38, cursor: 'not-allowed', justifyContent: 'center' } : { justifyContent: 'center' }}
             >
               ↪ Extend scene
             </button>
@@ -700,17 +717,11 @@ export default function UgcPage() {
               type="button"
               onClick={handleNewScene}
               disabled={atSceneCap}
+              className="btn-ghost"
               style={{
-                background: 'transparent',
-                border: '1px solid rgba(255, 255, 255, 0.4)',
-                color: '#ededed',
-                padding: '12px 16px',
-                borderRadius: 6,
+                justifyContent: 'center',
+                opacity: atSceneCap ? 0.38 : 1,
                 cursor: atSceneCap ? 'not-allowed' : 'pointer',
-                opacity: atSceneCap ? 0.4 : 1,
-                fontSize: 14,
-                fontFamily: 'inherit',
-                fontWeight: 500,
               }}
             >
               + New scene
@@ -718,27 +729,19 @@ export default function UgcPage() {
           </div>
 
           {atSceneCap && (
-            <div style={{ marginTop: 8, fontSize: 11, color: '#888', textAlign: 'center' }}>
-              5-scene cap reached. Combine or start a new story.
+            <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-faint)', textAlign: 'center', fontFamily: 'var(--font-mono)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              5-scene cap reached — combine or start a new story.
             </div>
           )}
 
-          <div style={{ display: 'flex', gap: 10, marginTop: 12, flexWrap: 'wrap' }}>
+          {/* Secondary actions */}
+          <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
             {storyScenes.length >= 2 && (
               <button
                 type="button"
                 onClick={handleCombine}
-                style={{
-                  flex: 1, minWidth: 180,
-                  background: 'transparent',
-                  border: '1px solid rgba(255,255,255,0.18)',
-                  color: '#ddd',
-                  padding: '10px 14px',
-                  borderRadius: 6,
-                  cursor: 'pointer',
-                  fontSize: 13,
-                  fontFamily: 'inherit',
-                }}
+                className="btn-ghost"
+                style={{ flex: 1, minWidth: 180, justifyContent: 'center' }}
               >
                 ↓ Combine &amp; download ({storyScenes.length} scenes)
               </button>
@@ -746,17 +749,8 @@ export default function UgcPage() {
             <button
               type="button"
               onClick={() => triggerDownload(featured.videoUrl, `scene-${storyScenes.length}.mp4`)}
-              style={{
-                flex: 1, minWidth: 140,
-                background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.15)',
-                color: '#ddd',
-                padding: '10px 14px',
-                borderRadius: 6,
-                cursor: 'pointer',
-                fontSize: 13,
-                fontFamily: 'inherit',
-              }}
+              className="btn-ghost"
+              style={{ flex: 1, minWidth: 130, justifyContent: 'center' }}
             >
               ↓ Scene {storyScenes.length}
             </button>
@@ -764,17 +758,8 @@ export default function UgcPage() {
               <button
                 type="button"
                 onClick={handleUndo}
-                style={{
-                  flex: 1, minWidth: 120,
-                  background: 'transparent',
-                  border: '1px solid rgba(255,255,255,0.15)',
-                  color: '#bbb',
-                  padding: '10px 14px',
-                  borderRadius: 6,
-                  cursor: 'pointer',
-                  fontSize: 13,
-                  fontFamily: 'inherit',
-                }}
+                className="btn-ghost"
+                style={{ flex: 1, minWidth: 110, justifyContent: 'center' }}
               >
                 ⌫ Undo last
               </button>
@@ -782,17 +767,8 @@ export default function UgcPage() {
             <button
               type="button"
               onClick={resetStory}
-              style={{
-                flex: 1, minWidth: 120,
-                background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.15)',
-                color: '#bbb',
-                padding: '10px 14px',
-                borderRadius: 6,
-                cursor: 'pointer',
-                fontSize: 13,
-                fontFamily: 'inherit',
-              }}
+              className="btn-ghost"
+              style={{ flex: 1, minWidth: 110, justifyContent: 'center' }}
             >
               + New story
             </button>
@@ -826,16 +802,7 @@ export default function UgcPage() {
           <button
             type="button"
             onClick={() => setStep(storyScenes.length > 0 ? 'result' : (imageUrl ? 'animate' : 'choose'))}
-            style={{
-              background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.15)',
-              color: '#ddd',
-              padding: '8px 16px',
-              borderRadius: 6,
-              cursor: 'pointer',
-              fontSize: 13,
-              fontFamily: 'inherit',
-            }}
+            className="btn-ghost"
           >
             ← Back
           </button>
@@ -845,16 +812,21 @@ export default function UgcPage() {
   }
 
   const calloutStyle = {
-    maxWidth: 720,
+    maxWidth: 680,
+    width: 'calc(100% - 32px)',
     margin: '12px auto 20px',
-    padding: '12px 16px',
-    border: '1px solid rgba(255, 255, 255, 0.35)',
-    borderRadius: 10,
-    background: 'rgba(255, 255, 255, 0.06)',
-    color: '#e6e6e6',
-    fontSize: 13,
-    lineHeight: 1.5,
+    padding: '12px 18px',
+    border: '1px solid rgba(255,255,255,0.09)',
+    borderRadius: 'var(--radius-lg)',
+    background: 'linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.015))',
+    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.07)',
+    color: 'var(--text-dim)',
+    fontSize: 12,
+    lineHeight: 1.55,
     textAlign: 'center',
+    fontFamily: 'var(--font-mono)',
+    letterSpacing: '0.04em',
+    textTransform: 'uppercase',
   };
 
   if (step === 'animate' && effectiveStartImage) {
@@ -872,7 +844,7 @@ export default function UgcPage() {
           <div className={styles.hero}>
             <span className={styles.eyebrow}>{eyebrow}</span>
             <h1 className={styles.headline}>
-              Tell your character what to <span className={styles.accent}>do and say</span>
+              Tell your character what to <em className={styles.accent}>do and say</em>
             </h1>
           </div>
 
@@ -883,35 +855,36 @@ export default function UgcPage() {
           </div>
 
           <form className={styles.shell} onSubmit={handleAnimate}>
+            {/* Starting frame — glass preview */}
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={effectiveStartImage}
-                alt="Starting frame"
-                style={{ maxWidth: 320, maxHeight: 320, borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)' }}
-              />
+              <div style={{
+                position: 'relative',
+                borderRadius: 'var(--radius-xl)',
+                overflow: 'hidden',
+                border: '1px solid rgba(255,255,255,0.1)',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.09), var(--shadow-lg)',
+              }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={effectiveStartImage}
+                  alt="Starting frame"
+                  style={{ maxWidth: 300, maxHeight: 300, display: 'block' }}
+                />
+              </div>
             </div>
 
-            <label className={styles.field} style={{ display: 'block' }}>
-              <span className={styles.swapModeLabel}>Script / direction</span>
-              <textarea
-                value={script}
-                onChange={(e) => setScript(e.target.value)}
-                rows={4}
-                placeholder='e.g. Smiles and waves at the camera, then says: "Hey everyone, today I am reviewing my favorite coffee."'
-                style={{
-                  width: '100%',
-                  padding: 12,
-                  borderRadius: 8,
-                  background: '#0f0f11',
-                  color: '#eee',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  fontFamily: 'inherit',
-                  fontSize: 14,
-                  resize: 'vertical',
-                }}
-              />
-              <div style={{ marginTop: 6, fontSize: 11, color: '#888' }}>
+            <label style={{ display: 'block' }}>
+              <span className={styles.swapModeLabel} style={{ display: 'block', marginBottom: 8 }}>Script / direction</span>
+              <div className={styles.ugcTextareaWrap}>
+                <textarea
+                  value={script}
+                  onChange={(e) => setScript(e.target.value)}
+                  rows={4}
+                  placeholder='e.g. Smiles and waves at the camera, then says: "Hey everyone, today I am reviewing my favorite coffee."'
+                  className={styles.ugcTextarea}
+                />
+              </div>
+              <div style={{ marginTop: 6, fontSize: 11, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                 Tip: put dialogue in &ldquo;quotes&rdquo; so the model lip-syncs it.
               </div>
             </label>
@@ -964,18 +937,8 @@ export default function UgcPage() {
                   setStep('choose');
                 }
               }}
-              style={{
-                marginTop: 12,
-                background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.15)',
-                color: '#ddd',
-                padding: '8px 16px',
-                borderRadius: 6,
-                cursor: 'pointer',
-                fontSize: 13,
-                fontFamily: 'inherit',
-                width: '100%',
-              }}
+              className="btn-ghost"
+              style={{ marginTop: 4, width: '100%', justifyContent: 'center' }}
             >
               ← {storyScenes.length > 0 ? 'Back to scenes' : 'Use a different image'}
             </button>
@@ -1011,19 +974,26 @@ export default function UgcPage() {
     <>
       <Head><title>From a Single Image to a Full Video — Ariya Lab</title></Head>
       <main className={styles.page} style={{ paddingTop: 8 }}>
-        <div className={styles.hero} style={{ marginBottom: 6 }}>
+        <div className={styles.hero} style={{ marginBottom: 10 }}>
+          <span className={styles.eyebrow}>◆ UGC Creator</span>
           <h1
             className={styles.headline}
-            style={{ fontSize: 'clamp(18px, 2.6vw, 26px)', margin: '4px 0', lineHeight: 1.2 }}
+            style={{ fontSize: 'clamp(32px, 5.5vw, 58px)', margin: '18px 0 0', lineHeight: 1.06 }}
           >
-            Turn Your Image Into a Talking, Moving Video
+            Turn Any Image Into a{' '}
+            <em className="shimmer-text" style={{ fontStyle: 'italic' }}>
+              Talking Video
+            </em>
           </h1>
+          <p className={styles.subtitle} style={{ marginTop: 12, fontSize: 15 }}>
+            Upload your character, write the script — Ariya Lab animates it in minutes.
+          </p>
         </div>
 
         <form onSubmit={handleAnimate} className={styles.ugcCard}>
           {/* 1. Add your character */}
           <section className={styles.ugcSection}>
-            <h3 className={styles.ugcSectionTitle}>1. Add your character</h3>
+            <h3 className={styles.ugcSectionTitle} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--text-faint)', fontWeight: 500 }}>01 — Add your character</h3>
             <UploadZone
               label="Upload image"
               sublabel="JPG or PNG · clear face/body"
@@ -1081,7 +1051,7 @@ export default function UgcPage() {
 
           {/* 2. Script */}
           <section className={styles.ugcSection}>
-            <h3 className={styles.ugcSectionTitle}>2. What should they say &amp; do?</h3>
+            <h3 className={styles.ugcSectionTitle} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--text-faint)', fontWeight: 500 }}>02 — Script &amp; direction</h3>
             <div className={styles.ugcTextareaWrap}>
               <textarea
                 value={script}
@@ -1097,7 +1067,7 @@ export default function UgcPage() {
 
           {/* 3. Video length */}
           <section className={styles.ugcSection}>
-            <h3 className={styles.ugcSectionTitle}>3. Video length</h3>
+            <h3 className={styles.ugcSectionTitle} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--text-faint)', fontWeight: 500 }}>03 — Video length</h3>
             {model === 'standard' ? (
               <div
                 role="radiogroup"
@@ -1115,18 +1085,23 @@ export default function UgcPage() {
                       onClick={() => setDuration(sec)}
                       style={{
                         flex: '1 1 0',
-                        padding: '14px 12px',
-                        borderRadius: 12,
+                        padding: '13px 10px',
+                        borderRadius: 'var(--radius-md)',
                         border: selected
-                          ? '1px solid rgba(255,255,255,0.55)'
-                          : '1px solid rgba(255,255,255,0.12)',
-                        background: selected ? '#ededed' : '#0f0f11',
-                        color: selected ? '#0b0b0c' : '#ededed',
+                          ? '1px solid rgba(255,255,255,0.5)'
+                          : '1px solid rgba(255,255,255,0.08)',
+                        background: selected
+                          ? 'linear-gradient(180deg, #ffffff 0%, #d4d4da 100%)'
+                          : 'rgba(255,255,255,0.03)',
+                        boxShadow: selected
+                          ? 'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(0,0,0,0.1), 0 6px 18px -8px rgba(255,255,255,0.28)'
+                          : 'none',
+                        color: selected ? '#0a0a0b' : 'var(--text-dim)',
                         fontFamily: 'inherit',
-                        fontSize: 15,
-                        fontWeight: selected ? 600 : 500,
+                        fontSize: 14,
+                        fontWeight: selected ? 600 : 400,
                         cursor: 'pointer',
-                        transition: 'background 120ms ease, color 120ms ease',
+                        transition: 'background 140ms var(--ease), color 140ms var(--ease), box-shadow 200ms var(--ease)',
                       }}
                     >
                       {sec}s
@@ -1218,8 +1193,8 @@ export default function UgcPage() {
             </div>
           )}
 
-          <div className={styles.ugcFootNote}>
-            <span aria-hidden="true">🔒</span>
+          <div className={styles.ugcFootNote} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
+            <span aria-hidden="true" style={{ fontSize: 11 }}>◆</span>
             <span>Your videos are private and secure</span>
           </div>
 
@@ -1269,31 +1244,53 @@ export default function UgcPage() {
         <style jsx global>{`
           .ugc-creator-carousel-wrap {
             max-width: 100%;
-            margin: 28px auto 8px;
+            margin: 32px auto 12px;
             padding: 0;
           }
           .ugc-creator-carousel {
             display: flex;
-            gap: 10px;
+            gap: 12px;
             overflow-x: auto;
             overflow-y: hidden;
             scroll-snap-type: x mandatory;
             -webkit-overflow-scrolling: touch;
             scroll-padding: 0 16px;
-            padding: 4px 16px 10px;
+            padding: 8px 16px 14px;
             scrollbar-width: none;
           }
           .ugc-creator-carousel::-webkit-scrollbar { display: none; }
           .ugc-creator-carousel-card {
+            position: relative;
             flex: 0 0 auto;
             width: clamp(160px, 60vw, 200px);
-            border-radius: 12px;
+            border-radius: 18px;
             overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            background: #0c0c0e;
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: #09090b;
+            box-shadow:
+              inset 0 1px 0 rgba(255, 255, 255, 0.08),
+              0 12px 36px -12px rgba(0, 0, 0, 0.65),
+              0 4px 12px rgba(0, 0, 0, 0.35);
             scroll-snap-align: center;
             min-width: 0;
+            transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease;
+          }
+          .ugc-creator-carousel-card::before {
+            content: '';
+            position: absolute;
+            inset: 0 0 auto 0;
+            height: 36%;
+            border-radius: 18px 18px 0 0;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), transparent);
+            pointer-events: none;
+            z-index: 1;
+          }
+          .ugc-creator-carousel-card:hover {
+            transform: translateY(-3px) scale(1.012);
+            box-shadow:
+              inset 0 1px 0 rgba(255, 255, 255, 0.1),
+              0 20px 52px -14px rgba(0, 0, 0, 0.75),
+              0 6px 16px rgba(0, 0, 0, 0.4);
           }
           .ugc-creator-carousel-card wistia-player {
             display: block;
@@ -1304,9 +1301,9 @@ export default function UgcPage() {
             .ugc-creator-carousel {
               justify-content: center;
               scroll-padding: 0;
-              padding: 4px 24px 10px;
+              padding: 8px 24px 14px;
             }
-            .ugc-creator-carousel-card { width: 180px; }
+            .ugc-creator-carousel-card { width: 182px; }
           }
         `}</style>
       </main>

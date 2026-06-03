@@ -18,14 +18,18 @@
   font-size: 11px;
   letter-spacing: 0.25em;
   text-transform: uppercase;
-  color: var(--gold);
+  color: var(--text-dim);
 }
 .title {
   font-family: var(--font-display);
-  font-size: clamp(28px, 4vw, 44px);
+  font-size: clamp(32px, 4vw, 52px);
   font-weight: 500;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
   margin: 4px 0 0;
+  background: var(--accent-grad);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 .note {
   font-size: 12px;
@@ -42,17 +46,24 @@
 }
 
 .card {
-  background: var(--surface-0);
-  border: 1px solid var(--border);
+  background:
+    radial-gradient(130% 70% at 50% -10%, rgba(255,255,255,0.06), transparent 56%),
+    linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.012)),
+    rgba(10,10,12,0.5);
+  backdrop-filter: blur(16px) saturate(130%);
+  -webkit-backdrop-filter: blur(16px) saturate(130%);
+  border: 1px solid rgba(255,255,255,0.1);
   border-radius: var(--radius-lg);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  transition: border-color 0.25s var(--ease), transform 0.25s var(--ease);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), var(--shadow-lg);
+  transition: border-color 0.25s var(--ease), transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
 }
 .card:hover {
   border-color: var(--border-strong);
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), var(--shadow-xl);
 }
 
 .video {
@@ -61,10 +72,11 @@
   background: #000;
   object-fit: cover;
   display: block;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
 }
 
 .cardBody {
-  padding: 12px 14px 14px;
+  padding: 14px 16px 16px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -82,9 +94,10 @@
   font-size: 10px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--gold);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  padding: 4px 8px;
+  color: var(--text-dim);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 4px 10px;
   border-radius: 9999px;
   white-space: nowrap;
 }
@@ -107,39 +120,59 @@
   text-decoration: none;
   font-size: 13px;
   font-weight: 600;
-  padding: 8px 10px;
+  padding: 9px 12px;
   border-radius: 9999px;
   cursor: pointer;
-  transition: background 0.2s var(--ease), color 0.2s var(--ease);
+  transition: transform 0.18s var(--ease-out-quint), box-shadow 0.2s var(--ease), background 0.2s var(--ease), border-color 0.2s var(--ease);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .btnPrimary {
-  background: var(--gold);
-  color: #000;
+  background: linear-gradient(180deg, #ffffff 0%, #d6d6db 100%);
+  color: #0a0a0b;
   border: none;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -1px 0 rgba(0,0,0,0.12), 0 6px 20px -8px rgba(255,255,255,0.28);
+}
+.btnPrimary:hover {
+  transform: translateY(-1px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(0,0,0,0.12), 0 10px 28px -8px rgba(255,255,255,0.38);
 }
 .btnGhost {
-  background: transparent;
-  border: 1px solid var(--border-strong);
-  color: var(--text);
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
 }
-.btnGhost:hover { border-color: var(--gold); }
+.btnGhost:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+  background: rgba(255,255,255,0.06);
+  transform: translateY(-1px);
+}
 
 .empty {
   text-align: center;
   padding: 80px 20px;
   color: var(--text-dim);
-  border: 1px dashed var(--border-strong);
-  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(130% 70% at 50% -10%, rgba(255,255,255,0.04), transparent 56%),
+    rgba(10,10,12,0.4);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.07), var(--shadow-md);
 }
 .emptyTitle {
   font-family: var(--font-display);
-  font-size: 24px;
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
   color: var(--text);
-  margin: 0 0 8px;
+  margin: 0 0 10px;
 }
 .emptyBody {
   font-size: 14px;
   max-width: 480px;
   margin: 0 auto;
-  line-height: 1.55;
+  line-height: 1.6;
+  color: var(--text-dim);
 }

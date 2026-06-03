@@ -68,9 +68,10 @@ export default function Ugc2ClaimRedirect() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        color: '#bbb',
-        fontFamily: 'inherit',
-        fontSize: 14,
+        color: 'var(--text-faint)',
+        fontFamily: 'var(--font-mono)',
+        fontSize: 13,
+        letterSpacing: '0.04em',
       }}
     >
       Finishing up…
