@@ -57,7 +57,7 @@ export default function SupportPage() {
               fontSize: 18,
               fontWeight: 600,
               textDecoration: 'none',
-              borderBottom: '1px solid rgba(224, 196, 136, 0.5)',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.5)',
               padding: '2px 4px',
             }}
           >

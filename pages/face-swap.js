@@ -734,7 +734,7 @@ export default function Home() {
           width: clamp(160px, 60vw, 200px);
           border-radius: 12px;
           overflow: hidden;
-          border: 1px solid rgba(224, 196, 136, 0.18);
+          border: 1px solid rgba(255, 255, 255, 0.18);
           background: #0c0c0e;
           box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
           scroll-snap-align: center;

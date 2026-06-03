@@ -26,7 +26,7 @@
 
 .ring {
   transform: rotate(0deg);
-  filter: drop-shadow(0 0 12px rgba(201, 169, 110, 0.35));
+  filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.35));
 }
 
 .ringStroke {
@@ -78,7 +78,7 @@
 .dotActive {
   width: 22px;
   background: var(--gold);
-  box-shadow: 0 0 12px rgba(201, 169, 110, 0.35);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.35);
 }
 
 .note {

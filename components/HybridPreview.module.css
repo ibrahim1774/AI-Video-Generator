@@ -50,7 +50,7 @@
 .bigFrame {
   margin: 0;
   background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(224, 196, 136, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 12px;
   padding: 8px;
   display: flex;
@@ -154,8 +154,8 @@
 }
 
 .btnSecondary {
-  background: rgba(224, 196, 136, 0.12);
-  border: 1px solid rgba(224, 196, 136, 0.4);
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   color: #ededed;
 }
 

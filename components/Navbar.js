@@ -148,15 +148,18 @@ export default function Navbar() {
               className={styles.desktopOnly}
               style={{
                 fontSize: 12,
+                fontWeight: 600,
                 fontFamily: 'inherit',
-                color: '#ededed',
-                background: 'rgba(224, 196, 136, 0.08)',
-                border: '1px solid rgba(224, 196, 136, 0.3)',
-                padding: '5px 12px',
+                color: '#f6f6f7',
+                background: 'linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0.03))',
+                border: '1px solid rgba(255,255,255,0.16)',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
+                padding: '6px 13px',
                 borderRadius: 999,
                 whiteSpace: 'nowrap',
                 textDecoration: 'none',
                 cursor: 'pointer',
+                letterSpacing: '0.01em',
               }}
               aria-label="Credits remaining — click to manage"
               title="Manage credits"
@@ -170,14 +173,16 @@ export default function Navbar() {
                 type="button"
                 onClick={() => setMenuOpen((v) => !v)}
                 style={{
-                  background: 'transparent',
-                  border: '1px solid rgba(255,255,255,0.15)',
-                  color: '#ddd',
-                  padding: '6px 12px',
-                  borderRadius: 6,
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  color: '#cfcfd4',
+                  padding: '7px 14px',
+                  borderRadius: 999,
                   cursor: 'pointer',
                   fontSize: 12,
+                  fontWeight: 500,
                   fontFamily: 'inherit',
+                  letterSpacing: '0.01em',
                 }}
               >
                 {user.email?.split('@')[0] || 'Account'} ▾
@@ -186,15 +191,19 @@ export default function Navbar() {
                 <div
                   style={{
                     position: 'absolute',
-                    top: '110%',
+                    top: '128%',
                     right: 0,
-                    background: '#0f0f11',
-                    border: '1px solid rgba(255,255,255,0.12)',
-                    borderRadius: 8,
+                    background: 'rgba(14,14,17,0.92)',
+                    backdropFilter: 'blur(20px) saturate(140%)',
+                    WebkitBackdropFilter: 'blur(20px) saturate(140%)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: 14,
                     padding: 6,
-                    minWidth: 180,
-                    boxShadow: '0 10px 30px rgba(0,0,0,0.6)',
+                    minWidth: 190,
+                    boxShadow: '0 30px 70px -32px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.06)',
                     zIndex: 9000,
+                    animation: 'scaleIn 0.18s cubic-bezier(0.22,1,0.36,1) both',
+                    transformOrigin: 'top right',
                   }}
                   onMouseLeave={() => setMenuOpen(false)}
                 >
@@ -238,13 +247,15 @@ export default function Navbar() {
             <Link
               href="/sign-in"
               style={{
-                color: '#ededed',
+                color: '#0a0a0b',
                 fontSize: 12,
+                fontWeight: 600,
                 textDecoration: 'none',
-                letterSpacing: '0.04em',
-                border: '1px solid rgba(224, 196, 136, 0.4)',
-                padding: '6px 12px',
-                borderRadius: 6,
+                letterSpacing: '0.02em',
+                background: 'linear-gradient(180deg, #ffffff 0%, #d6d6db 100%)',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85), 0 8px 22px -10px rgba(255,255,255,0.4)',
+                padding: '8px 16px',
+                borderRadius: 999,
               }}
             >
               Sign in

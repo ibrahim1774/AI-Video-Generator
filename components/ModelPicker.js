@@ -120,8 +120,8 @@ const pillStyle = {
   textAlign: 'center',
 };
 const pillActiveStyle = {
-  borderColor: 'rgba(224, 196, 136, 0.6)',
-  background: 'rgba(224, 196, 136, 0.12)',
+  borderColor: 'rgba(255, 255, 255, 0.6)',
+  background: 'rgba(255, 255, 255, 0.12)',
 };
 const pillTitleStyle = {
   fontSize: 14,

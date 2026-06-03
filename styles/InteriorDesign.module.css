@@ -94,7 +94,7 @@
 }
 
 .dropZone:hover {
-  border-color: rgba(201, 169, 110, 0.4);
+  border-color: rgba(255, 255, 255, 0.4);
   background: var(--surface-2);
 }
 
@@ -224,15 +224,15 @@
 }
 
 .styleCard:hover {
-  border-color: rgba(201, 169, 110, 0.4);
+  border-color: rgba(255, 255, 255, 0.4);
   background: var(--surface-2);
   transform: translateY(-1px);
 }
 
 .styleCardActive {
   border-color: var(--gold);
-  background: linear-gradient(180deg, var(--surface-2) 0%, rgba(201, 169, 110, 0.06) 100%);
-  box-shadow: 0 0 0 1px var(--gold), 0 8px 22px rgba(201, 169, 110, 0.18);
+  background: linear-gradient(180deg, var(--surface-2) 0%, rgba(255, 255, 255, 0.06) 100%);
+  box-shadow: 0 0 0 1px var(--gold), 0 8px 22px rgba(255, 255, 255, 0.18);
 }
 
 .styleCardName {
@@ -331,7 +331,7 @@
 
 .textarea:focus {
   outline: none;
-  border-color: rgba(201, 169, 110, 0.6);
+  border-color: rgba(255, 255, 255, 0.6);
 }
 
 .selectRow {
@@ -369,7 +369,7 @@
 
 .select:focus {
   outline: none;
-  border-color: rgba(201, 169, 110, 0.6);
+  border-color: rgba(255, 255, 255, 0.6);
 }
 
 /* CTA */
@@ -445,7 +445,7 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  border: 3px solid rgba(201, 169, 110, 0.2);
+  border: 3px solid rgba(255, 255, 255, 0.2);
   border-top-color: var(--gold);
   animation: spin 0.9s linear infinite;
 }
@@ -524,7 +524,7 @@
 
 .resultBtn:hover {
   background: var(--surface-2);
-  border-color: rgba(201, 169, 110, 0.4);
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
 .resultBtnPrimary {

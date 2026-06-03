@@ -63,8 +63,8 @@ export default function LocalBusinessPricingPlanPage() {
               display: 'inline-block',
               padding: '6px 14px',
               borderRadius: 10,
-              border: '1px solid rgba(224, 196, 136, 0.4)',
-              background: 'rgba(224, 196, 136, 0.08)',
+              border: '1px solid rgba(255, 255, 255, 0.4)',
+              background: 'rgba(255, 255, 255, 0.08)',
               color: '#f5ebd0',
               maxWidth: '94%',
             }}
@@ -155,7 +155,7 @@ export default function LocalBusinessPricingPlanPage() {
             width: clamp(78px, 22vw, 100px);
             border-radius: 8px;
             overflow: hidden;
-            border: 1px solid rgba(224, 196, 136, 0.18);
+            border: 1px solid rgba(255, 255, 255, 0.18);
             background: #0c0c0e;
             box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
             scroll-snap-align: center;

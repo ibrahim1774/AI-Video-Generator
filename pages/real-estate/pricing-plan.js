@@ -52,8 +52,8 @@ export default function RealEstatePricingPlanPage() {
               display: 'inline-block',
               padding: '6px 14px',
               borderRadius: 10,
-              border: '1px solid rgba(224, 196, 136, 0.4)',
-              background: 'rgba(224, 196, 136, 0.08)',
+              border: '1px solid rgba(255, 255, 255, 0.4)',
+              background: 'rgba(255, 255, 255, 0.08)',
               color: '#f5ebd0',
               maxWidth: '94%',
             }}

@@ -45,7 +45,7 @@ export default function ResolutionPicker({
           <span
             style={{
               ...switchTrackStyle,
-              background: audio ? 'rgba(224, 196, 136, 0.7)' : 'rgba(255,255,255,0.18)',
+              background: audio ? 'rgba(255, 255, 255, 0.7)' : 'rgba(255,255,255,0.18)',
             }}
           >
             <span
@@ -154,7 +154,7 @@ const pillStyle = {
   textAlign: 'center',
 };
 const pillActiveStyle = {
-  borderColor: 'rgba(224, 196, 136, 0.6)',
-  background: 'rgba(224, 196, 136, 0.12)',
+  borderColor: 'rgba(255, 255, 255, 0.6)',
+  background: 'rgba(255, 255, 255, 0.12)',
   fontWeight: 600,
 };

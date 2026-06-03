@@ -178,8 +178,8 @@ export default function AdminPage() {
             margin: '0 0 20px',
             padding: 20,
             borderRadius: 14,
-            border: '1px solid rgba(224, 196, 136, 0.25)',
-            background: 'rgba(224, 196, 136, 0.05)',
+            border: '1px solid rgba(255, 255, 255, 0.25)',
+            background: 'rgba(255, 255, 255, 0.05)',
           }}
         >
           <h3 style={{ margin: '0 0 6px', fontSize: 16 }}>Feature tabs visibility</h3>

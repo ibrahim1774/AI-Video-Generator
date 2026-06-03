@@ -1,14 +1,15 @@
 .backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(10, 10, 12, 0.7);
-  backdrop-filter: blur(4px);
+  background: rgba(4, 4, 5, 0.72);
+  backdrop-filter: blur(8px) saturate(120%);
+  -webkit-backdrop-filter: blur(8px) saturate(120%);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 9998;
   padding: 20px;
-  animation: fadeIn 0.15s ease;
+  animation: fadeIn 0.2s var(--ease);
 }
 
 @keyframes fadeIn {
@@ -17,16 +18,33 @@
 }
 
 .card {
-  background: #0f0f11;
-  border: 1px solid rgba(224, 196, 136, 0.25);
-  border-radius: 14px;
-  padding: 28px 28px 22px;
-  max-width: 420px;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(130% 80% at 50% -10%, rgba(255, 255, 255, 0.07), transparent 56%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.012)),
+    rgba(12, 12, 14, 0.82);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-xl);
+  padding: 32px 30px 24px;
+  max-width: 430px;
   width: 100%;
   color: #e6e6e6;
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
-  position: relative;
-  animation: slideIn 0.2s ease;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    var(--shadow-xl);
+  animation: scaleIn 0.32s var(--ease-out-quint) both;
+}
+/* Specular sheen on the top of the modal. */
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 46%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent);
+  pointer-events: none;
 }
 
 @keyframes slideIn {
@@ -52,8 +70,15 @@
 }
 
 .header {
+  position: relative;
+  z-index: 1;
   text-align: center;
   margin-bottom: 20px;
+}
+
+.form {
+  position: relative;
+  z-index: 1;
 }
 
 .kicker {
@@ -83,10 +108,10 @@
 .googleBtn {
   width: 100%;
   background: #fff;
-  color: #1c170f;
+  color: #16161a;
   border: none;
-  border-radius: 8px;
-  padding: 11px 14px;
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -94,11 +119,13 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  transition: transform 0.05s ease, opacity 0.15s ease;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 8px 22px -12px rgba(255, 255, 255, 0.3);
+  transition: transform 0.18s var(--ease-out-quint), box-shadow 0.2s var(--ease), opacity 0.15s ease;
 }
 
 .googleBtn:hover:not(:disabled) {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 14px 30px -14px rgba(255, 255, 255, 0.4);
 }
 
 .googleBtn:disabled {
@@ -169,7 +196,7 @@
 
 .input:focus {
   outline: none;
-  border-color: rgba(224, 196, 136, 0.5);
+  border-color: rgba(255, 255, 255, 0.5);
   background: rgba(255, 255, 255, 0.05);
 }
 
@@ -183,20 +210,29 @@
 }
 
 .submitBtn {
-  margin-top: 4px;
-  background: linear-gradient(180deg, #ededed 0%, #a8a8a8 100%);
-  color: #1c170f;
+  margin-top: 6px;
+  background: linear-gradient(180deg, #ffffff 0%, #d4d4da 100%);
+  color: #0a0a0b;
   border: none;
-  border-radius: 8px;
-  padding: 11px 16px;
+  border-radius: var(--radius-md);
+  padding: 13px 16px;
   font-size: 14px;
   font-weight: 600;
+  letter-spacing: 0.01em;
   cursor: pointer;
-  transition: transform 0.05s ease, opacity 0.15s ease;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.12),
+    0 12px 30px -12px rgba(255, 255, 255, 0.35);
+  transition: transform 0.18s var(--ease-out-quint), box-shadow 0.25s var(--ease), opacity 0.15s ease;
 }
 
 .submitBtn:hover:not(:disabled) {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.12),
+    0 18px 42px -14px rgba(255, 255, 255, 0.48);
 }
 
 .submitBtn:disabled {
@@ -223,5 +259,5 @@
 }
 
 .link:hover {
-  color: #f0e0bc;
+  color: #ffffff;
 }

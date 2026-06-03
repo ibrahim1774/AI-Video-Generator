@@ -320,8 +320,8 @@ export default function AuthModal({
             style={{
               padding: '10px 14px',
               borderRadius: 8,
-              border: '1px solid rgba(224, 196, 136, 0.25)',
-              background: 'rgba(224, 196, 136, 0.06)',
+              border: '1px solid rgba(255, 255, 255, 0.25)',
+              background: 'rgba(255, 255, 255, 0.06)',
               color: '#e6e6e6',
               fontSize: 12,
               lineHeight: 1.5,
@@ -339,8 +339,8 @@ export default function AuthModal({
             style={{
               padding: '10px 14px',
               borderRadius: 8,
-              border: '1px solid rgba(224, 196, 136, 0.25)',
-              background: 'rgba(224, 196, 136, 0.06)',
+              border: '1px solid rgba(255, 255, 255, 0.25)',
+              background: 'rgba(255, 255, 255, 0.06)',
               color: '#e6e6e6',
               fontSize: 12,
               lineHeight: 1.5,

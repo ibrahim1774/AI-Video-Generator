@@ -703,8 +703,8 @@ export default function LocalBusinessPage() {
             style={{
               marginTop: 10,
               padding: '10px 14px',
-              background: 'rgba(224, 196, 136, 0.06)',
-              border: '1px solid rgba(224, 196, 136, 0.25)',
+              background: 'rgba(255, 255, 255, 0.06)',
+              border: '1px solid rgba(255, 255, 255, 0.25)',
               borderRadius: 8,
               fontSize: 12,
               color: '#e6e6e6',
@@ -731,7 +731,7 @@ export default function LocalBusinessPage() {
               disabled={atSceneCap}
               style={{
                 background: 'transparent',
-                border: '1px solid rgba(224, 196, 136, 0.4)',
+                border: '1px solid rgba(255, 255, 255, 0.4)',
                 color: '#ededed',
                 padding: '12px 16px',
                 borderRadius: 6,
@@ -873,9 +873,9 @@ export default function LocalBusinessPage() {
     maxWidth: 720,
     margin: '12px auto 20px',
     padding: '12px 16px',
-    border: '1px solid rgba(224, 196, 136, 0.35)',
+    border: '1px solid rgba(255, 255, 255, 0.35)',
     borderRadius: 10,
-    background: 'rgba(224, 196, 136, 0.06)',
+    background: 'rgba(255, 255, 255, 0.06)',
     color: '#e6e6e6',
     fontSize: 13,
     lineHeight: 1.5,
@@ -1041,8 +1041,8 @@ export default function LocalBusinessPage() {
               display: 'inline-block',
               padding: '6px 14px',
               borderRadius: 10,
-              border: '1px solid rgba(224, 196, 136, 0.4)',
-              background: 'rgba(224, 196, 136, 0.08)',
+              border: '1px solid rgba(255, 255, 255, 0.4)',
+              background: 'rgba(255, 255, 255, 0.08)',
               color: '#f5ebd0',
               maxWidth: '94%',
             }}
@@ -1408,7 +1408,7 @@ export default function LocalBusinessPage() {
             width: clamp(160px, 60vw, 200px);
             border-radius: 12px;
             overflow: hidden;
-            border: 1px solid rgba(224, 196, 136, 0.18);
+            border: 1px solid rgba(255, 255, 255, 0.18);
             background: #0c0c0e;
             box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
             scroll-snap-align: center;

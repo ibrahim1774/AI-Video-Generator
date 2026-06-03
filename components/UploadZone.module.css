@@ -17,14 +17,14 @@
 }
 
 .zone:hover {
-  border-color: rgba(201, 169, 110, 0.35);
+  border-color: rgba(255, 255, 255, 0.35);
   background: var(--surface-1);
 }
 
 .zone:focus-visible {
   outline: none;
   border-color: var(--gold);
-  box-shadow: 0 0 0 2px rgba(201, 169, 110, 0.25);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.25);
 }
 
 .zoneDragOver {
