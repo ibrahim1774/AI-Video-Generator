@@ -23,11 +23,12 @@ import { screenText, screenImage, ModerationError, moderationErrorResponse } fro
  *   - Pool refill: 30 image credits every 30 days for any active sub
  *     (monthly OR yearly). Yearly users effectively get 30 fresh
  *     image credits each rolling month.
- *   - Image gen: kie.ai's GPT-4o image endpoint
- *     (POST /api/v1/gpt4o-image/generate, polled via record-info).
- *     filesUrl accepts up to 5 reference URLs, so all 1–4 user photos
- *     are passed in unchanged — no multipart upload needed since the
- *     photos already live on Vercel Blob.
+ *   - Image gen: Nano Banana Pro (Google Gemini 3 Pro Image) via kie.ai's
+ *     unified jobs API (POST /api/v1/jobs/createTask, polled via
+ *     /jobs/recordInfo). input.image_input accepts up to 8 reference URLs,
+ *     so all 1–5 user photos are passed in unchanged — no multipart upload
+ *     needed since the photos already live on Vercel Blob. (Replaced the 4o
+ *     endpoint, which hung in GENERATING for minutes without completing.)
  *   - Output: kie.ai returns a CDN URL; we download it and re-upload
  *     to Vercel Blob via put() so the user gets a stable URL on our
  *     infra (and the download button keeps working long-term).
@@ -42,21 +43,27 @@ const CREDITS_PER_PERIOD = 30;
 const PERIOD_MS = PERIOD_DAYS * 24 * 60 * 60 * 1000;
 
 const KIE_BASE = 'https://api.kie.ai/api/v1';
-const KIE_GENERATE_PATH = '/gpt4o-image/generate';
-const KIE_RECORD_PATH = '/gpt4o-image/record-info';
+// Nano Banana Pro (Google Gemini 3 Pro Image) via kie.ai's unified jobs API.
+// Replaces 4o / gpt-image-1, which accepted the task then hung in GENERATING
+// for 4+ min without ever completing (confirmed in prod logs). Pro is fast,
+// reliable, and purpose-built for identity-preserving edits from reference
+// photos, and accepts multiple input images (our 1–5 photo flow).
+const KIE_CREATE_PATH = '/jobs/createTask';
+const KIE_RECORD_PATH = '/jobs/recordInfo';
+const KIE_MODEL = 'nano-banana-pro';
+// 2K is a strong quality/speed/cost balance; kie.ai also supports '4K'.
+const KIE_RESOLUTION = '2K';
 
-// Max time we'll block the request waiting for kie.ai to finish.
-// 4o-image jobs usually resolve in 15–45s, but under load kie.ai can run
-// 2–4 min — the old 120s cap gave up on those with "Image generation timed
-// out." Poll up to 240s and leave the remaining ~60s of the 300s function
-// (maxDuration) for the create call + downloading/mirroring the result to Blob.
+// Max time we'll block the request waiting for kie.ai to finish. Nano Banana
+// Pro usually resolves in well under a minute; we keep 240s of headroom and
+// leave the rest of the 300s function budget for mirroring the result to Blob.
 const POLL_INTERVAL_MS = 3000;
 const POLL_TIMEOUT_MS = 240 * 1000;
 
-// Prompt the model receives in 'edit' mode. The first imageUrl in
-// filesUrl is the previously-generated portrait — kie.ai/4o treats
-// earlier files as the primary edit subject — and the rest are the
-// user's original reference photos for identity anchoring.
+// Prompt the model receives in 'edit' mode. The first image in
+// image_input is the previously-generated portrait (the primary edit
+// subject) and the rest are the user's original reference photos for
+// identity anchoring.
 const EDIT_PROMPT_PREFIX =
   "You are given the most recent AI-generated portrait of a person, followed by reference photos of the same person. CRITICAL: Keep the person's face, facial structure, skin tone, eye color, and identity absolutely identical to the references — do NOT alter the face. Apply the following user-requested edit while preserving the realism, lighting quality, and overall premium portrait look:";
 
@@ -239,24 +246,23 @@ export default async function handler(req, res) {
 
   const startedAt = Date.now();
   try {
-    // 1. Create the kie.ai 4o-image task.
-    const createRes = await fetch(`${KIE_BASE}${KIE_GENERATE_PATH}`, {
+    // 1. Create the Nano Banana Pro task via kie.ai's unified jobs API.
+    const createRes = await fetch(`${KIE_BASE}${KIE_CREATE_PATH}`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${kieKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        prompt: kiePrompt,
-        filesUrl: imageUrls.slice(0, 5),
-        size: '1:1',
-        // kie.ai's 4o-image (gpt-image-1) endpoint has been accepting the task
-        // then sitting in GENERATING past our whole poll budget (confirmed in
-        // prod logs: lastStatus GENERATING, elapsed ~240s, never SUCCESS).
-        // enableFallback routes the job to a backup model when 4o stalls/is
-        // unavailable so it completes instead of hanging.
-        enableFallback: true,
-        fallbackModel: 'FLUX_MAX',
+        model: KIE_MODEL,
+        input: {
+          prompt: kiePrompt,
+          // Reference photos for identity preservation (Pro accepts up to 8).
+          image_input: imageUrls.slice(0, 8),
+          aspect_ratio: '1:1',
+          resolution: KIE_RESOLUTION,
+          output_format: 'png',
+        },
       }),
     });
     const createText = await createRes.text();
@@ -274,10 +280,10 @@ export default async function handler(req, res) {
     const taskId = createData.data.taskId;
     console.log('[glow-up] task created', JSON.stringify({ taskId, mode, createMs: Date.now() - startedAt }));
 
-    // 2. Poll record-info until SUCCESS, GENERATE_FAILED, or timeout.
+    // 2. Poll recordInfo until state success, fail, or timeout.
     // Diagnostic tracking so a no-result failure is not a black box: we
-    // record how many times we polled, the last status kie.ai reported, and
-    // a snippet of its last raw response (which carries errorCode/errorMessage).
+    // record how many times we polled, the last state kie.ai reported, and
+    // a snippet of its last raw response (which carries failCode/failMsg).
     const deadline = Date.now() + POLL_TIMEOUT_MS;
     let resultUrl = null;
     let lastErr = null;
@@ -302,15 +308,23 @@ export default async function handler(req, res) {
       }
       lastRecCode = rec.code;
       if (rec.code !== 200) continue;
-      const status = String(rec.data?.status || '').toUpperCase();
-      lastStatus = status;
-      if (status === 'SUCCESS') {
-        const urls = rec.data?.response?.resultUrls;
+      // jobs API state: waiting | queuing | generating | success | fail
+      const state = String(rec.data?.state || '').toLowerCase();
+      lastStatus = state;
+      if (state === 'success') {
+        // resultJson is a JSON *string* -> { resultUrls: [ ... ] }
+        let urls = null;
+        try {
+          const parsed = JSON.parse(rec.data?.resultJson || '{}');
+          urls = parsed?.resultUrls;
+        } catch {
+          urls = null;
+        }
         resultUrl = Array.isArray(urls) && urls.length > 0 ? urls[0] : null;
         break;
       }
-      if (status === 'GENERATE_FAILED' || status === 'CREATE_TASK_FAILED') {
-        lastErr = rec.data?.errorMessage || 'Image generation failed.';
+      if (state === 'fail') {
+        lastErr = rec.data?.failMsg || 'Image generation failed.';
         break;
       }
       // status is GENERATING / unknown — keep polling.
