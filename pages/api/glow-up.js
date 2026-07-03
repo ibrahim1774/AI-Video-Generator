@@ -97,6 +97,12 @@ function isPaidPlan(plan) {
 
 export const config = {
   api: { bodyParser: { sizeLimit: '1mb' } },
+  // This route blocks up to POLL_TIMEOUT_MS (120s) waiting on kie.ai. Without
+  // an explicit maxDuration Vercel kills the function at the low plan default,
+  // so any generation past ~the typical 15–45s returns "Generation failed"
+  // even though the image is still being made. 300s matches video/render.js
+  // and gives the 120s poll budget full headroom.
+  maxDuration: 300,
 };
 
 export default async function handler(req, res) {
