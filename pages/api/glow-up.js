@@ -46,10 +46,12 @@ const KIE_GENERATE_PATH = '/gpt4o-image/generate';
 const KIE_RECORD_PATH = '/gpt4o-image/record-info';
 
 // Max time we'll block the request waiting for kie.ai to finish.
-// 4o-image jobs typically resolve in 15–45s; cap at 120s so we don't
-// approach Vercel's 300s function ceiling.
+// 4o-image jobs usually resolve in 15–45s, but under load kie.ai can run
+// 2–4 min — the old 120s cap gave up on those with "Image generation timed
+// out." Poll up to 240s and leave the remaining ~60s of the 300s function
+// (maxDuration) for the create call + downloading/mirroring the result to Blob.
 const POLL_INTERVAL_MS = 3000;
-const POLL_TIMEOUT_MS = 120 * 1000;
+const POLL_TIMEOUT_MS = 240 * 1000;
 
 // Prompt the model receives in 'edit' mode. The first imageUrl in
 // filesUrl is the previously-generated portrait — kie.ai/4o treats
