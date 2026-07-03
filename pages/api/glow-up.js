@@ -250,6 +250,13 @@ export default async function handler(req, res) {
         prompt: kiePrompt,
         filesUrl: imageUrls.slice(0, 5),
         size: '1:1',
+        // kie.ai's 4o-image (gpt-image-1) endpoint has been accepting the task
+        // then sitting in GENERATING past our whole poll budget (confirmed in
+        // prod logs: lastStatus GENERATING, elapsed ~240s, never SUCCESS).
+        // enableFallback routes the job to a backup model when 4o stalls/is
+        // unavailable so it completes instead of hanging.
+        enableFallback: true,
+        fallbackModel: 'FLUX_MAX',
       }),
     });
     const createText = await createRes.text();
