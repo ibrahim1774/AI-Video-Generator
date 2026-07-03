@@ -237,6 +237,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'KIE_API_KEY is not configured.' });
   }
 
+  const startedAt = Date.now();
   try {
     // 1. Create the kie.ai 4o-image task.
     const createRes = await fetch(`${KIE_BASE}${KIE_GENERATE_PATH}`, {
@@ -264,11 +265,19 @@ export default async function handler(req, res) {
       return res.status(502).json({ error: createData?.msg || 'Image generation failed.' });
     }
     const taskId = createData.data.taskId;
+    console.log('[glow-up] task created', JSON.stringify({ taskId, mode, createMs: Date.now() - startedAt }));
 
     // 2. Poll record-info until SUCCESS, GENERATE_FAILED, or timeout.
+    // Diagnostic tracking so a no-result failure is not a black box: we
+    // record how many times we polled, the last status kie.ai reported, and
+    // a snippet of its last raw response (which carries errorCode/errorMessage).
     const deadline = Date.now() + POLL_TIMEOUT_MS;
     let resultUrl = null;
     let lastErr = null;
+    let pollCount = 0;
+    let lastStatus = null;
+    let lastRecCode = null;
+    let lastRecSnippet = null;
     while (Date.now() < deadline) {
       await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
       const recRes = await fetch(
@@ -276,14 +285,18 @@ export default async function handler(req, res) {
         { headers: { Authorization: `Bearer ${kieKey}` } }
       );
       const recText = await recRes.text();
+      pollCount += 1;
+      lastRecSnippet = recText.slice(0, 800);
       let rec;
       try {
         rec = JSON.parse(recText);
       } catch {
         continue; // transient parse error — keep polling
       }
+      lastRecCode = rec.code;
       if (rec.code !== 200) continue;
       const status = String(rec.data?.status || '').toUpperCase();
+      lastStatus = status;
       if (status === 'SUCCESS') {
         const urls = rec.data?.response?.resultUrls;
         resultUrl = Array.isArray(urls) && urls.length > 0 ? urls[0] : null;
@@ -297,8 +310,31 @@ export default async function handler(req, res) {
     }
 
     if (!resultUrl) {
+      const timedOut = Date.now() >= deadline;
+      // Make the no-result failure diagnosable: distinguish an actual timeout
+      // (kie.ai never reached a terminal status) from kie.ai reporting a
+      // failure, and log its raw last response so we can see the real reason.
+      console.error(
+        '[glow-up] no result',
+        JSON.stringify({
+          taskId,
+          mode,
+          elapsedMs: Date.now() - startedAt,
+          pollCount,
+          lastStatus,
+          lastRecCode,
+          timedOut,
+          lastErr,
+          lastRec: lastRecSnippet,
+        })
+      );
       if (creditReserved) await refundCredit({ customerId, isAdmin, md: entitlement.md, nextPeriodStart: entitlement.nextPeriodStart });
-      return res.status(502).json({ error: lastErr || 'Image generation timed out.' });
+      const clientError = lastErr
+        ? lastErr
+        : timedOut
+        ? 'Image generation timed out.'
+        : 'Image generation failed.';
+      return res.status(502).json({ error: clientError });
     }
 
     // 3. Re-upload kie.ai's CDN result to our own Blob store so the
