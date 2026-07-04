@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 
 import styles from './AuthModal.module.css';
 import { getBrowserSupabase } from '../lib/supabase';
+import { META_PRODUCT } from './MetaPixel';
 
 // Fire the same event to both Meta Pixel and TikTok Pixel, deduping
 // against server-side CAPI/Events-API via the shared eventId. TikTok
@@ -13,7 +14,9 @@ function firePixels({ eventName, params, eventId, content }) {
   if (!eventId || typeof window === 'undefined') return;
   if (typeof window.fbq === 'function') {
     try {
-      window.fbq('track', eventName, params, { eventID: eventId });
+      // Stamp product so a product-scoped Custom Conversion can isolate this
+      // site's events on the shared pixel (matches server CAPI custom_data).
+      window.fbq('track', eventName, { ...params, product: META_PRODUCT }, { eventID: eventId });
     } catch {}
   }
   if (window.ttq && typeof window.ttq.track === 'function') {
