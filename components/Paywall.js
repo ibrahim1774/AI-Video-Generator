@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 import styles from './Paywall.module.css';
 import TopupRow from './TopupRow';
+import { META_PRODUCT } from './MetaPixel';
 
 // Cosmetic credit-display multiplier for image-credit surfaces.
 const IMAGE_DISPLAY_MULTIPLIER = 10;
@@ -353,7 +354,7 @@ export default function Paywall({
   const firePixel = (meta, content) => {
     if (!meta?.eventId) return;
     if (typeof window === 'undefined') return;
-    const baseParams = { value: meta.value, currency: meta.currency || 'USD' };
+    const baseParams = { value: meta.value, currency: meta.currency || 'USD', product: META_PRODUCT };
     const id = content?.content_id || 'subscription';
     const displayName = content?.content_name || id;
     const ttParams = {

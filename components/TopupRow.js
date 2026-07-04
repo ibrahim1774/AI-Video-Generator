@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import paywallStyles from './Paywall.module.css';
+import { META_PRODUCT } from './MetaPixel';
 
 /*
  * Top-up packs (one-time credit purchases). Two clearly-labeled groups:
@@ -44,7 +45,7 @@ function firePixel(meta, content) {
   if (!meta?.eventId) return;
   if (typeof window === 'undefined') return;
   const name = meta.eventName || 'InitiateCheckout';
-  const baseParams = { value: meta.value, currency: meta.currency || 'USD' };
+  const baseParams = { value: meta.value, currency: meta.currency || 'USD', product: META_PRODUCT };
   const id = content?.content_id || 'topup';
   const displayName = content?.content_name || id;
   const ttParams = {

@@ -7,6 +7,7 @@ import Paywall from '../../components/Paywall';
 import TopupRow from '../../components/TopupRow';
 import { getBrowserSupabase } from '../../lib/supabase';
 import { log } from '../../lib/debugLog';
+import { META_PRODUCT } from '../../components/MetaPixel';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -82,7 +83,7 @@ export default function DashboardPage() {
                 window.fbq(
                   'track',
                   meta.eventName || 'Purchase',
-                  { value: meta.value, currency: meta.currency || 'USD' },
+                  { value: meta.value, currency: meta.currency || 'USD', product: META_PRODUCT },
                   { eventID: meta.eventId }
                 );
               } catch (e) {
