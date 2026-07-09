@@ -973,11 +973,11 @@ export default function UgcPage() {
   return (
     <>
       <Head><title>From a Single Image to a Full Video — Ariya Lab</title></Head>
-      <main className={styles.page} style={{ paddingTop: 8 }}>
+      <main className={`${styles.page} ugc-lux-page`} style={{ paddingTop: 8 }}>
         <div className={styles.hero} style={{ marginBottom: 10 }}>
-          <span className={styles.eyebrow}>◆ UGC Creator</span>
+          <span className={`${styles.eyebrow} ugc-lux-in ugc-lux-d1`}>◆ UGC Creator</span>
           <h1
-            className={styles.headline}
+            className={`${styles.headline} ugc-lux-in ugc-lux-d2`}
             style={{ fontSize: 'clamp(32px, 5.5vw, 58px)', margin: '18px 0 0', lineHeight: 1.06 }}
           >
             Turn Any Image Into a{' '}
@@ -985,12 +985,12 @@ export default function UgcPage() {
               Talking Video
             </em>
           </h1>
-          <p className={styles.subtitle} style={{ marginTop: 12, fontSize: 15 }}>
+          <p className={`${styles.subtitle} ugc-lux-in ugc-lux-d3`} style={{ marginTop: 12, fontSize: 15 }}>
             Upload your character, write the script — Ariya Lab animates it in minutes.
           </p>
         </div>
 
-        <form onSubmit={handleAnimate} className={styles.ugcCard}>
+        <form onSubmit={handleAnimate} className={`${styles.ugcCard} ugc-lux-card ugc-lux-in ugc-lux-d4`}>
           {/* 1. Add your character */}
           <section className={styles.ugcSection}>
             <h3 className={styles.ugcSectionTitle} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--text-faint)', fontWeight: 500 }}>01 — Add your character</h3>
@@ -1217,7 +1217,7 @@ export default function UgcPage() {
           />
         ))}
 
-        <div className="ugc-creator-carousel-wrap">
+        <div className="ugc-creator-carousel-wrap ugc-lux-in ugc-lux-d5">
           <div className="ugc-creator-carousel" role="region" aria-label="UGC examples">
             {LANDING_VIDEOS.slice(0, 4).map((v) => (
               <div key={v.id} className="ugc-creator-carousel-card">
@@ -1304,6 +1304,70 @@ export default function UgcPage() {
               padding: 8px 24px 14px;
             }
             .ugc-creator-carousel-card { width: 182px; }
+          }
+
+          /* ── premium motion pass (visual only) ─────────────────────────
+             Staggered load-in, a faint platinum aura behind the hero, a
+             focus glow on the form card, and per-card rises for the demo
+             reel. No layout or copy changes; reduced-motion collapses all. */
+          .ugc-lux-page { position: relative; }
+          .ugc-lux-page::before {
+            content: '';
+            position: absolute;
+            top: -140px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(860px, 92vw);
+            height: 460px;
+            background: radial-gradient(
+              50% 50% at 50% 40%,
+              rgba(255, 255, 255, 0.07) 0%,
+              rgba(255, 255, 255, 0.025) 45%,
+              transparent 75%
+            );
+            pointer-events: none;
+            z-index: 0;
+          }
+          .ugc-lux-in {
+            opacity: 0;
+            transform: translateY(14px);
+            animation: ugc-lux-rise 0.85s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+          }
+          .ugc-lux-d1 { animation-delay: 0.05s; }
+          .ugc-lux-d2 { animation-delay: 0.16s; }
+          .ugc-lux-d3 { animation-delay: 0.3s; }
+          .ugc-lux-d4 { animation-delay: 0.44s; }
+          .ugc-lux-d5 { animation-delay: 0.6s; }
+          @keyframes ugc-lux-rise {
+            to { opacity: 1; transform: translateY(0); }
+          }
+          .ugc-lux-card {
+            transition: box-shadow 0.35s ease, border-color 0.35s ease;
+          }
+          .ugc-lux-card:focus-within {
+            border-color: rgba(255, 255, 255, 0.22);
+            box-shadow:
+              inset 0 1px 0 rgba(255, 255, 255, 0.09),
+              0 0 0 1px rgba(255, 255, 255, 0.08),
+              0 24px 70px -30px rgba(255, 255, 255, 0.12),
+              var(--shadow-lg);
+          }
+          .ugc-lux-d5 .ugc-creator-carousel-card {
+            opacity: 0;
+            transform: translateY(16px);
+            animation: ugc-lux-rise 0.8s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+          }
+          .ugc-lux-d5 .ugc-creator-carousel-card:nth-child(1) { animation-delay: 0.7s; }
+          .ugc-lux-d5 .ugc-creator-carousel-card:nth-child(2) { animation-delay: 0.8s; }
+          .ugc-lux-d5 .ugc-creator-carousel-card:nth-child(3) { animation-delay: 0.9s; }
+          .ugc-lux-d5 .ugc-creator-carousel-card:nth-child(4) { animation-delay: 1s; }
+          @media (prefers-reduced-motion: reduce) {
+            .ugc-lux-in,
+            .ugc-lux-d5 .ugc-creator-carousel-card {
+              animation: none;
+              opacity: 1;
+              transform: none;
+            }
           }
         `}</style>
       </main>
