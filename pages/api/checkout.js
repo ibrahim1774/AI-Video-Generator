@@ -1,3 +1,4 @@
+import { parse as parseCookies } from 'cookie';
 import {
   stripe,
   getOrCreatePrice,
@@ -111,11 +112,44 @@ async function findStripeCustomerForUser({ admin, userId, email }) {
   return customerId;
 }
 
+/*
+ * Ad attribution for /tracking: lib/adAttribution.js persists the ad-click
+ * params (utm_* / fbclid / …) in the `al_attr` cookie (last touch) and
+ * `al_attr_f` (first touch, stamped with an fc_ prefix). Merging them into
+ * the Checkout Session metadata makes completed sessions the conversion
+ * log — no extra database. Keys/values are sanitized and capped well under
+ * Stripe's 50-key metadata limit.
+ */
+function adAttrFromRequest(req) {
+  const out = {};
+  const cookies = parseCookies(req.headers?.cookie || '');
+  const readSet = (cookieName, prefix) => {
+    try {
+      const raw = cookies[cookieName];
+      if (!raw) return;
+      const parsed = JSON.parse(decodeURIComponent(raw));
+      let added = 0;
+      for (const [k, v] of Object.entries(parsed)) {
+        if (added >= 15) break;
+        if (!/^[a-z0-9_]{1,40}$/.test(k)) continue;
+        if (typeof v !== 'string' || !v) continue;
+        out[prefix + k] = v.slice(0, 480);
+        added += 1;
+      }
+    } catch { /* attribution is best-effort */ }
+  };
+  readSet('al_attr', '');
+  readSet('al_attr_f', 'fc_');
+  return out;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method not allowed' });
   }
+
+  const adAttr = adAttrFromRequest(req);
 
   // Subscription path supports anonymous users (pay first, sign up
   // after). Top-up requires auth because credits attach to an
@@ -174,7 +208,7 @@ export default async function handler(req, res) {
         cancel_url: `${origin}/dashboard?paid=0`,
         allow_promotion_codes: true,
         billing_address_collection: 'auto',
-        metadata: { supabase_user_id: session.user.id },
+        metadata: { supabase_user_id: session.user.id, ...adAttr },
       });
       const value = TOPUPS[pack].amountCents / 100;
       const eventId = nsEventId(`ic-${checkout.id}`);
@@ -294,7 +328,7 @@ export default async function handler(req, res) {
       subscription_data: {
         metadata: subMetadata,
       },
-      metadata: subMetadata,
+      metadata: { ...subMetadata, ...adAttr },
     });
 
     // Pixel value: actual cents charged today.
