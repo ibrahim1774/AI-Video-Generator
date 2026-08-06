@@ -78,8 +78,9 @@ export default function TrackingPage() {
     const byAd = new Map();
     for (const r of data.spend) {
       const key = r.adId || `${r.campaign}|${r.ad}`;
-      const cur = byAd.get(key) || { campaign: r.campaign, adset: r.adset, ad: r.ad, adId: r.adId, spend: 0, impressions: 0, clicks: 0, purchases: 0, revenue: 0, convs: [] };
+      const cur = byAd.get(key) || { campaign: r.campaign, adset: r.adset, ad: r.ad, adId: r.adId, spend: 0, impressions: 0, clicks: 0, metaPurchases: 0, metaRevenue: 0, purchases: 0, revenue: 0, convs: [] };
       cur.spend += r.spend; cur.impressions += r.impressions; cur.clicks += r.clicks;
+      cur.metaPurchases += r.metaPurchases || 0; cur.metaRevenue += r.metaRevenue || 0;
       byAd.set(key, cur);
     }
     const unattributed = [];
@@ -101,6 +102,8 @@ export default function TrackingPage() {
       clicks: ads.reduce((s, a) => s + a.clicks, 0),
       purchases: data.conversions.length,
       revenue: data.conversions.reduce((s, c) => s + c.amount, 0),
+      metaPurchases: ads.reduce((s, a) => s + a.metaPurchases, 0),
+      metaRevenue: ads.reduce((s, a) => s + a.metaRevenue, 0),
     };
     return { ads, unattributed, totals };
   }, [data, model]);
@@ -175,6 +178,7 @@ export default function TrackingPage() {
                 ['Spend', money(t.spend), PAPER],
                 ['Clicks', String(t.clicks), PAPER],
                 ['Purchases', String(t.purchases), GREEN],
+                ['Meta purchases', String(Math.round(t.metaPurchases)), SMOKE],
                 ['Revenue', money(t.revenue), GREEN],
                 ['ROAS', roas === null ? '—' : `${roas.toFixed(2)}x`, roas !== null && roas >= 1 ? GREEN : RED],
                 ['Cost / purchase', cpa === null ? '—' : money(cpa), PAPER],
@@ -191,10 +195,10 @@ export default function TrackingPage() {
             <section style={{ ...box, overflow: 'hidden', marginBottom: 18 }}>
               <div style={{ padding: '14px 18px', borderBottom: `1px solid ${LINE}`, fontWeight: 800, fontSize: 14 }}>By ad creative</div>
               <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5, minWidth: 760 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5, minWidth: 900 }}>
                   <thead>
                     <tr style={{ color: SMOKE, textAlign: 'left' }}>
-                      {['Campaign', 'Ad set', 'Ad', 'Spend', 'Clicks', 'Purchases', 'Revenue', 'ROAS'].map((h) => (
+                      {['Campaign', 'Ad set', 'Ad', 'Spend', 'Clicks', 'Purchases', 'Meta purch', 'Revenue', 'Meta rev', 'ROAS'].map((h) => (
                         <th key={h} style={{ padding: '9px 14px', borderBottom: `1px solid ${LINE}`, fontWeight: 600, whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
                     </tr>
@@ -212,12 +216,14 @@ export default function TrackingPage() {
                             <td style={{ padding: '9px 14px', borderBottom: `1px solid ${LINE}`, fontVariantNumeric: 'tabular-nums' }}>{money(a.spend)}</td>
                             <td style={{ padding: '9px 14px', borderBottom: `1px solid ${LINE}`, fontVariantNumeric: 'tabular-nums' }}>{a.clicks}</td>
                             <td style={{ padding: '9px 14px', borderBottom: `1px solid ${LINE}`, fontVariantNumeric: 'tabular-nums', color: a.purchases ? GREEN : SMOKE }}>{a.purchases}</td>
+                            <td style={{ padding: '9px 14px', borderBottom: `1px solid ${LINE}`, fontVariantNumeric: 'tabular-nums', color: SMOKE }}>{a.metaPurchases ? Math.round(a.metaPurchases) : '—'}</td>
                             <td style={{ padding: '9px 14px', borderBottom: `1px solid ${LINE}`, fontVariantNumeric: 'tabular-nums', color: a.revenue ? GREEN : SMOKE }}>{a.revenue ? money(a.revenue) : '—'}</td>
+                            <td style={{ padding: '9px 14px', borderBottom: `1px solid ${LINE}`, fontVariantNumeric: 'tabular-nums', color: SMOKE }}>{a.metaRevenue ? money(a.metaRevenue) : '—'}</td>
                             <td style={{ padding: '9px 14px', borderBottom: `1px solid ${LINE}`, fontVariantNumeric: 'tabular-nums', color: r === null ? SMOKE : r >= 1 ? GREEN : RED }}>{r === null ? '—' : `${r.toFixed(2)}x`}</td>
                           </tr>
                           {openAd === key && a.convs.map((c) => (
                             <tr key={c.id} style={{ background: 'rgba(52,211,153,0.04)' }}>
-                              <td colSpan={8} style={{ padding: '8px 14px 8px 30px', borderBottom: `1px solid ${LINE}`, fontSize: 12, color: SMOKE }}>
+                              <td colSpan={10} style={{ padding: '8px 14px 8px 30px', borderBottom: `1px solid ${LINE}`, fontSize: 12, color: SMOKE }}>
                                 <span style={{ color: GREEN, fontWeight: 700 }}>{money(c.amount)} {c.currency}</span>
                                 {' · '}{c.plan || c.type || 'purchase'}
                                 {' · '}{new Date(c.created * 1000).toLocaleString()}
@@ -229,7 +235,7 @@ export default function TrackingPage() {
                       );
                     })}
                     {!agg.ads.length && (
-                      <tr><td colSpan={8} style={{ padding: 16, color: SMOKE }}>No ad spend in this range.</td></tr>
+                      <tr><td colSpan={10} style={{ padding: 16, color: SMOKE }}>No ad spend in this range.</td></tr>
                     )}
                   </tbody>
                 </table>
